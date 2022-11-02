@@ -59,8 +59,8 @@ export default function Navbar(props: NavbarProps) {
                     href={link.href}
                     className={
                       active
-                        ? 'block rounded py-2 pr-4 pl-3 dark:text-white text-cyan-700'
-                        : 'block rounded py-2 pr-4 pl-3 text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white  hover:text-cyan-700 '
+                        ? 'block rounded py-2 pr-4 pl-3 text-emerald-700 dark:text-white'
+                        : 'block rounded py-2 pr-4 pl-3 text-gray-700 hover:bg-gray-100 hover:text-emerald-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700  dark:hover:text-white '
                     }
                     aria-current={active ? 'page' : undefined}
                   >

@@ -1,6 +1,6 @@
 export default function RootPage() {
   return (
-    <div className="prose mx-auto dark:prose-invert sm:prose-sm lg:prose-lg xl:prose-xl">
+    <div className="prose prose-emerald  mx-auto dark:prose-invert sm:prose-sm lg:prose-lg xl:prose-xl">
       <h1>HTML Ipsum Presents</h1>
 
       <p>
