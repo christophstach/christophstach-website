@@ -17,7 +17,12 @@ export default function Hero() {
           </p>
         </div>
         <div className="hidden lg:col-span-5 lg:mt-0 lg:flex">
-          <Image className="h-72 w-72 rounded-full object-cover drop-shadow-xl" src={image} alt="Hero section image" />
+          <Image
+            className="h-72 w-72 rounded-full object-cover drop-shadow-xl"
+            src={image}
+            alt="Hero section image"
+            placeholder="blur"
+          />
         </div>
       </div>
     </section>

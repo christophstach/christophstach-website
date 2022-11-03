@@ -15,13 +15,13 @@ export default function RootLayout(props: PropsWithChildren) {
   const { children } = props
 
   return (
-    <html lang="en" className={inter.className} >
+    <html lang="en" className={inter.className}>
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta httpEquiv="X-UA-Compatible" content="ie=edge" />
       </head>
-      <body className='bg-neutral-100 dark:bg-neutral-900'>
+      <body className="bg-neutral-100 dark:bg-neutral-900">
         <ThemeProvider>
           <Navbar />
           <div className="mt-20">
