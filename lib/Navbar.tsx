@@ -44,7 +44,7 @@ export default function Navbar(props: NavbarProps) {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed top-0 left-0 z-20 flex h-20 w-full items-center border-b border-gray-200 bg-white/30 px-2 py-2.5 backdrop-blur dark:border-gray-600 dark:bg-gray-900/30 sm:px-4">
+    <nav className="fixed top-0 left-0 z-20 flex h-20 w-full items-center border-b border-gray-300 bg-white/30 px-2 py-2.5 backdrop-blur dark:border-gray-600 dark:bg-gray-900/30 sm:px-4">
       <div className="container mx-auto flex flex-wrap items-center justify-between">
         <Brand />
 
