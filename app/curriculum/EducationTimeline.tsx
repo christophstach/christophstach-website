@@ -5,7 +5,7 @@ import Timeline from '../../lib/timeline/Timeline'
 function getData() {
   return [
     {
-      title: 'M. Sc. Angewandte Informatik ',
+      title: 'M. Sc. Angewandte Informatik',
       institution: 'HTW Berlin - Hochschule für Technik und Wirtschaft Berlin',
       description:
         'At <a target="_blank" href="https://www.htw-berlin.de/">HTW Berlin</a> I am studying applied computer science (Angewandte Informatik). I am currently in the end of my masters. During the time on this university I did serveal projects in the area of bio informatics, deep learning and data science.',
