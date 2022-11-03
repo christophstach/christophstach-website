@@ -16,7 +16,7 @@ export default function Hero() {
             <strong>Tailwind CSS</strong>.
           </p>
         </div>
-        <div className="hidden lg:col-span-5 lg:mt-0 lg:flex">
+        <div className="flex flex-row justify-center lg:col-span-5 lg:mt-0 lg:flex-col">
           <Image
             className="h-72 w-72 rounded-full object-cover drop-shadow-xl"
             src={image}

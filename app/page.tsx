@@ -18,7 +18,7 @@ export default function RootPage() {
         developing methods of artificial intelligence with neural networks. Later I focused more on methods of
         bioinformatics, studying the creation of pipelines for next generation sequencing data. I always kept up to date
         with developing websites. My main interest is the frontend part. I used many frameworks like{' '}
-        <a href="https://angular.io/">Angular</a>, <a href="https://reactjs.org/">React</a>,
+        <a href="https://angular.io/">Angular</a>, <a href="https://reactjs.org/">React</a>,{' '}
         <a href="https://vuejs.org/">VueJS</a> and <a href="https://tailwindcss.com/">Tailwind CSS</a>. Recently,{' '}
         <a href="https://svelte.dev/">Svelte</a> (especially Svelte Kit) caught my attention and I also create this
         website with it.

@@ -81,7 +81,7 @@ export default function ExperienceTimeline() {
             </Timeline.Time>
             <Timeline.Content>
               <p
-                className="prose-sm prose prose-emerald mb-5 mt-4 max-w-none"
+                className="prose-sm prose prose-emerald dark:prose-invert mb-5 mt-4 max-w-none"
                 dangerouslySetInnerHTML={{ __html: item.description }}
               />
 
@@ -91,7 +91,7 @@ export default function ExperienceTimeline() {
                     return (
                       <li
                         key={bulletIndex}
-                        className="prose-sm prose prose-emerald max-w-none"
+                        className="prose-sm prose prose-emerald dark:prose-invert max-w-none"
                         dangerouslySetInnerHTML={{ __html: bullet }}
                       />
                     )
