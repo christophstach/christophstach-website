@@ -19,9 +19,9 @@ export default function RootPage() {
         bioinformatics, studying the creation of pipelines for next generation sequencing data. I always kept up to date
         with developing websites. My main interest is the frontend part. I used many frameworks like{' '}
         <a href="https://angular.io/">Angular</a>, <a href="https://reactjs.org/">React</a>,{' '}
-        <a href="https://vuejs.org/">VueJS</a> and <a href="https://tailwindcss.com/">Tailwind CSS</a>. Recently,{' '}
-        <a href="https://svelte.dev/">Svelte</a> (especially Svelte Kit) caught my attention and I also create this
-        website with it.
+        <a href="https://vuejs.org/">VueJS</a>, <a href="https://svelte.dev/">Svelte</a> (especially SvelteKit) and{' '}
+        <a href="https://tailwindcss.com/">Tailwind CSS</a>. Recently, <a href="https://nextjs.org/">Next.js</a> caught{' '}
+        my attention and I also create this website with it.
       </p>
     </div>
   )

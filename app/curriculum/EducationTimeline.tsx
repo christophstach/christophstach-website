@@ -73,7 +73,7 @@ export default function EducationTimeline() {
             </Timeline.Time>
             <Timeline.Content>
               <p
-                className="prose-sm prose prose-emerald dark:prose-invert mb-5 mt-4 max-w-none"
+                className="prose-sm prose prose-emerald mb-5 mt-4 max-w-none dark:prose-invert"
                 dangerouslySetInnerHTML={{ __html: item.description }}
               />
 
@@ -83,7 +83,7 @@ export default function EducationTimeline() {
                     return (
                       <li
                         key={bulletIndex}
-                        className="prose-sm prose prose-emerald dark:prose-invert max-w-none"
+                        className="prose-sm prose prose-emerald max-w-none dark:prose-invert"
                         dangerouslySetInnerHTML={{ __html: bullet }}
                       />
                     )
