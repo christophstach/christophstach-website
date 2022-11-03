@@ -18,7 +18,7 @@ interface TimelineSubComponents {
 const Timeline: FC<PropsWithChildren> & TimelineSubComponents = (props) => {
   const { children } = props
 
-  return <ol className="relative border-l border-gray-300 dark:border-gray-700">{children}</ol>
+  return <ol className="relative ml-3 border-l border-gray-300 dark:border-gray-700">{children}</ol>
 }
 
 Timeline.Item = TimelineItem

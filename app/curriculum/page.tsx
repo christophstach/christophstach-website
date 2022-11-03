@@ -1,60 +1,22 @@
-import { AcademicCapIcon, BriefcaseIcon } from '@heroicons/react/24/outline'
-import Timeline from '../../lib/timeline/Timeline'
+import EducationTimeline from './EducationTimeline'
+import ExperienceTimeline from './ExperienceTimeline'
 
 export default function Curriculum() {
   return (
-    <div className="flex">
-      <div>
-        <Timeline>
-          <Timeline.Item>
-            <Timeline.Icon current>
-              <BriefcaseIcon />
-            </Timeline.Icon>
-            <Timeline.Title>Flowbite Application UI v2.0.0</Timeline.Title>
-            <Timeline.Time>Released on January 13th, 2022</Timeline.Time>
-            <Timeline.Content>
-              Get access to over 20+ pages including a dashboard layout, charts, kanban board, calendar, and pre-order
-              E-commerce & Marketing pages.
-            </Timeline.Content>
-          </Timeline.Item>
-          <Timeline.Item>
-            <Timeline.Icon>
-              <BriefcaseIcon />
-            </Timeline.Icon>
-            <Timeline.Title>Flowbite Application UI v2.0.0</Timeline.Title>
-            <Timeline.Time>Released on January 13th, 2022</Timeline.Time>
-            <Timeline.Content>
-              Get access to over 20+ pages including a dashboard layout, charts, kanban board, calendar, and pre-order
-              E-commerce & Marketing pages.
-            </Timeline.Content>
-          </Timeline.Item>
-        </Timeline>
+    <div className="flex flex-col lg:flex-row">
+      <div className="flex-1">
+        <div className='xl:prose-xl" prose prose-emerald max-w-none dark:prose-invert sm:prose-sm lg:prose-lg mb-10'>
+          <h2>Professional Experience</h2>
+        </div>
+
+        <ExperienceTimeline />
       </div>
-      <div>
-        <Timeline>
-          <Timeline.Item>
-            <Timeline.Icon>
-              <AcademicCapIcon />
-            </Timeline.Icon>
-            <Timeline.Title>Flowbite Application UI v2.0.0</Timeline.Title>
-            <Timeline.Time>Released on January 13th, 2022</Timeline.Time>
-            <Timeline.Content>
-              Get access to over 20+ pages including a dashboard layout, charts, kanban board, calendar, and pre-order
-              E-commerce & Marketing pages.
-            </Timeline.Content>
-          </Timeline.Item>
-          <Timeline.Item>
-            <Timeline.Icon>
-              <AcademicCapIcon />
-            </Timeline.Icon>
-            <Timeline.Title>Flowbite Application UI v2.0.0</Timeline.Title>
-            <Timeline.Time>Released on January 13th, 2022</Timeline.Time>
-            <Timeline.Content>
-              Get access to over 20+ pages including a dashboard layout, charts, kanban board, calendar, and pre-order
-              E-commerce & Marketing pages.
-            </Timeline.Content>
-          </Timeline.Item>
-        </Timeline>
+      <div className="flex-1">
+        <div className="prose prose-emerald max-w-none dark:prose-invert sm:prose-sm lg:prose-lg xl:prose-xl mb-10">
+          <h2>Education</h2>
+        </div>
+
+        <EducationTimeline />
       </div>
     </div>
   )
