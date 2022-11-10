@@ -15,7 +15,7 @@ export default function Root() {
         <Meta charset="utf-8" />
         <Meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta name='description' content='Christoph Stach is a software engineer with a passion for webtechnologies, especially frontend development' />
-        <Link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+        <Link rel="stylesheet"  href="https://rsms.me/inter/inter.css" />
         <Link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </Head>
       <Body class="bg-neutral-100 dark:bg-neutral-900">
