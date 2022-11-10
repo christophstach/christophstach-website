@@ -18,7 +18,7 @@ export default function Root() {
         <Link rel="stylesheet"  href="https://rsms.me/inter/inter.css" />
         <Link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </Head>
-      <Body class="">
+      <Body class="bg-white dark:bg-black">
         <Suspense>
           <ErrorBoundary>
             <Navbar />

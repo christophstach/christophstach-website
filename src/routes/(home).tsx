@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <>
       <Title>Christoph Stach - Home</Title>
-      <div class="prose prose-emerald mx-auto dark:prose-invert sm:prose-sm lg:prose-lg xl:prose-xl">
+      <div class="prose prose-indigo mx-auto dark:prose-invert sm:prose-sm lg:prose-lg xl:prose-xl">
         <p>
           I started software development at the age of 13. It quickly became a passion for me and I started to code my
           first small projects and websites. I found most interest in websites. These days they were still developed

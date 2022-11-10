@@ -1,6 +1,6 @@
 export default function Hero() {
   return (
-    <section class="bg-gray-50 dark:bg-gray-900">
+    <section class="bg-neutral-50 dark:bg-neutral-900">
       <div class="mx-auto grid max-w-screen-xl px-4 py-8 lg:grid-cols-12 lg:gap-8 lg:py-16 xl:gap-0">
         <div class="mr-auto place-self-center lg:col-span-7">
           <h1 class="mb-4 max-w-2xl text-4xl font-extrabold leading-none tracking-tight dark:text-white md:text-5xl xl:text-6xl">

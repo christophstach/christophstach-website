@@ -54,8 +54,8 @@ export default function Navbar(props: NavbarProps) {
                     <A
                       end={true}
                       href={link.href}
-                      activeClass="block rounded py-2 pr-4 pl-3 text-emerald-700 dark:text-white"
-                      inactiveClass="block rounded py-2 pr-4 pl-3 text-gray-700 hover:bg-gray-100 hover:text-emerald-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+                      activeClass="block rounded py-2 pr-4 pl-3 text-indigo-700 dark:text-white"
+                      inactiveClass="block rounded py-2 pr-4 pl-3 text-gray-700 hover:bg-gray-100 hover:text-indigo-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
                     >
                       {link.text}
                     </A>
