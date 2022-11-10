@@ -13,7 +13,12 @@ export default function Hero() {
           </p>
         </div>
         <div class="flex flex-row justify-center lg:col-span-5 lg:mt-0 lg:flex-col">
-          <img class="h-72 w-72 rounded-full object-cover drop-shadow-xl" src="hero.webp" alt="Hero section image" loading='eager' />
+          <img
+            class="h-72 w-72 rounded-full object-cover drop-shadow-xl"
+            src="hero.webp"
+            alt="Hero section image"
+            loading="eager"
+          />
         </div>
       </div>
     </section>
