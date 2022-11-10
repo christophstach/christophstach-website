@@ -21,7 +21,9 @@
   "dependencies": {
     "@solidjs/meta": "^0.28.0",
     "@solidjs/router": "^0.5.0",
+    "chrome-aws-lambda": "^10.1.0",
     "date-fns": "^2.29.3",
+    "puppeteer-core": "^19.2.2",
     "solid-icons": "^1.0.4",
     "solid-js": "^1.6.0",
     "solid-start": "^0.2.0",
