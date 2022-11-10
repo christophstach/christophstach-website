@@ -74,13 +74,18 @@ export default function EducationTimeline() {
                 {!isBefore(item.to, new Date()) ? <> Present</> : <> {format(item.to, 'MMMM yyyy')}</>}
               </Timeline.Time>
               <Timeline.Content>
-                <p class="prose prose-sm prose-indigo mb-5 mt-4 max-w-none dark:prose-invert">{item.description}</p>
+                <p
+                  class="prose prose-sm prose-indigo mb-5 mt-4 max-w-none dark:prose-invert"
+                  innerHTML={item.description}
+                />
 
                 <Show when={item.bullets.length > 0}>
                   <ul class="ml-4 list-disc text-sm">
                     <For each={item.bullets}>
                       {(bullet) => {
-                        return <li class="prose prose-sm prose-indigo max-w-none dark:prose-invert">{bullet}</li>
+                        return (
+                          <li class="prose prose-sm prose-indigo max-w-none dark:prose-invert" innerHTML={bullet} />
+                        )
                       }}
                     </For>
                   </ul>
