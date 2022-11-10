@@ -21,7 +21,6 @@
   "dependencies": {
     "@solidjs/meta": "^0.28.0",
     "@solidjs/router": "^0.5.0",
-    "@vercel/og": "^0.0.20",
     "date-fns": "^2.29.3",
     "solid-icons": "^1.0.4",
     "solid-js": "^1.6.0",
