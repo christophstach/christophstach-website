@@ -9,14 +9,21 @@ export async function GET2() {
       headless: true,
       // channel: 'chrome',
       executablePath: await chrome.executablePath,
-      defaultViewport: { width: 1200, height: 630 },
+      defaultViewport: {
+        width: 1200,
+        height: 630,
+      },
     })
 
     const page = await browser.newPage()
     //text-white bg-purple-700 hover:bg-purple-800 focus:outline-none focus:ring-4 focus:ring-purple-300 font-medium rounded-full text-sm px-5 py-2.5 text-center mb-2
     const content = (
       <Html>
-        <Body style={{ margin: 0 }}>
+        <Body
+          style={{
+            margin: 0,
+          }}
+        >
           <div
             style={{
               'font-family': 'sans-serif',
@@ -28,11 +35,21 @@ export async function GET2() {
               height: '100%',
             }}
           >
-            <div style={{ 'font-size': '3.75rem', 'font-weight': 800 }}>Hi, I am Christoph!</div>
+            <div
+              style={{
+                'font-size': '3.75rem',
+                'font-weight': 800,
+              }}
+            >
+              Hi, I am Christoph!
+            </div>
 
             <div>
               <img
-                style={{ display: 'block', 'border-radius': '100%' }}
+                style={{
+                  display: 'block',
+                  'border-radius': '100%',
+                }}
                 src="https://christophstach-website.vercel.app/hero.webp"
               />
             </div>
