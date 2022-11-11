@@ -28,7 +28,7 @@ export default function Home() {
           frontend part. I used many frameworks like <a href="https://angular.io/">Angular</a>,{' '}
           <a href="https://reactjs.org/">React</a>, <a href="https://vuejs.org/">VueJS</a>,{' '}
           <a href="https://svelte.dev/">Svelte</a> and <a href="https://tailwindcss.com/">Tailwind CSS</a>. As well as
-          meta frameworks like <a href="https://nextjs.org/">Next.js</a>, <a href="https://remix.run/">Remix</a>, and
+          meta frameworks like <a href="https://nextjs.org/">Next.js</a>, <a href="https://remix.run/">Remix</a>, and{' '}
           <a href="https://kit.svelte.dev/">SvelteKit</a>. Recently, <a href="https://www.solidjs.com/">SolidJS</a>{' '}
           caught my attention and I also create this website with it.
         </p>
