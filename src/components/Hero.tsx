@@ -1,7 +1,7 @@
 export default function Hero() {
   return (
     <section class="bg-neutral-50 dark:bg-neutral-900">
-      <div class="mx-auto flex max-w-screen-xl flex-col items-center justify-center gap-8 px-4 py-8 lg:flex-row lg:gap-20 lg:py-16">
+      <div class="mx-auto flex max-w-screen-xl flex-col-reverse items-center justify-center gap-8 px-4 py-8 lg:flex-row lg:gap-20 lg:py-16">
         <div>
           <h1 class="mb-4 max-w-2xl text-4xl font-extrabold leading-none tracking-tight dark:text-white md:text-5xl xl:text-6xl">
             Hi, I am Christoph!
