@@ -52,9 +52,9 @@ export default function NavbarDialog(props: NavbarDialogProps) {
                             end={link.exact}
                             href={link.href}
                             onclick={() => {
-                              setTimeout(() => {
-                                api().close()
+                              api().close()
 
+                              setTimeout(() => {
                                 window.scrollTo({
                                   top: 420,
                                   behavior: 'smooth',
