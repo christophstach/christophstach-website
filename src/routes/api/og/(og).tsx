@@ -3,7 +3,7 @@ import puppeteer from 'puppeteer-core'
 import { renderToString } from 'solid-js/web'
 import { Body, Html } from 'solid-start'
 
-export async function GET() {
+export async function GET2() {
   try {
     const browser = await puppeteer.launch({
       headless: true,
