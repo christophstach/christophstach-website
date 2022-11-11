@@ -42,7 +42,7 @@ export default function Navbar(props: NavbarProps) {
   const { links = defaultLinks } = props
 
   return (
-    <nav class="fixed top-0 left-0 z-20 flex h-20 w-full items-center border-b border-gray-300 bg-white/30 px-2 py-2.5 backdrop-blur dark:border-gray-600 dark:bg-gray-900/30 ">
+    <nav class="fixed top-0 left-0 z-20 flex h-20 w-full items-center border-b border-gray-300 bg-white/30 px-2 py-2.5 backdrop-blur dark:border-gray-600 dark:bg-gray-900/30">
       <div class="container mx-auto flex items-center justify-between">
         <Brand />
 
