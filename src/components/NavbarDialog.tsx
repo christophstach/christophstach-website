@@ -28,11 +28,11 @@ export default function NavbarDialog(props: NavbarDialogProps) {
       <Show when={api().isOpen}>
         <Portal>
           <div {...api().backdropProps} />
-          <div
-            {...api().underlayProps}
-            class="absolute top-0 left-0 z-30 w-full items-center"
-          >
-            <div {...api().contentProps} class="flex flex-col border-b border-gray-300 dark:border-gray-600 bg-white dark:bg-black">
+          <div {...api().underlayProps} class="absolute top-0 left-0 z-30 w-full items-center">
+            <div
+              {...api().contentProps}
+              class="flex flex-col border-b border-gray-300 bg-white dark:border-gray-600 dark:bg-black"
+            >
               <div class="container mx-auto ">
                 <div class="flex h-20 flex-col items-end justify-center px-2 py-2.5 ">
                   <button
