@@ -14,8 +14,8 @@ export default function ThemeSwitch() {
       onClick={handleToggleTheme}
       aria-label="Theme Switch"
     >
-      <HiOutlineSun class={`h-5 w-5 ${theme() === 'dark' ? 'hidden' : ''}`} />
-      <HiOutlineMoon class={`h-5 w-5 ${theme() !== 'dark' ? 'hidden' : ''}`} />
+      <HiOutlineSun class={`h-5 w-5 ${theme() !== 'dark' ? 'hidden' : ''}`} />
+      <HiOutlineMoon class={`h-5 w-5 ${theme() === 'dark' ? 'hidden' : ''}`} />
     </button>
   )
 }
