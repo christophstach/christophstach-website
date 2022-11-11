@@ -1,6 +1,7 @@
 // @refresh reload
 import { createSignal, Suspense } from 'solid-js'
-import { Body, ErrorBoundary, Head, Html, Link, Meta, Scripts, Title } from 'solid-start'
+import { Body, ErrorBoundary, FileRoutes, Head, Html, Link, Meta, Routes, Scripts, Title } from 'solid-start'
+import Hero from './components/Hero'
 import Navbar from './components/Navbar'
 import './root.css'
 
@@ -32,6 +33,15 @@ export default function Root() {
         <Suspense>
           <ErrorBoundary>
             <Navbar />
+            <div class="mt-20">
+              <Hero />
+            </div>
+
+            <main class="container my-12 mx-auto px-4">
+              <Routes>
+                <FileRoutes />
+              </Routes>
+            </main>
           </ErrorBoundary>
         </Suspense>
         <Scripts />
