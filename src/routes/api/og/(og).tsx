@@ -28,7 +28,7 @@ export async function GET2() {
               height: '100%',
             }}
           >
-            <div style={{'font-size': '3.75rem', 'font-weight': 800}}>Hi, I am Christoph!</div>
+            <div style={{ 'font-size': '3.75rem', 'font-weight': 800 }}>Hi, I am Christoph!</div>
 
             <div>
               <img
@@ -41,7 +41,7 @@ export async function GET2() {
               style={{
                 padding: '0.625rem 1.25rem ',
                 'font-weight': 500,
-                'color': '#ffffff',
+                color: '#ffffff',
                 'font-size': '0.875rem',
                 'line-height': '1.25rem',
                 'text-align': 'center',

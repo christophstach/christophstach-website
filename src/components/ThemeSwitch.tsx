@@ -4,6 +4,7 @@ import { setTheme, theme } from '../root'
 export default function ThemeSwitch() {
   function handleToggleTheme() {
     setTheme(theme() === 'dark' ? 'light' : 'dark')
+    //document.querySelector(":root")!.style.setProperty('color-theme', theme())
   }
 
   return (
