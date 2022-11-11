@@ -51,6 +51,16 @@ export default function NavbarDialog(props: NavbarDialogProps) {
                           <A
                             end={link.exact}
                             href={link.href}
+                            onclick={() => {
+                              setTimeout(() => {
+                                api().close()
+
+                                window.scrollTo({
+                                  top: 500,
+                                  behavior: 'smooth',
+                                })
+                              }, 10)
+                            }}
                             activeClass="block rounded py-2 pr-4 pl-3 text-indigo-700 dark:text-white"
                             inactiveClass="block rounded py-2 pr-4 pl-3 text-gray-700 hover:bg-gray-100 hover:text-indigo-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
                           >

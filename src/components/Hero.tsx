@@ -14,7 +14,7 @@ export default function Hero() {
         </div>
         <div class="flex items-center justify-center ">
           <img
-            class="h-32 w-32 md:h-72 md:w-72 rounded-full object-cover drop-shadow-xl"
+            class="h-32 w-32 rounded-full object-cover drop-shadow-xl md:h-72 md:w-72"
             src="/hero.webp"
             alt="Hero section image"
             loading="eager"
