@@ -56,7 +56,7 @@ export default function NavbarDialog(props: NavbarDialogProps) {
                                 api().close()
 
                                 window.scrollTo({
-                                  top: 500,
+                                  top: 420,
                                   behavior: 'smooth',
                                 })
                               }, 500)
