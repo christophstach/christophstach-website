@@ -8,9 +8,9 @@ import './root.css'
 
 const colorSchemeStorageKey = 'color-scheme'
 
-function initializeColorScheme () {
+function initializeColorScheme() {
   let theme
-  
+
   if (typeof localStorage !== 'undefined' && localStorage.getItem(colorSchemeStorageKey)) {
     theme = localStorage.getItem(colorSchemeStorageKey) as 'light' | 'dark'
   } else if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
