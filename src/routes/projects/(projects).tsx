@@ -17,7 +17,7 @@ export default function Projects() {
                 <div class="prose prose-sm prose-indigo dark:prose-invert" innerHTML={project.description} />
 
                 <Show when={project.tags}>
-                  <div class='flex gap-2 flex-wrap'>
+                  <div class="flex flex-wrap gap-2">
                     <For each={project.tags}>
                       {(tag) => {
                         return (

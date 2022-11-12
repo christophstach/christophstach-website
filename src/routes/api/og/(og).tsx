@@ -1,4 +1,3 @@
-import chrome from 'chrome-aws-lambda'
 import puppeteer from 'puppeteer-core'
 import { renderToString } from 'solid-js/web'
 import { Body, Html } from 'solid-start'
@@ -7,8 +6,8 @@ export async function GET2() {
   try {
     const browser = await puppeteer.launch({
       headless: true,
-      // channel: 'chrome',
-      executablePath: await chrome.executablePath,
+      channel: 'chrome',
+      //executablePath: await chrome.executablePath,
       defaultViewport: {
         width: 1200,
         height: 630,
