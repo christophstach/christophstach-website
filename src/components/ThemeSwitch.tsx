@@ -1,10 +1,9 @@
 import { HiOutlineMoon, HiOutlineSun } from 'solid-icons/hi'
-import { setTheme, theme } from '../root'
+import { colorScheme, setColorScheme } from '../root'
 
 export default function ThemeSwitch() {
   function handleToggleTheme() {
-    setTheme(theme() === 'dark' ? 'light' : 'dark')
-    //document.querySelector(":root")!.style.setProperty('color-theme', theme())
+    setColorScheme(colorScheme() === 'dark' ? 'light' : 'dark')
   }
 
   return (
@@ -14,8 +13,8 @@ export default function ThemeSwitch() {
       onClick={handleToggleTheme}
       aria-label="Theme Switch"
     >
-      <HiOutlineSun class={`h-5 w-5 ${theme() !== 'dark' ? 'hidden' : ''}`} />
-      <HiOutlineMoon class={`h-5 w-5 ${theme() === 'dark' ? 'hidden' : ''}`} />
+      <HiOutlineSun class={`h-5 w-5 ${colorScheme() !== 'dark' ? 'hidden' : ''}`} />
+      <HiOutlineMoon class={`h-5 w-5 ${colorScheme() === 'dark' ? 'hidden' : ''}`} />
     </button>
   )
 }

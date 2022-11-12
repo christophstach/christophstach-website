@@ -1,16 +1,37 @@
 // @refresh reload
-import { createSignal, Suspense } from 'solid-js'
+import { createEffect, createSignal, Suspense } from 'solid-js'
 import { Body, ErrorBoundary, FileRoutes, Head, Html, Link, Meta, Routes, Scripts, Title } from 'solid-start'
 import Hero from './components/Hero'
 import Navbar from './components/Navbar'
 import navbarLinks from './data/navbar-links'
 import './root.css'
 
-export const [theme, setTheme] = createSignal('light')
+const colorSchemeStorageKey = 'color-scheme'
+
+function initializeColorScheme () {
+  let theme
+  
+  if (typeof localStorage !== 'undefined' && localStorage.getItem(colorSchemeStorageKey)) {
+    theme = localStorage.getItem(colorSchemeStorageKey) as 'light' | 'dark'
+  } else if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    theme = 'dark'
+  } else {
+    theme = 'light'
+  }
+
+  return theme
+}
+
+export const [colorScheme, setColorScheme] = createSignal(initializeColorScheme())
 
 export default function Root() {
+  createEffect(() => {
+    localStorage.setItem(colorSchemeStorageKey, colorScheme())
+    document.documentElement.style.colorScheme = colorScheme()
+  })
+
   return (
-    <Html lang="en" data-theme={theme()}>
+    <Html lang="en" data-theme={colorScheme()}>
       <Head>
         <Title>Christoph Stach</Title>
         <Meta charset="utf-8" />
