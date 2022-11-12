@@ -1,50 +1,21 @@
-import * as dialog from '@zag-js/dialog'
-import { normalizeProps, useMachine } from '@zag-js/solid'
 import { HiOutlineMenu, HiOutlineX } from 'solid-icons/hi'
-import { createMemo, createUniqueId, For, Show } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import { A } from 'solid-start'
+import { NavbarLink } from '../data/navbar-links'
 import Brand from './Brand'
 import ThemeSwitch from './ThemeSwitch'
 
-export interface NavbarLink {
-  href: string
-  text: string
-  exact?: boolean
-}
-
 export interface NavbarProps {
-  links?: NavbarLink[]
+  links: NavbarLink[]
 }
 
 export default function Navbar(props: NavbarProps) {
-  const defaultLinks: NavbarLink[] = [
-    {
-      href: '/',
-      text: 'Home',
-      exact: true,
-    },
-    {
-      href: '/about-me',
-      text: 'About me',
-    },
-    {
-      href: '/curriculum',
-      text: 'Curriculum',
-    },
-    {
-      href: '/projects',
-      text: 'Projects',
-    },
-    {
-      href: '/contact',
-      text: 'Contact',
-    },
-  ]
+  const { links } = props
+  const [open, setOpen] = createSignal(false)
 
-  const { links = defaultLinks } = props
-
-  const [state, send] = useMachine(dialog.machine({ id: createUniqueId(), preventScroll: false, trapFocus: false }))
-  const api = createMemo(() => dialog.connect(state, send, normalizeProps))
+  function handleToggleOpen() {
+    setOpen(!open())
+  }
 
   return (
     <nav>
@@ -78,22 +49,22 @@ export default function Navbar(props: NavbarProps) {
               <div>
                 <ThemeSwitch />
               </div>
-              <div class='block md:hidden'>
+              <div class="block md:hidden">
                 <button
                   class="rounded-lg p-2.5 text-sm text-indigo-700 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-700"
-                  {...api().triggerProps}
+                  type="button"
+                  onclick={handleToggleOpen}
                 >
-                  <Show when={!api().isOpen} fallback={<HiOutlineX class='h-5 w-5' />}>
-                  <HiOutlineMenu class="h-5 w-5" />
+                  <Show when={open()} fallback={<HiOutlineMenu class="h-5 w-5" />}>
+                    <HiOutlineX class="h-5 w-5" />
                   </Show>
-                  
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        <Show when={api().isOpen}>
+        <Show when={open()}>
           <div class="container mx-auto">
             <ul class="flex flex-col gap-4 py-4">
               <For each={links}>
@@ -104,7 +75,7 @@ export default function Navbar(props: NavbarProps) {
                         end={link.exact}
                         href={link.href}
                         onclick={() => {
-                          api().close()
+                          setOpen(false)
 
                           setTimeout(() => {
                             window.scrollTo({

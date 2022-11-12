@@ -3,6 +3,7 @@ import { createSignal, Suspense } from 'solid-js'
 import { Body, ErrorBoundary, FileRoutes, Head, Html, Link, Meta, Routes, Scripts, Title } from 'solid-start'
 import Hero from './components/Hero'
 import Navbar from './components/Navbar'
+import navbarLinks from './data/navbar-links'
 import './root.css'
 
 export const [theme, setTheme] = createSignal('light')
@@ -32,7 +33,7 @@ export default function Root() {
       <Body class="bg-white dark:bg-black">
         <Suspense>
           <ErrorBoundary>
-            <Navbar />
+            <Navbar links={navbarLinks} />
             <div class="mt-20">
               <Hero />
             </div>
