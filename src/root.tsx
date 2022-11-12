@@ -41,14 +41,14 @@ export default function Root() {
           content="Christoph Stach is a software engineer with a passion for webtechnologies, especially frontend development"
         />
 
-        <Meta name="og:type" content="website" />
-        <Meta name="og:title" content="Christoph Stach" />
+        <Meta property="og:type" content="website" />
+        <Meta property="og:title" content="Christoph Stach" />
         <Meta
-          name="og:description"
+          property="og:description"
           content="Christoph Stach is a software engineer with a passion for webtechnologies, especially frontend development"
         />
-        <Meta name="og:url" content="https://christophstach.me" />
-        <Meta name="og:image" content="https://christophstach.me/og.png" />
+        <Meta property="og:url" content="https://christophstach.me" />
+        <Meta property="og:image" content="https://christophstach.me/og.png" />
 
         <Link
           rel="preload"
