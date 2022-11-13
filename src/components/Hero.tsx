@@ -8,8 +8,8 @@ export default function Hero() {
           </h1>
           <p class="mb-6 max-w-2xl font-light text-gray-500 dark:text-gray-400 md:text-lg lg:mb-8 lg:text-xl">
             A software engineer with a passion for webtechnologies, especially frontend development. Currently I like to
-            use <strong>TypeScript</strong>, <strong>React</strong>, <strong>Next.js</strong>, and{' '}
-            <strong>Tailwind CSS</strong>.
+            use <strong>TypeScript</strong>, <strong>React</strong>, <strong>SolidJS</strong>, and{' '}
+            <strong>TailwindCSS</strong>.
           </p>
         </div>
         <div class="flex items-center justify-center ">
