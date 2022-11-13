@@ -53,7 +53,7 @@ export default function Root() {
         <Link
           rel="preload"
           as="style"
-          href="https://rsms.me/inter/inter.css"
+          href="/fonts/inter/inter.css"
           onLoad={(event) => {
             event.currentTarget.rel = 'stylesheet'
             event.currentTarget.onload = null
