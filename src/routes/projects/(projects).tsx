@@ -1,5 +1,4 @@
-import { AiOutlineGithub } from 'solid-icons/ai'
-import { HiOutlineGlobe } from 'solid-icons/hi'
+import { AiOutlineGithub, AiOutlineGlobal } from 'solid-icons/ai'
 import { For, Show } from 'solid-js'
 import { Title } from 'solid-start'
 import projects from '../../data/projects'
@@ -33,7 +32,7 @@ export default function Projects() {
                 <Show when={project.website}>
                   <div class="flex items-center gap-3">
                     <div>
-                      <HiOutlineGlobe class="h-5 w-5" />
+                      <AiOutlineGlobal class="h-5 w-5" />
                     </div>
                     <a
                       href={project.website}
