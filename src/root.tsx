@@ -49,16 +49,7 @@ export default function Root() {
         />
         <Meta property="og:url" content="https://christophstach.me" />
         <Meta property="og:image" content="https://christophstach.me/og.png" />
-
-        <Link
-          rel="preload"
-          as="style"
-          href="/fonts/inter/inter.css"
-          onLoad={(event) => {
-            event.currentTarget.rel = 'stylesheet'
-            event.currentTarget.onload = null
-          }}
-        />
+        
         <Link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </Head>
       <Body class="bg-white dark:bg-black">
