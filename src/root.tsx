@@ -57,8 +57,6 @@ export default function Root() {
           onLoad={(event) => {
             event.currentTarget.rel = 'stylesheet'
             event.currentTarget.onload = null
-
-
           }}
         />
         <Link rel="icon" href="/favicon.svg" type="image/svg+xml" />
