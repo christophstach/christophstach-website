@@ -9,17 +9,17 @@ import './root.css'
 const colorSchemeStorageKey = 'color-scheme'
 
 function initializeColorScheme() {
-  let theme
+  let colorScheme
 
   if (typeof localStorage !== 'undefined' && localStorage.getItem(colorSchemeStorageKey)) {
-    theme = localStorage.getItem(colorSchemeStorageKey) as 'light' | 'dark'
+    colorScheme = localStorage.getItem(colorSchemeStorageKey) as 'light' | 'dark'
   } else if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    theme = 'dark'
+    colorScheme = 'dark'
   } else {
-    theme = 'light'
+    colorScheme = 'light'
   }
 
-  return theme
+  return colorScheme
 }
 
 export const [colorScheme, setColorScheme] = createSignal(initializeColorScheme())
@@ -57,11 +57,38 @@ export default function Root() {
           onLoad={(event) => {
             event.currentTarget.rel = 'stylesheet'
             event.currentTarget.onload = null
+
+
           }}
         />
         <Link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </Head>
       <Body class="bg-white dark:bg-black">
+        <script>
+          const html = document.documentElement;
+          const colorSchemeStorageKey = 'color-scheme';
+
+          function initializeColorScheme() {'{'}
+            let colorScheme;
+
+            if (typeof localStorage !== 'undefined' && localStorage.getItem(colorSchemeStorageKey)) {'{'}
+              colorScheme = localStorage.getItem(colorSchemeStorageKey);
+            {'}'} else if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {'{'}
+              colorScheme = 'dark';
+            {'}'} else {'{'}
+              colorScheme = 'light';
+            {'}'}
+
+            return colorScheme;
+          {'}'}
+
+          const colorScheme = initializeColorScheme();
+
+          if(colorScheme && html) {'{'}
+            html.setAttribute('data-theme', colorScheme);
+          {'}'}
+          
+        </script>
         <Suspense>
           <ErrorBoundary>
             <Navbar links={navbarLinks} />
