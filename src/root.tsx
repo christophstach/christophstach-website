@@ -87,7 +87,6 @@ export default function Root() {
           if(colorScheme && html) {'{'}
             html.setAttribute('data-theme', colorScheme);
           {'}'}
-          
         </script>
         <Suspense>
           <ErrorBoundary>
