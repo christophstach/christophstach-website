@@ -18,6 +18,7 @@ netlify
 
 # Temp
 gitignore
+vite.config.ts.timestamp-*
 
 # System Files
 .DS_Store
