@@ -10,7 +10,6 @@ export interface NavbarProps {
 }
 
 export default function Navbar(props: NavbarProps) {
-  const { links } = props
   const [open, setOpen] = createSignal(false)
 
   function handleToggleOpen() {
@@ -26,7 +25,7 @@ export default function Navbar(props: NavbarProps) {
           </div>
           <div class="hidden md:block">
             <ul class="flex gap-4">
-              <For each={links}>
+              <For each={props.links}>
                 {(link) => {
                   return (
                     <li>
@@ -68,7 +67,7 @@ export default function Navbar(props: NavbarProps) {
         <Show when={open()}>
           <div class="container mx-auto">
             <ul class="flex flex-col gap-4 py-4">
-              <For each={links}>
+              <For each={props.links}>
                 {(link) => {
                   return (
                     <li>

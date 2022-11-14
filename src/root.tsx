@@ -49,32 +49,25 @@ export default function Root() {
         />
         <Meta property="og:url" content="https://christophstach.me" />
         <Meta property="og:image" content="https://christophstach.me/og.png" />
-        
+
         <Link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </Head>
       <Body class="bg-white dark:bg-black">
         <script>
-          const html = document.documentElement;
-          const colorSchemeStorageKey = 'color-scheme';
-
-          function initializeColorScheme() {'{'}
-            let colorScheme;
-
-            if (typeof localStorage !== 'undefined' && localStorage.getItem(colorSchemeStorageKey)) {'{'}
-              colorScheme = localStorage.getItem(colorSchemeStorageKey);
-            {'}'} else if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {'{'}
-              colorScheme = 'dark';
-            {'}'} else {'{'}
-              colorScheme = 'light';
-            {'}'}
-
-            return colorScheme;
+          const html = document.documentElement; const colorSchemeStorageKey = 'color-scheme'; function
+          initializeColorScheme() {'{'}
+          let colorScheme; if (typeof localStorage !== 'undefined' && localStorage.getItem(colorSchemeStorageKey)) {'{'}
+          colorScheme = localStorage.getItem(colorSchemeStorageKey);
+          {'}'} else if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches){' '}
+          {'{'}
+          colorScheme = 'dark';
+          {'}'} else {'{'}
+          colorScheme = 'light';
           {'}'}
-
-          const colorScheme = initializeColorScheme();
-
-          if(colorScheme && html) {'{'}
-            html.setAttribute('data-theme', colorScheme);
+          return colorScheme;
+          {'}'}
+          const colorScheme = initializeColorScheme(); if(colorScheme && html) {'{'}
+          html.setAttribute('data-theme', colorScheme);
           {'}'}
         </script>
         <Suspense>
