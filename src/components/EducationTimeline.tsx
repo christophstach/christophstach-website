@@ -1,3 +1,4 @@
+/* eslint-disable solid/no-innerhtml */
 import { format, isBefore } from 'date-fns'
 import { HiOutlineAcademicCap } from 'solid-icons/hi'
 import { For, Show } from 'solid-js'

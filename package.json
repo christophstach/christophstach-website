@@ -9,27 +9,29 @@
   "type": "module",
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.8",
+    "@typescript-eslint/eslint-plugin": "^5.43.0",
+    "@typescript-eslint/parser": "^5.43.0",
     "autoprefixer": "^10.4.13",
+    "eslint": "^8.28.0",
+    "eslint-plugin-solid": "^0.8.0",
     "postcss": "^8.4.18",
     "prettier": "^2.7.1",
     "prettier-plugin-tailwindcss": "^0.1.13",
-    "solid-start-node": "^0.2.0",
+    "solid-start-node": "^0.2.5",
     "tailwindcss": "^3.2.3",
     "typescript": "^4.8.4",
-    "vite": "^3.1.8"
+    "vite": "^3.1.8",
+    "vite-plugin-eslint": "^1.8.1"
   },
   "dependencies": {
-    "@solidjs/meta": "^0.28.0",
+    "@solidjs/meta": "^0.28.2",
     "@solidjs/router": "^0.5.0",
-    "@zag-js/solid": "^0.2.1",
-    "chrome-aws-lambda": "^10.1.0",
     "date-fns": "^2.29.3",
-    "puppeteer-core": "^19.2.2",
     "solid-icons": "^1.0.4",
-    "solid-js": "^1.6.0",
-    "solid-start": "^0.2.0",
+    "solid-js": "^1.6.2",
+    "solid-start": "^0.2.5",
     "solid-start-vercel": "^0.2.5",
-    "undici": "^5.11.0"
+    "undici": "^5.12.0"
   },
   "engines": {
     "node": ">=16"

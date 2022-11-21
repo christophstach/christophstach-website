@@ -1,3 +1,4 @@
+/* eslint-disable solid/no-innerhtml */
 import { AiOutlineGithub, AiOutlineGlobal } from 'solid-icons/ai'
 import { For, Show } from 'solid-js'
 import { Title } from 'solid-start'
@@ -13,7 +14,7 @@ export default function Projects() {
             return (
               <div class="flex max-w-xs flex-col gap-3 rounded-lg border border-gray-200 bg-white p-6 shadow-md dark:border-gray-700 dark:bg-gray-800 md:max-w-md">
                 <h5 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{project.title}</h5>
-                <div class="prose prose-sm prose-indigo dark:prose-invert" innerHTML={project.description} />
+                <div class="prose prose-sm prose-indigo dark:prose-invert" innerHTML={project.description}  />
 
                 <Show when={project.tags}>
                   <div class="flex flex-wrap gap-2">
