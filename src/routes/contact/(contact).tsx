@@ -54,7 +54,7 @@ export default function Contact() {
     <>
       <Title>Christoph Stach - Contact</Title>
       <Form>
-        <div class="flex flex-col gap-5 overflow-hidden rounded-md p-5 shadow">
+        <div class="flex flex-col gap-5 rounded-lg border border-gray-200 bg-white p-6 shadow-md dark:border-gray-700 dark:bg-gray-800">
           <Input type="email" name="email" placeholder="E-Mail" label="E-Mail" />
           <Input type="text" name="subject" placeholder="Subject" label="Subject" />
           <Input type="textarea" name="text" placeholder="Text" label="Text" />
