@@ -9,6 +9,6 @@ export default defineConfig({
     solid({
       adapter: vercel(),
     }),
-    eslint()
+    eslint(),
   ],
 })
