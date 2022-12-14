@@ -61,7 +61,7 @@ export default function Contact() {
 
           <div>
             <Button type="submit" disabled={response.pending}>
-              <Show when={response.pending} fallback="Submit">
+              <Show when={response.pending} fallback="Send">
                 Sending...
               </Show>
             </Button>
