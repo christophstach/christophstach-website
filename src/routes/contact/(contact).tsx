@@ -23,7 +23,7 @@ export default function Contact() {
         },
       })
 
-      const smtpInfo = await transporter.sendMail({
+      await transporter.sendMail({
         from: import.meta.env.VITE_SMTP_SENDER,
         to: import.meta.env.VITE_SMTP_RECIPIENT,
         subject: "E-Mail from Contact form",
@@ -43,8 +43,7 @@ export default function Contact() {
           email,
           subject,
           text,
-        },
-        smtpInfo,
+        }
       }
     } catch (error) {
       return { error }
