@@ -1,5 +1,5 @@
-import { A, Title } from 'solid-start'
-import { HttpStatusCode } from 'solid-start/server'
+import { A, Title } from "solid-start"
+import { HttpStatusCode } from "solid-start/server"
 
 export default function NotFound() {
   return (
@@ -17,7 +17,7 @@ export default function NotFound() {
               Something's missing.
             </p>
             <p class="mb-4 text-lg font-light text-gray-500 dark:text-gray-400">
-              Sorry, we can't find that page. You'll find lots to explore on the home page.{' '}
+              Sorry, we can't find that page. You'll find lots to explore on the home page.{" "}
             </p>
             <A
               href="/"

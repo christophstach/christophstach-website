@@ -1,4 +1,4 @@
-import { ParentProps } from 'solid-js'
+import { ParentProps } from "solid-js"
 
 export default function TimelineTime(props: ParentProps) {
   return (

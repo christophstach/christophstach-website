@@ -5,3 +5,5 @@ dist
 .next
 .solid
 .vercel
+pnpm-lock.yaml
+.env

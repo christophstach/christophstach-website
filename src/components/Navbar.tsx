@@ -1,9 +1,9 @@
-import { HiOutlineMenu, HiOutlineX } from 'solid-icons/hi'
-import { createSignal, For, Show } from 'solid-js'
-import { A } from 'solid-start'
-import { NavbarLink } from '../data/navbar-links'
-import Brand from './Brand'
-import ThemeSwitch from './ThemeSwitch'
+import { HiOutlineMenu, HiOutlineX } from "solid-icons/hi"
+import { createSignal, For, Show } from "solid-js"
+import { A } from "solid-start"
+import { NavbarLink } from "../data/navbar-links"
+import Brand from "./Brand"
+import ThemeSwitch from "./ThemeSwitch"
 
 export interface NavbarProps {
   links: NavbarLink[]
@@ -80,7 +80,7 @@ export default function Navbar(props: NavbarProps) {
                           setTimeout(() => {
                             window.scrollTo({
                               top: 420,
-                              behavior: 'smooth',
+                              behavior: "smooth",
                             })
                           }, 500)
                         }}

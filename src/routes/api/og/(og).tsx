@@ -1,12 +1,12 @@
-import puppeteer from 'puppeteer-core'
-import { renderToString } from 'solid-js/web'
-import { Body, Html } from 'solid-start'
+import puppeteer from "puppeteer-core"
+import { renderToString } from "solid-js/web"
+import { Body, Html } from "solid-start"
 
 export async function GET2() {
   try {
     const browser = await puppeteer.launch({
       headless: true,
-      channel: 'chrome',
+      channel: "chrome",
       //executablePath: await chrome.executablePath,
       defaultViewport: {
         width: 1200,
@@ -25,19 +25,19 @@ export async function GET2() {
         >
           <div
             style={{
-              'font-family': 'sans-serif',
-              gap: '2rem',
-              'flex-direction': 'column',
-              display: 'flex',
-              'justify-content': 'center',
-              'align-items': 'center',
-              height: '100%',
+              "font-family": "sans-serif",
+              gap: "2rem",
+              "flex-direction": "column",
+              display: "flex",
+              "justify-content": "center",
+              "align-items": "center",
+              height: "100%",
             }}
           >
             <div
               style={{
-                'font-size': '3.75rem',
-                'font-weight': 800,
+                "font-size": "3.75rem",
+                "font-weight": 800,
               }}
             >
               Hi, I am Christoph!
@@ -46,8 +46,8 @@ export async function GET2() {
             <div>
               <img
                 style={{
-                  display: 'block',
-                  'border-radius': '100%',
+                  display: "block",
+                  "border-radius": "100%",
                 }}
                 src="https://christophstach-website.vercel.app/hero.webp"
               />
@@ -55,14 +55,14 @@ export async function GET2() {
 
             <div
               style={{
-                padding: '0.625rem 1.25rem ',
-                'font-weight': 500,
-                color: '#ffffff',
-                'font-size': '0.875rem',
-                'line-height': '1.25rem',
-                'text-align': 'center',
-                'border-radius': '0.5rem',
-                'background-color': 'rgb(79,70,229)',
+                padding: "0.625rem 1.25rem ",
+                "font-weight": 500,
+                color: "#ffffff",
+                "font-size": "0.875rem",
+                "line-height": "1.25rem",
+                "text-align": "center",
+                "border-radius": "0.5rem",
+                "background-color": "rgb(79,70,229)",
               }}
             >
               Go to my website
@@ -81,5 +81,5 @@ export async function GET2() {
     console.log(e)
   }
 
-  return new Response('TEst 123')
+  return new Response("TEst 123")
 }
