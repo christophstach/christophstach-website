@@ -21,7 +21,7 @@ export default function Home() {
           enthusiast like me, a potential employer, or just someone who stumbled upon my website by accident, I'm glad
           you're here. If you've got any questions or just want to chat, don't hesitate to reach out. You can{" "}
           <a href="https://www.linkedin.com/in/christoph-stach-7586b958/">connect with me on LinkedIn</a> or shoot me an{" "}
-          <a href="mailto:christoph@christophstach.me">email</a> – I'm always open to new opportunities and connections.
+          <a href="/contact">email</a> – I'm always open to new opportunities and connections.
         </p>
       </div>
     </>

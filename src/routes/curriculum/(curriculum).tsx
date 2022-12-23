@@ -6,6 +6,15 @@ export default function Curriculum() {
   return (
     <>
       <Title>Christoph Stach - Curriculum</Title>
+
+      <section class="mb-10">
+        <p>
+          On this page, you'll find a rundown of my education, professional experience, and skills. I'm always looking
+          to learn new things and push myself to be the best I can be, and this page is a way for me to show you what
+          I've been up to.
+        </p>
+      </section>
+
       <div class="flex flex-col lg:flex-row">
         <div class="flex-1">
           <div class='xl:prose-xl" prose prose-indigo mb-10 max-w-none dark:prose-invert sm:prose-sm lg:prose-lg'>

@@ -43,7 +43,7 @@ export default function Contact() {
           email,
           subject,
           text,
-        }
+        },
       }
     } catch (error) {
       return { error }
@@ -53,11 +53,26 @@ export default function Contact() {
   return (
     <>
       <Title>Christoph Stach - Contact</Title>
+
+      <section class="mb-10">
+        <p>
+          If you need to get in touch with me for any reason, this is the place to do it. Simply fill out the form below
+          and I'll get back to you as soon as I can. I'm always happy to help and I'm open to new opportunities and
+          connections, so don't hesitate to reach out.
+        </p>
+      </section>
+
       <Form>
         <div class="flex flex-col gap-5 rounded-lg border border-gray-200 bg-white p-6 shadow-md dark:border-gray-700 dark:bg-gray-800">
-          <Input type="email" name="email" placeholder="E-Mail" label="E-Mail" />
-          <Input type="text" name="subject" placeholder="Subject" label="Subject" />
+          <Input type="email" name="email" placeholder="E-Mail" label="E-Mail" required />
+          <Input type="text" name="subject" placeholder="Subject" label="Subject" required />
           <Input type="textarea" name="text" placeholder="Text" label="Text" />
+
+          <p>
+            The information you provide on this form will be used solely to respond to your message and will not be
+            shared with any third parties. By submitting this form, you consent to the collection, use, and processing
+            of your personal data in accordance with the GDPR.
+          </p>
 
           <div>
             <Button type="submit" disabled={response.pending}>

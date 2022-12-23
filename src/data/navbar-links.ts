@@ -22,10 +22,10 @@ const navbarLinks: NavbarLink[] = [
     href: "/projects",
     text: "Projects",
   },
-  // {
-  //   href: "/contact",
-  //   text: "Contact",
-  // },
+  {
+    href: "/contact",
+    text: "Contact",
+  },
 ]
 
 export default navbarLinks

@@ -8,7 +8,16 @@ export default function Projects() {
   return (
     <>
       <Title>Christoph Stach - Projects</Title>
-      <div class="flex flex-wrap justify-center gap-10">
+
+      <section class="mb-10">
+        <p>
+          Here, you'll find a selection of the projects I've worked on that showcase my skills and interests as a
+          developer. I am constantly learning and experimenting with new technologies, and these projects reflect that
+          passion for growth and innovation.
+        </p>
+      </section>
+
+      <div class="flex flex-wrap justify-between gap-10">
         <For each={projects}>
           {(project) => {
             return (
