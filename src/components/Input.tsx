@@ -1,4 +1,4 @@
-import cuid from "cuid"
+
 import { Show } from "solid-js"
 
 export interface InputProps {
@@ -12,7 +12,7 @@ export interface InputProps {
 }
 
 export default function Input(props: InputProps) {
-  const id = cuid()
+  const id = `uuid-${crypto.randomUUID()}`
 
   return (
     <div>

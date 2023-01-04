@@ -10,7 +10,7 @@
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.3",
     "@tailwindcss/typography": "^0.5.8",
-    "@types/nodemailer": "^6.4.6",
+    "@types/nodemailer": "^6.4.7",
     "@typescript-eslint/eslint-plugin": "^5.46.1",
     "@typescript-eslint/parser": "^5.46.1",
     "autoprefixer": "^10.4.13",
@@ -27,13 +27,12 @@
   "dependencies": {
     "@solidjs/meta": "^0.28.2",
     "@solidjs/router": "^0.6.0",
-    "cuid": "^2.1.8",
     "date-fns": "^2.29.3",
     "nodemailer": "^6.8.0",
     "solid-icons": "^1.0.4",
-    "solid-js": "^1.6.6",
-    "solid-start": "^0.2.8",
-    "solid-start-vercel": "^0.2.8",
+    "solid-js": "^1.6.7",
+    "solid-start": "^0.2.10",
+    "solid-start-vercel": "^0.2.10",
     "undici": "^5.14.0"
   },
   "engines": {
