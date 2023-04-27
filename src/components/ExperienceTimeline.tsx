@@ -74,13 +74,16 @@ export default function ExperienceTimeline() {
                 <HiOutlineBriefcase />
               </Timeline.Icon>
               <Timeline.Title>
-                <span class="font-extrabold">{item.title}</span>
-                <span class="font-extralight">@</span>
-                <span class="font-extralight">{item.company}</span>
+                <div class="flex flex-wrap">
+                  <span class="font-extrabold">{item.title}</span>
+                  <span class="font-extralight">@{item.company}</span>
+                </div>
               </Timeline.Title>
               <Timeline.Time>
                 {format(item.from, 'MMMM yyyy')} -
-                {!isBefore(item.to, new Date()) ? <> Present</> : <> {format(item.to, 'MMMM yyyy')}</>}
+                <Show when={isBefore(item.to, new Date())} fallback={' Present'}>
+                  {format(item.to, ' MMMM yyyy')}
+                </Show>
               </Timeline.Time>
               <Timeline.Content>
                 <p class="prose prose-sm prose-indigo mb-5 mt-4 max-w-none dark:prose-invert">{item.description}</p>
