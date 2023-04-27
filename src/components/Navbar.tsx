@@ -18,7 +18,7 @@ export default function Navbar(props: NavbarProps) {
 
   return (
     <nav>
-      <div class="fixed top-0 left-0 z-20 w-full border-b border-gray-300 bg-white/30 px-4 backdrop-blur dark:border-gray-600 dark:bg-gray-900/30">
+      <div class="fixed left-0 top-0 z-20 w-full border-b border-gray-300 bg-white/30 px-4 backdrop-blur dark:border-gray-600 dark:bg-gray-900/30">
         <div class="container mx-auto flex h-20 items-center justify-between">
           <div>
             <Brand />

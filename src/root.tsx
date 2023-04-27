@@ -80,7 +80,7 @@ export default function Root() {
               <Hero />
             </div>
 
-            <main class="container my-12 mx-auto px-4">
+            <main class="container mx-auto my-12 px-4">
               <Routes>
                 A
                 <FileRoutes />

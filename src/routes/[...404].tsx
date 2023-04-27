@@ -8,7 +8,7 @@ export default function NotFound() {
       <HttpStatusCode code={404} />
 
       <section>
-        <div class="mx-auto max-w-screen-xl py-8 px-4 lg:py-16 lg:px-6">
+        <div class="mx-auto max-w-screen-xl px-4 py-8 lg:px-6 lg:py-16">
           <div class="mx-auto max-w-screen-sm text-center">
             <h1 class="mb-4 text-7xl font-extrabold tracking-tight text-indigo-600 dark:text-indigo-500 lg:text-9xl">
               404
