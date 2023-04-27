@@ -20,8 +20,7 @@ export default function Home() {
           I hope you find something interesting here and that you'll stick around for a while. Whether you're a tech
           enthusiast like me, a potential employer, or just someone who stumbled upon my website by accident, I'm glad
           you're here. If you've got any questions or just want to chat, don't hesitate to reach out. You can{" "}
-          <a href="https://www.linkedin.com/in/christoph-stach-7586b958/">connect with me on LinkedIn</a> or shoot me an{" "}
-          <a href="/contact">email</a> – I'm always open to new opportunities and connections.
+          <a href="https://www.linkedin.com/in/christoph-stach-7586b958/">connect with me on LinkedIn</a> or send me a message.
         </p>
       </div>
     </>

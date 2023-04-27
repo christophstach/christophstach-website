@@ -8,11 +8,18 @@ export interface Project {
 
 const projects: Project[] = [
   {
+    title: "Crowds UI",
+    description: `
+      At Dericon GmbH, my latest project involves developing a responsive, intuitive workflow editor featuring a specialized view that displays tasks from the backend as a graph. The UI converts tasks into nodes and edges, and an auto-layout function optimizes their positions. Additionally, the project incorporates dynamic form generation based on backend-provided structures.
+    `,
+    tags: ["TypeScript", "React", "Remix.run", "TailwindCSS", "DaisyUI", "reactflow", "react-hook-form"],
+    // website: "https://christophstach.me",
+    // repository: "https://github.com/christophstach/christophstach-website",
+  },
+  {
     title: "This website",
     description: `
-      This website is a rework of my own personal website. The former website was based on Angular and Bootstrap.
-      I wanted to give it a new, fresh feeling and chose the most modern technologies to develop it. This website
-      is server side rendered and uses the metaframework SolidStart. It also supports a darkmode.
+      Introducing a revamped version of my personal website, designed to exude a contemporary and invigorating atmosphere. The previous iteration relied on Angular and Bootstrap, but this edition employs cutting-edge technologies for an enhanced user experience. Featuring server-side rendering and the innovative SolidStart metaframework, the site now also offers a sleek dark mode option.
     `,
     tags: ["TypeScript", "SolidJS", "SolidStart", "TailwindCSS"],
     website: "https://christophstach.me",
@@ -21,10 +28,7 @@ const projects: Project[] = [
   {
     title: "Finance Check",
     description: `
-      This web-application renders a questionary. It supports multiple categories. Each category can have a finite number of questions wich answers.
-      It supports normal and multiple choice questions. In the end of each category the user is promoted if he wants to continue wich a remaining
-      category. All answers are saved and in the end send to a backend service for further processing. I developed this tool for the needs of a friend, 
-      who is running the finance consulting website <a href="https://andreasjansen.com/">andreasjansen.com</a>.
+      This web application presents an interactive questionnaire featuring a variety of categories. Each category contains a finite number of questions accompanied by their respective answers. The questionnaire supports both standard and multiple-choice questions. Upon completing each category, the user is prompted to decide whether they wish to proceed with any remaining categories. All responses are stored and ultimately transmitted to a backend service for further analysis. I designed this tool to cater to the requirements of a friend who operates a financial consulting website, <a href="https://andreasjansen.com/">andreasjansen.com</a>.
     `,
     tags: ["TypeScript", "React", "Jotai", "TailwindCSS"],
     website: "https://andreasjansen.com/finanzcheck-starten",
@@ -33,9 +37,7 @@ const projects: Project[] = [
   {
     title: "Covid SpiNGS - Realtime Variant Caller",
     description: `
-      A next generation sequencing variant caller which can analyse incoming bam files in realtime. 
-      It saves itermediate results in memory and calculates statistics on user demand.
-      The variant caller is written in the programming language kotling to utilize the performance of the JVM platform.
+      Introducing a cutting-edge variant caller for next-generation sequencing, designed to analyze incoming BAM files in real-time. This sophisticated tool efficiently stores intermediate results in memory, and upon user request, seamlessly calculates vital statistics. Developed in the Kotlin programming language, the variant caller harnesses the capabilities of the JVM platform.
     `,
     tags: ["Kotlin", "Java", "JVM", "NGS", "SAMtools", "htsjdk"],
     website: "https://www.htw-berlin.de/forschung/online-forschungskatalog/projekte/projekt/?eid=3100",
@@ -44,10 +46,7 @@ const projects: Project[] = [
   {
     title: "Covid SpiNGS - Realtime pipeline",
     description: `
-    This Nextflow pipeline uses nextflow to analyse data. It observes a folder in the filesystem for incoming fastq files.
-    These are then aligned to a reference sequence by <a href="https://github.com/lh3/minimap2">minimap2</a>. The results of multiple files are gathered,
-    merged and then forwarded to the variant caller <a href="https://github.com/kishwarshafin/pepper">PEPPER-Margin-DeepVariant</a>, 
-    which produces the final VCF result.
+      The Nextflow pipeline employs Nextflow to process data by monitoring a designated folder for incoming fastq files. These files are subsequently aligned to a reference sequence using <a href="https://github.com/lh3/minimap2">minimap2</a>. The results from various files are collected, combined, and then passed to the variant caller, <a href="https://github.com/kishwarshafin/pepper">PEPPER-Margin-DeepVariant</a>, which generates the final VCF outcome.
     `,
     tags: ["Nextflow", "NGS", "SAMtools", "Minimap2", "DeepVariant"],
     website: "https://www.htw-berlin.de/forschung/online-forschungskatalog/projekte/projekt/?eid=3100",
