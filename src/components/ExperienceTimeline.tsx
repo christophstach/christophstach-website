@@ -10,6 +10,7 @@ function getData() {
       company: "DERICON GmbH",
       description: "",
       bullets: [
+        "Developing UIs in ReactJS and Remix for internal Software",
         "Extending the existing frontend of a web based software based on Angular (v2+)",
         "Developing a PHP Symfony framework middleware to connect the AngularJS (v1) frontend with the systems core REST API",
       ],
