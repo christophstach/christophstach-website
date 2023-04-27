@@ -1,8 +1,8 @@
 /* eslint-disable solid/no-innerhtml */
-import { AiOutlineGithub, AiOutlineGlobal } from "solid-icons/ai"
-import { For, Show } from "solid-js"
-import { Title } from "solid-start"
-import projects from "../../data/projects"
+import { AiOutlineGithub, AiOutlineGlobal } from 'solid-icons/ai'
+import { For, Show } from 'solid-js'
+import { Title } from 'solid-start'
+import projects from '../../data/projects'
 
 export default function Projects() {
   return (

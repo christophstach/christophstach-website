@@ -1,6 +1,6 @@
-import { Title } from "solid-start"
-import EducationTimeline from "../../components/EducationTimeline"
-import ExperienceTimeline from "../../components/ExperienceTimeline"
+import { Title } from 'solid-start'
+import EducationTimeline from '../../components/EducationTimeline'
+import ExperienceTimeline from '../../components/ExperienceTimeline'
 
 export default function Curriculum() {
   return (

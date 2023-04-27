@@ -1,4 +1,4 @@
-import { Title } from "solid-start"
+import { Title } from 'solid-start'
 
 export default function Home() {
   return (
@@ -19,7 +19,7 @@ export default function Home() {
         <p>
           I hope you find something interesting here and that you'll stick around for a while. Whether you're a tech
           enthusiast like me, a potential employer, or just someone who stumbled upon my website by accident, I'm glad
-          you're here. If you've got any questions or just want to chat, don't hesitate to reach out. You can{" "}
+          you're here. If you've got any questions or just want to chat, don't hesitate to reach out. You can{' '}
           <a href="https://www.linkedin.com/in/christoph-stach-7586b958/">connect with me on LinkedIn</a> or send me a
           message.
         </p>

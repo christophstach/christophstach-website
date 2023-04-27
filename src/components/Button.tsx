@@ -1,12 +1,12 @@
-import { mergeProps, ParentProps } from "solid-js"
+import { mergeProps, ParentProps } from 'solid-js'
 
 export interface ButtonProps extends ParentProps {
-  type?: "button" | "submit" | "reset"
+  type?: 'button' | 'submit' | 'reset'
   disabled?: boolean
 }
 
 export default function Button(props: ButtonProps) {
-  const propsWithDefaults = mergeProps({ type: "button" as "button" | "submit" | "reset" }, props)
+  const propsWithDefaults = mergeProps({ type: 'button' as 'button' | 'submit' | 'reset' }, props)
 
   return (
     <button

@@ -1,10 +1,10 @@
-import { Component, ParentProps } from "solid-js"
-import TimelineButton from "./TimelineButton"
-import TimelineContent from "./TimelineContent"
-import TimelineIcon from "./TimelineIcon"
-import TimelineItem from "./TimelineItem"
-import TimelineTime from "./TimelineTime"
-import TimelineTitle from "./TimelineTitle"
+import { Component, ParentProps } from 'solid-js'
+import TimelineButton from './TimelineButton'
+import TimelineContent from './TimelineContent'
+import TimelineIcon from './TimelineIcon'
+import TimelineItem from './TimelineItem'
+import TimelineTime from './TimelineTime'
+import TimelineTitle from './TimelineTitle'
 
 interface TimelineSubComponents {
   Item: typeof TimelineItem
