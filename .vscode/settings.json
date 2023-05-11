@@ -1,10 +1,8 @@
 {
   "editor.insertSpaces": true,
   "editor.tabSize": 2,
-  "typescript.preferences.quoteStyle": "double",
   "editor.codeActionsOnSave": {
-    "source.organizeImports": true,
-    "source.fixAll": true
+    "source.organizeImports": true
   },
   "typescript.tsdk": "./node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
@@ -13,5 +11,7 @@
   },
   "editor.quickSuggestions": {
     "strings": true
-  }
+  },
+  "typescript.experimental.tsserver.web.enableProjectWideIntellisense": true,
+  "typescript.tsserver.experimental.enableProjectDiagnostics": true
 }
