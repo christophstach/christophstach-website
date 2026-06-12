@@ -1,3 +1,8 @@
+export interface TimelineLink {
+  text: string;
+  href: string;
+}
+
 export interface TimelineEntry {
   title: string;
   organization: string;
@@ -5,6 +10,7 @@ export interface TimelineEntry {
   to?: string;
   tech?: string[];
   bullets: string[];
+  links?: TimelineLink[];
 }
 
 export const experience: TimelineEntry[] = [
@@ -75,6 +81,7 @@ export const education: TimelineEntry[] = [
       "Specialisations: AI, Bioinformatics, Deep Learning, Data Science",
       "Exchange: NTUST, Taipei",
     ],
+    links: [{ text: "Read the thesis (PDF)", href: "/christoph-stach-master-thesis.pdf" }],
   },
   {
     title: "B.Sc. Applied Computer Science",

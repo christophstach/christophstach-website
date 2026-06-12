@@ -35,6 +35,20 @@ defineProps<{
       <ul class="timeline__bullets">
         <li v-for="bullet in entry.bullets" :key="bullet">{{ bullet }}</li>
       </ul>
+
+      <p v-if="entry.links?.length" class="timeline__links">
+        <a
+          v-for="link in entry.links"
+          :key="link.href"
+          :href="link.href"
+          target="_blank"
+          rel="noopener"
+          class="text-link timeline__link"
+        >
+          <Icon name="tabler:file-type-pdf" size="16" />
+          {{ link.text }}
+        </a>
+      </p>
     </li>
   </ol>
 </template>
@@ -111,5 +125,19 @@ defineProps<{
   padding-left: var(--space-4);
   font-size: var(--text-sm);
   color: var(--color-text-soft);
+}
+
+.timeline__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.timeline__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
 }
 </style>
