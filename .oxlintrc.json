@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "unicorn", "oxc", "vue", "promise", "node"],
+  "env": {
+    "browser": true
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "pedantic": "error",
+    "perf": "error",
+    "style": "error"
+  },
+  "rules": {
+    "eqeqeq": "error",
+    "no-console": "error",
+    "no-debugger": "error",
+    "capitalized-comments": "off",
+    "sort-keys": "off",
+    "no-ternary": "off",
+    "func-style": "off",
+    "no-magic-numbers": "off",
+    "import/no-named-export": "off",
+    "import/prefer-default-export": "off",
+    "import/group-exports": "off",
+    "unicorn/filename-case": ["error", { "cases": { "kebabCase": true, "pascalCase": true } }]
+  },
+  "ignorePatterns": [".nuxt", ".output", "dist", "node_modules"]
+}
