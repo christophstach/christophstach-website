@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Briefcase, GraduationCap } from "lucide-vue-next";
+import { Briefcase, GraduationCap } from "@lucide/vue";
 
 import { education, experience } from "~/data/cv";
 

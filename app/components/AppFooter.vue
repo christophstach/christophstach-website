@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { Github, Linkedin } from "lucide-vue-next";
-
 const year = new Date().getFullYear();
 </script>
 
@@ -17,7 +15,7 @@ const year = new Date().getFullYear();
           aria-label="LinkedIn profile"
           class="icon-button"
         >
-          <Linkedin :size="20" />
+          <IconLinkedin :size="20" />
         </a>
         <a
           href="https://github.com/christophstach"
@@ -26,7 +24,7 @@ const year = new Date().getFullYear();
           aria-label="GitHub profile"
           class="icon-button"
         >
-          <Github :size="20" />
+          <IconGithub :size="20" />
         </a>
       </div>
     </div>

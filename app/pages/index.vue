@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight, Github, Linkedin } from "lucide-vue-next";
+import { ArrowRight } from "@lucide/vue";
 
 import heroImage from "~/assets/images/hero.webp";
 
@@ -41,7 +41,7 @@ const skills = [
             rel="noopener"
             class="button button--outline"
           >
-            <Linkedin :size="16" />
+            <IconLinkedin :size="16" />
             LinkedIn
           </a>
 
@@ -51,7 +51,7 @@ const skills = [
             rel="noopener"
             class="button button--outline"
           >
-            <Github :size="16" />
+            <IconGithub :size="16" />
             GitHub
           </a>
         </div>
