@@ -1,0 +1,157 @@
+/*
+ * Design tokens
+ *
+ * Two layers:
+ *   1. Primitives — raw scales (color palettes, type scale, spacing, radii, shadows).
+ *      Never reference these directly in components.
+ *   2. Semantic aliases — purpose-named tokens (--color-text, --color-accent, …).
+ *      Components consume only these; dark mode swaps them via the `.dark` class.
+ */
+
+:root {
+  /* ---------- Primitives ---------- */
+
+  /* Color palette: neutral */
+  --neutral-0: #ffffff;
+  --neutral-50: #fafafa;
+  --neutral-100: #f5f5f5;
+  --neutral-200: #e5e5e5;
+  --neutral-300: #d4d4d4;
+  --neutral-400: #a3a3a3;
+  --neutral-500: #737373;
+  --neutral-600: #525252;
+  --neutral-700: #404040;
+  --neutral-800: #262626;
+  --neutral-900: #171717;
+  --neutral-950: #0a0a0a;
+
+  /* Color palette: indigo (brand) */
+  --indigo-50: #eef2ff;
+  --indigo-100: #e0e7ff;
+  --indigo-300: #a5b4fc;
+  --indigo-400: #818cf8;
+  --indigo-500: #6366f1;
+  --indigo-600: #4f46e5;
+  --indigo-700: #4338ca;
+  --indigo-950: #1e1b4b;
+
+  /* Typography */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-extrabold: 800;
+
+  --leading-tight: 1.15;
+  --leading-snug: 1.35;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  --tracking-tight: -0.025em;
+  --tracking-widest: 0.1em;
+
+  /* Spacing scale (4px base) */
+  --space-1: 0.25rem;
+  --space-1-5: 0.375rem;
+  --space-2: 0.5rem;
+  --space-2-5: 0.625rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-14: 3.5rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+
+  /* Radii */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* Layout */
+  --container-max: 64rem;
+  --content-max: 48rem;
+  --header-height: 4rem;
+
+  /* Motion */
+  --transition-fast: 150ms ease;
+
+  /* Z-index */
+  --z-header: 20;
+
+  /* ---------- Semantic aliases (light) ---------- */
+
+  color-scheme: light;
+
+  --color-bg: var(--neutral-0);
+  --color-bg-translucent: rgb(255 255 255 / 0.7);
+  --color-surface: var(--neutral-100);
+
+  --color-heading: var(--neutral-900);
+  --color-text: var(--neutral-800);
+  --color-text-soft: var(--neutral-600);
+  --color-text-muted: var(--neutral-500);
+
+  --color-border: var(--neutral-200);
+  --color-border-strong: var(--neutral-300);
+
+  --color-hover: var(--neutral-100);
+  --color-hover-text: var(--neutral-900);
+
+  --color-accent: var(--indigo-600);
+  --color-accent-strong: var(--indigo-700);
+  --color-accent-contrast: var(--neutral-0);
+  --color-accent-subtle-bg: var(--indigo-50);
+  --color-accent-subtle-text: var(--indigo-700);
+  --color-ring: rgb(79 70 229 / 0.2);
+}
+
+.dark {
+  /* ---------- Semantic aliases (dark) ---------- */
+
+  color-scheme: dark;
+
+  --color-bg: var(--neutral-950);
+  --color-bg-translucent: rgb(10 10 10 / 0.7);
+  --color-surface: var(--neutral-800);
+
+  --color-heading: var(--neutral-0);
+  --color-text: var(--neutral-200);
+  --color-text-soft: var(--neutral-300);
+  --color-text-muted: var(--neutral-400);
+
+  --color-border: var(--neutral-800);
+  --color-border-strong: var(--neutral-700);
+
+  --color-hover: var(--neutral-800);
+  --color-hover-text: var(--neutral-0);
+
+  --color-accent: var(--indigo-400);
+  --color-accent-strong: var(--indigo-300);
+  --color-accent-contrast: var(--neutral-0);
+  --color-accent-subtle-bg: var(--indigo-950);
+  --color-accent-subtle-text: var(--indigo-300);
+  --color-ring: rgb(129 140 248 / 0.25);
+}
