@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { Monitor, Moon, Sun } from "@lucide/vue";
-
 const colorMode = useColorMode();
 
 const modes = ["system", "light", "dark"] as const;
 type Mode = (typeof modes)[number];
 
-const icons: Record<Mode, typeof Sun> = {
-  system: Monitor,
-  light: Sun,
-  dark: Moon,
+const icons: Record<Mode, string> = {
+  system: "tabler:device-desktop",
+  light: "tabler:sun",
+  dark: "tabler:moon",
 };
 
 const preference = computed<Mode>(() =>
@@ -34,13 +32,13 @@ function cycle() {
       :title="`Color scheme: ${preference}`"
       @click="cycle"
     >
-      <component :is="icons[preference]" :size="20" />
+      <Icon :name="icons[preference]" size="20" />
     </button>
 
     <template #fallback>
       <span class="icon-button" aria-hidden="true">
-        <Sun class="theme-toggle__sun" :size="20" />
-        <Moon class="theme-toggle__moon" :size="20" />
+        <Icon name="tabler:sun" class="theme-toggle__sun" size="20" />
+        <Icon name="tabler:moon" class="theme-toggle__moon" size="20" />
       </span>
     </template>
   </ClientOnly>

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ArrowRight } from "@lucide/vue";
-
 import heroImage from "~/assets/images/hero.webp";
 
 const skills = [
@@ -32,7 +30,7 @@ const skills = [
         <div class="hero__actions">
           <NuxtLink to="/curriculum" class="button button--primary">
             View curriculum
-            <ArrowRight :size="16" />
+            <Icon name="tabler:arrow-right" size="16" />
           </NuxtLink>
 
           <a
@@ -41,7 +39,7 @@ const skills = [
             rel="noopener"
             class="button button--outline"
           >
-            <IconLinkedin :size="16" />
+            <Icon name="tabler:brand-linkedin" size="16" />
             LinkedIn
           </a>
 
@@ -51,7 +49,7 @@ const skills = [
             rel="noopener"
             class="button button--outline"
           >
-            <IconGithub :size="16" />
+            <Icon name="tabler:brand-github" size="16" />
             GitHub
           </a>
         </div>

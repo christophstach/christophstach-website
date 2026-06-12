@@ -16,14 +16,15 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@lucide/vue": "^1.18.0",
     "@nuxt/fonts": "^0.14.0",
+    "@nuxt/icon": "^2.2.3",
     "@nuxtjs/color-mode": "^4.0.1",
     "nuxt": "npm:nuxt-nightly@latest",
     "vue": "^3.5.0",
     "vue-router": "^5.1.0"
   },
   "devDependencies": {
+    "@iconify-json/tabler": "^1.2.35",
     "oxfmt": "^0.54.0",
     "oxlint": "^1.69.0",
     "typescript": "^6.0.3",

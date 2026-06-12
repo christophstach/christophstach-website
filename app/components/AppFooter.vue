@@ -15,7 +15,7 @@ const year = new Date().getFullYear();
           aria-label="LinkedIn profile"
           class="icon-button"
         >
-          <IconLinkedin :size="20" />
+          <Icon name="tabler:brand-linkedin" size="20" />
         </a>
         <a
           href="https://github.com/christophstach"
@@ -24,7 +24,7 @@ const year = new Date().getFullYear();
           aria-label="GitHub profile"
           class="icon-button"
         >
-          <IconGithub :size="20" />
+          <Icon name="tabler:brand-github" size="20" />
         </a>
       </div>
     </div>

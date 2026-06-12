@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { Briefcase, GraduationCap } from "@lucide/vue";
-
 import { education, experience } from "~/data/cv";
 
 useSeoMeta({
@@ -26,7 +24,7 @@ useSeoMeta({
 
         <CvTimeline :entries="experience">
           <template #icon>
-            <Briefcase :size="16" />
+            <Icon name="tabler:briefcase" size="16" />
           </template>
         </CvTimeline>
       </section>
@@ -36,7 +34,7 @@ useSeoMeta({
 
         <CvTimeline :entries="education">
           <template #icon>
-            <GraduationCap :size="16" />
+            <Icon name="tabler:school" size="16" />
           </template>
         </CvTimeline>
       </section>
