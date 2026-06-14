@@ -1,21 +1,47 @@
 <script setup lang="ts">
 import heroImage from "~/assets/images/hero.webp";
 
-const skills = [
-  "Vue / Nuxt",
-  "React / Next.js",
-  "TypeScript",
-  "Tailwind",
-  "NestJS",
-  "Python",
-  "LLMs & AI Agents",
-  "A2A / MCP",
-  "Kubernetes",
-  "PostgreSQL",
-  "MongoDB",
-  "GitLab CI",
-  "Azure DevOps",
+const skillGroups = [
+  { label: "frontend", items: ["Vue / Nuxt", "React / Next.js", "TypeScript", "Tailwind"] },
+  { label: "backend", items: ["NestJS", "Python", "PostgreSQL", "MongoDB"] },
+  { label: "ai_agents", items: ["LLMs & AI Agents", "A2A / MCP"] },
+  { label: "infra_devops", items: ["Kubernetes", "GitLab CI", "Azure DevOps"] },
 ];
+
+const totalSkills = skillGroups.reduce((sum, group) => sum + group.items.length, 0);
+const maxGroup = Math.max(...skillGroups.map((group) => group.items.length));
+
+function useCountUp(target: number, duration = 1100) {
+  const value = ref(target);
+
+  onMounted(() => {
+    if (globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    const start = performance.now();
+    value.value = 0;
+
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - (1 - progress) ** 3;
+      value.value = Math.round(target * eased);
+
+      if (progress < 1) {
+        requestAnimationFrame(tick);
+      }
+    };
+
+    requestAnimationFrame(tick);
+  });
+
+  return value;
+}
+
+const years = useCountUp(10);
+const companies = useCountUp(4);
+const degrees = useCountUp(2);
+const techs = useCountUp(totalSkills);
 </script>
 
 <template>
@@ -89,6 +115,28 @@ const skills = [
       </div>
     </section>
 
+    <section class="stats reveal" style="animation-delay: 120ms">
+      <h2 class="section-label">stats --summary</h2>
+      <ul class="stats__grid" aria-label="Career at a glance">
+        <li class="stat">
+          <span class="stat__value">{{ years }}<span class="stat__unit">+</span></span>
+          <span class="stat__label">years_exp</span>
+        </li>
+        <li class="stat">
+          <span class="stat__value">{{ companies }}</span>
+          <span class="stat__label">companies</span>
+        </li>
+        <li class="stat">
+          <span class="stat__value">{{ degrees }}</span>
+          <span class="stat__label">cs_degrees</span>
+        </li>
+        <li class="stat">
+          <span class="stat__value">{{ techs }}</span>
+          <span class="stat__label">technologies</span>
+        </li>
+      </ul>
+    </section>
+
     <section class="about reveal" style="animation-delay: 120ms">
       <h2 class="section-label">about</h2>
 
@@ -121,11 +169,26 @@ const skills = [
           nanopore-based DNA sequencing and neural style transfer.
         </p>
       </div>
+    </section>
 
-      <h2 class="section-label about__skills-label">stack --list</h2>
-      <ul class="about__skills" aria-label="Skills">
-        <li v-for="skill in skills" :key="skill" class="chip chip--outline">
-          {{ skill }}
+    <section class="stack reveal">
+      <h2 class="section-label">stack --distribution</h2>
+
+      <ul class="meters">
+        <li v-for="group in skillGroups" :key="group.label" class="meter">
+          <div class="meter__head">
+            <span class="meter__label">{{ group.label }}</span>
+            <span class="meter__count">[{{ group.items.length }}]</span>
+          </div>
+          <div class="meter__track">
+            <div
+              class="meter__fill"
+              :style="{ '--meter-value': `${(group.items.length / maxGroup) * 100}%` }"
+            />
+          </div>
+          <ul class="meter__tags" :aria-label="`${group.label} technologies`">
+            <li v-for="item in group.items" :key="item" class="chip chip--accent">{{ item }}</li>
+          </ul>
         </li>
       </ul>
     </section>
@@ -286,8 +349,71 @@ const skills = [
   color: var(--color-text-muted);
 }
 
+/* Stat tiles */
+.stats {
+  padding-block: var(--space-12) var(--space-4);
+}
+
+.stats__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  list-style: none;
+}
+
+@media (min-width: 48rem) {
+  .stats__grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.stat {
+  padding: var(--space-5);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.stat:hover {
+  border-color: var(--color-accent);
+  box-shadow: var(--glow-accent);
+}
+
+.stat__value {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-4xl);
+  font-weight: var(--font-bold);
+  line-height: 1;
+  color: var(--color-heading);
+}
+
+.stat__unit {
+  color: var(--color-accent);
+}
+
+.stat__label {
+  display: block;
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
+}
+
+.stat__label::before {
+  content: "› ";
+  color: var(--color-accent);
+}
+
+/* About */
 .about {
-  padding-block: var(--space-16);
+  padding-block: var(--space-12);
+  margin-top: var(--space-12);
   border-top: 1px solid var(--color-border);
 }
 
@@ -306,16 +432,69 @@ const skills = [
   font-weight: var(--font-semibold);
 }
 
-.about__skills-label {
-  display: block;
-  margin-top: var(--space-12);
+/* Stack distribution meters */
+.stack {
+  padding-block: var(--space-12) var(--space-16);
+  border-top: 1px solid var(--color-border);
 }
 
-.about__skills {
+.meters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+  list-style: none;
+}
+
+.meter__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+}
+
+.meter__label {
+  font-weight: var(--font-semibold);
+  color: var(--color-heading);
+}
+
+.meter__count {
+  font-size: var(--text-sm);
+  color: var(--color-accent);
+}
+
+.meter__track {
+  height: 0.5rem;
+  margin-top: var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg);
+  overflow: hidden;
+}
+
+.meter__fill {
+  width: var(--meter-value);
+  height: 100%;
+  background-color: var(--color-accent);
+  box-shadow: var(--glow-accent);
+  animation: meter-grow 1s ease both;
+}
+
+@keyframes meter-grow {
+  from {
+    width: 0;
+  }
+
+  to {
+    width: var(--meter-value);
+  }
+}
+
+.meter__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: var(--space-5);
+  gap: var(--space-1-5);
+  margin-top: var(--space-3);
   list-style: none;
 }
 </style>
