@@ -20,7 +20,7 @@
     "@nuxt/icon": "^2.2.3",
     "@nuxtjs/color-mode": "^4.0.1",
     "nuxt": "npm:nuxt-nightly@latest",
-    "vue": "^3.5.0",
+    "vue": "^3.5.38",
     "vue-router": "^5.1.0"
   },
   "devDependencies": {
@@ -28,7 +28,7 @@
     "oxfmt": "^0.54.0",
     "oxlint": "^1.69.0",
     "typescript": "^6.0.3",
-    "vue-tsc": "^3.0.0"
+    "vue-tsc": "^3.3.5"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
