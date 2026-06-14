@@ -39,10 +39,12 @@ h6 {
   color: var(--color-heading);
   line-height: var(--leading-tight);
   overflow-wrap: break-word;
+  text-wrap: balance;
 }
 
 p {
   overflow-wrap: break-word;
+  text-wrap: pretty;
 }
 
 img,

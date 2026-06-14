@@ -42,8 +42,8 @@ month strings (`"2023-10"`) formatted for display via `app/utils/format.ts` (`fo
 
 **CSS design system is layered, imported once via `app/assets/css/main.css`:**
 
-1. `tokens.css` — two tiers: _primitives_ (raw scales: color palettes, type, spacing) and
-   _semantic aliases_ (`--color-text`, `--color-accent`, …). **Components must consume only
+1. `tokens.css` — two tiers: *primitives* (raw scales: color palettes, type, spacing) and
+   *semantic aliases* (`--color-text`, `--color-accent`, …). **Components must consume only
    semantic aliases, never primitives.** Dark mode works by overriding semantic aliases under
    the `.dark` class — so a correctly-built component themes automatically.
 2. `base.css` — reset / element defaults.
