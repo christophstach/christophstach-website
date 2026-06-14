@@ -26,8 +26,8 @@ const skills = [
 
         <p class="hero__text">
           I'm a full-stack engineer based in Berlin with 10+ years of experience building modern web
-          apps across <strong>Vue/Nuxt</strong> and <strong>React/Next.js</strong> — now building
-          <strong>Python platform infrastructure for LLM agents</strong>. I care about clean,
+          apps across <strong>Vue/Nuxt</strong> and <strong>React/Next.js</strong>, and more
+          recently <strong>Python backends for AI and LLM agents</strong>. I care about clean,
           type-safe code, usability, accessibility, and performance, with an eye for detail in
           component design.
         </p>
@@ -74,14 +74,14 @@ const skills = [
 
       <div class="about__content">
         <p>
-          At <strong>MBition (Mercedes-Benz)</strong>, I work as a Senior Full Stack Engineer
-          building and operating a
-          <strong>Python platform that hosts LLM agents on Kubernetes</strong> — providing the
-          shared web service, base classes, and CI/CD that agent teams plug their business logic
-          into. Before the platform work, I shipped features end-to-end across Nuxt and NestJS with
-          strict <strong>TypeScript</strong> and zod-validated REST contracts, maintained pnpm
-          monorepos for better DX, and built reliable CI/CD pipelines in
-          <strong>GitLab CI and Azure DevOps</strong>.
+          At <strong>MBition (Mercedes-Benz)</strong>, I work as a Senior Full Stack Engineer. My
+          home base is the web: I ship features end-to-end across
+          <strong>Nuxt and NestJS</strong> with strict <strong>TypeScript</strong> and zod-validated
+          REST contracts, maintain pnpm monorepos for better DX, and build reliable CI/CD pipelines
+          in <strong>GitLab CI and Azure DevOps</strong>. More recently I've moved into
+          <strong>Python</strong>, building and operating a platform that hosts LLM agents on
+          Kubernetes — the shared service, base classes, and CI/CD that agent teams plug their
+          business logic into.
         </p>
 
         <p>
