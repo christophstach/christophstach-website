@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const description =
-  "Christoph Stach is a full-stack engineer based in Berlin with 10+ years of experience building modern web applications with Vue/Nuxt, React/Next.js, and Angular.";
+  "Christoph Stach is a full-stack engineer based in Berlin with 10+ years of experience building modern web applications with Vue/Nuxt and React/Next.js, now building Python platform infrastructure for LLM agents.";
 
 useSeoMeta({
   description,

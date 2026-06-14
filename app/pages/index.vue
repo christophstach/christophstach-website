@@ -4,13 +4,17 @@ import heroImage from "~/assets/images/hero.webp";
 const skills = [
   "Vue / Nuxt",
   "React / Next.js",
-  "Angular",
   "TypeScript",
+  "Tailwind",
   "NestJS",
+  "Python",
+  "LLMs & AI Agents",
+  "A2A / MCP",
+  "Kubernetes",
   "PostgreSQL",
   "MongoDB",
+  "GitLab CI",
   "Azure DevOps",
-  "CI/CD",
 ];
 </script>
 
@@ -22,9 +26,10 @@ const skills = [
 
         <p class="hero__text">
           I'm a full-stack engineer based in Berlin with 10+ years of experience building modern web
-          apps across <strong>Vue/Nuxt</strong>, <strong>React/Next.js</strong>, and
-          <strong>Angular</strong>. I care about clean, type-safe code, usability, accessibility,
-          and performance, with a strong focus on well-designed, reusable components.
+          apps across <strong>Vue/Nuxt</strong> and <strong>React/Next.js</strong> — now building
+          <strong>Python platform infrastructure for LLM agents</strong>. I care about clean,
+          type-safe code, usability, accessibility, and performance, with an eye for detail in
+          component design.
         </p>
 
         <div class="hero__actions">
@@ -69,16 +74,18 @@ const skills = [
 
       <div class="about__content">
         <p>
-          At <strong>MBition (Mercedes-Benz)</strong>, I work as a Senior Full Stack Engineer on
-          Nuxt and NestJS applications backed by PostgreSQL and MongoDB. I ship features end-to-end,
-          from designing REST contracts and APIs to building reusable UI components. I enjoy
-          enforcing strong <strong>TypeScript</strong> and linting standards, maintaining pnpm
-          monorepos for better DX, and setting up reliable
-          <strong>CI/CD pipelines in Azure DevOps</strong>.
+          At <strong>MBition (Mercedes-Benz)</strong>, I work as a Senior Full Stack Engineer
+          building and operating a
+          <strong>Python platform that hosts LLM agents on Kubernetes</strong> — providing the
+          shared web service, base classes, and CI/CD that agent teams plug their business logic
+          into. Before the platform work, I shipped features end-to-end across Nuxt and NestJS with
+          strict <strong>TypeScript</strong> and zod-validated REST contracts, maintained pnpm
+          monorepos for better DX, and built reliable CI/CD pipelines in
+          <strong>GitLab CI and Azure DevOps</strong>.
         </p>
 
         <p>
-          Before that, I spent several years building frontends with
+          Before that, I spent several years at DERICON building frontends with
           <strong>React, Remix, Vue, Nuxt, and Angular</strong>, including a graph-based no-code
           workflow builder that empowered non-technical users to model and deploy workflows
           themselves. Earlier in my career I worked as a PHP/JavaScript full-stack developer,
