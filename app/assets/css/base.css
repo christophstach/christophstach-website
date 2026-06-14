@@ -16,10 +16,15 @@ html {
 
 body {
   background-color: var(--color-bg);
+  /* Faint engineering graph paper. */
+  background-image:
+    linear-gradient(var(--color-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+  background-size: var(--space-12) var(--space-12);
   color: var(--color-text);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: var(--text-base);
-  line-height: var(--leading-normal);
+  line-height: var(--leading-relaxed);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -30,6 +35,7 @@ h3,
 h4,
 h5,
 h6 {
+  font-family: var(--font-mono);
   color: var(--color-heading);
   line-height: var(--leading-tight);
   overflow-wrap: break-word;
@@ -71,4 +77,15 @@ ol {
 ::selection {
   background-color: var(--color-accent);
   color: var(--color-accent-contrast);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

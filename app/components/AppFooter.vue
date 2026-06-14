@@ -41,7 +41,8 @@ const year = new Date().getFullYear();
   align-items: center;
   justify-content: space-between;
   height: var(--header-height);
-  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
 
