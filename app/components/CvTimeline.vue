@@ -32,7 +32,7 @@ defineProps<{
         </li>
       </ul>
 
-      <ul class="timeline__bullets">
+      <ul v-if="entry.bullets?.length" class="timeline__bullets">
         <li v-for="bullet in entry.bullets" :key="bullet">{{ bullet }}</li>
       </ul>
 

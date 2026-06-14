@@ -9,8 +9,14 @@ export interface TimelineEntry {
   from: string;
   to?: string;
   tech?: string[];
-  bullets: string[];
+  bullets?: string[];
   links?: TimelineLink[];
+}
+
+export interface Project {
+  title: string;
+  description: string;
+  tech: string[];
 }
 
 export const experience: TimelineEntry[] = [
@@ -18,12 +24,26 @@ export const experience: TimelineEntry[] = [
     title: "Senior Full Stack Engineer",
     organization: "MBition GmbH (Mercedes-Benz)",
     from: "2023-10",
-    tech: ["Vue", "Nuxt", "TypeScript", "NestJS", "PostgreSQL", "MongoDB", "Azure DevOps"],
+    tech: [
+      "Python",
+      "LLMs",
+      "A2A",
+      "MCP",
+      "Kubernetes",
+      "GitLab CI",
+      "Vue",
+      "Nuxt",
+      "TypeScript",
+      "NestJS",
+      "PostgreSQL",
+      "MongoDB",
+      "Azure DevOps",
+    ],
     bullets: [
-      "Shipped end-to-end features across Nuxt and NestJS: designed REST contracts, integrated APIs, and built reusable UI components",
-      "Enforced strict TypeScript and ESLint, significantly reducing runtime errors",
+      "Build and operate a Python platform that hosts multiple LLM agents on Kubernetes — providing the shared web service, base classes, and CI/CD that individual agent teams plug their business logic into",
+      "Migrated the project from GitHub to GitLab, rebuilding CI/CD pipelines and merging a separate agent-instructions repo into the main one to streamline releases",
       "Consolidated multiple products into a pnpm monorepo, cutting build times by ~50% and enabling end-to-end type-safety and better DX",
-      "Standardized Azure DevOps CI/CD (lint → test → build → release), improving deployment success rates and release traceability",
+      "Shipped end-to-end features across Nuxt and NestJS with strict TypeScript and zod-validated REST contracts, reducing runtime errors",
       "Implemented a Role-Based Access Control (RBAC) system using CASL.js",
     ],
   },
@@ -55,18 +75,6 @@ export const experience: TimelineEntry[] = [
     organization: "CREAVIVA GmbH & Co. KG",
     from: "2011-07",
     to: "2011-10",
-    tech: ["PHP", "MySQL", "CSS", "JavaScript", "TYPO3"],
-    bullets: [
-      "Managed and created content for websites using PHP, MySQL, CSS, and JavaScript",
-      "Developed websites with TYPO3 CMS, including custom TYPO3 extension creation",
-    ],
-  },
-  {
-    title: "IT Management Assistant",
-    organization: "Kortmann Beton GmbH & Co. KG",
-    from: "2009-07",
-    to: "2011-07",
-    bullets: ["Developed and maintained the company website"],
   },
 ];
 
@@ -74,7 +82,7 @@ export const education: TimelineEntry[] = [
   {
     title: "M.Sc. Applied Computer Science",
     organization: "HTW Berlin",
-    from: "2019-12",
+    from: "2019-10",
     to: "2023-10",
     bullets: [
       "Thesis: Explorative Analysis of Data from Nanopore-Based DNA Sequencing to Identify Dilution Effects — Grade: 1.1",
@@ -100,13 +108,25 @@ export const education: TimelineEntry[] = [
     to: "2011-07",
     bullets: ["Completed apprenticeship alongside theoretical studies — Grade: 2.0"],
   },
+];
+
+export const projects: Project[] = [
   {
-    title: "Information Technology Assistant",
-    organization: "Berufskolleg Rheine",
-    from: "2004-09",
-    to: "2008-07",
-    bullets: [
-      "Dual degree in Information Technology, covering programming, database management, and more, including university eligibility — Grade: 2.9",
-    ],
+    title: "TIGeR (Toolkit for Integration of Generative AI Resources)",
+    description:
+      "Platform for orchestrating LLM agents, providing the shared service, base classes, and CI/CD that agent teams build their business logic on.",
+    tech: ["Python", "LLMs", "A2A", "MCP", "Kubernetes", "GitLab CI"],
+  },
+  {
+    title: "SDP (Speech Development Platform)",
+    description:
+      "No-code platform for configuring and deploying speech applications for Mercedes-Benz.",
+    tech: ["Vue", "Nuxt", "Tailwind", "NestJS", "PostgreSQL", "MongoDB", "Websockets"],
+  },
+  {
+    title: "Crowds UI",
+    description:
+      "Workflow editor with graph-based task views and dynamic form generation to streamline internal processes.",
+    tech: ["React", "Remix", "Tailwind"],
   },
 ];
