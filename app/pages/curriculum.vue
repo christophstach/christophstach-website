@@ -9,18 +9,22 @@ useSeoMeta({
 
 <template>
   <div class="container page">
-    <h1 class="page__title">Curriculum</h1>
+    <p class="page__kicker reveal"><span class="terminal__prompt">$</span> cat curriculum.md</p>
 
-    <p class="page__intro">
+    <h1 class="page__title reveal" style="animation-delay: 60ms">
+      Curriculum<span class="cursor" />
+    </h1>
+
+    <p class="page__intro reveal" style="animation-delay: 140ms">
       A concise overview of my professional experience and education: a decade of full-stack
       engineering with Vue/Nuxt, React/Next.js, and NestJS, more recently extending into Python for
       AI and LLM agents at MBition (Mercedes-Benz), and a B.Sc. and M.Sc. in Applied Computer
       Science focused on AI, bioinformatics, deep learning, and data science.
     </p>
 
-    <div class="page__columns">
+    <div class="page__columns reveal" style="animation-delay: 200ms">
       <section>
-        <h2 class="section-label page__section-label">Professional experience</h2>
+        <h2 class="section-label page__section-label">experience</h2>
 
         <CvTimeline :entries="experience">
           <template #icon>
@@ -30,7 +34,7 @@ useSeoMeta({
       </section>
 
       <section>
-        <h2 class="section-label page__section-label">Education</h2>
+        <h2 class="section-label page__section-label">education</h2>
 
         <CvTimeline :entries="education">
           <template #icon>
@@ -40,12 +44,14 @@ useSeoMeta({
       </section>
     </div>
 
-    <section class="projects">
-      <h2 class="section-label page__section-label">Recent projects</h2>
+    <section class="projects reveal">
+      <h2 class="section-label page__section-label">projects --recent</h2>
 
       <ul class="projects__grid">
         <li v-for="project in projects" :key="project.title" class="projects__card">
-          <h3 class="projects__title">{{ project.title }}</h3>
+          <h3 class="projects__title">
+            <span class="projects__prompt">›</span> {{ project.title }}
+          </h3>
 
           <p class="projects__description">{{ project.description }}</p>
 
@@ -65,15 +71,28 @@ useSeoMeta({
   padding-block: var(--space-16);
 }
 
+.page__kicker {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.page__kicker .terminal__prompt {
+  color: var(--color-accent);
+  font-weight: var(--font-bold);
+}
+
 .page__title {
-  font-size: clamp(var(--text-3xl), 4vw, var(--text-4xl));
-  font-weight: var(--font-extrabold);
+  margin-top: var(--space-2);
+  font-size: clamp(var(--text-4xl), 5vw, var(--text-5xl));
+  font-weight: var(--font-bold);
   letter-spacing: var(--tracking-tight);
 }
 
 .page__intro {
   max-width: var(--content-max);
   margin-top: var(--space-6);
+  font-size: var(--text-lg);
   line-height: var(--leading-relaxed);
   color: var(--color-text-soft);
 }
@@ -119,20 +138,30 @@ useSeoMeta({
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-5);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
-  background-color: var(--color-bg);
-  transition: border-color var(--transition-fast);
+  background-color: var(--color-surface);
+  transition:
+    border-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .projects__card:hover {
-  border-color: var(--color-border-strong);
+  border-color: var(--color-accent);
+  transform: translateY(-3px);
+  box-shadow: var(--glow-accent);
 }
 
 .projects__title {
+  font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: var(--font-semibold);
   line-height: var(--leading-snug);
+}
+
+.projects__prompt {
+  color: var(--color-accent);
 }
 
 .projects__description {

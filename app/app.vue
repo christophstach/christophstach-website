@@ -13,7 +13,7 @@ useSeoMeta({
 
 const colorMode = useColorMode();
 
-const themeColors = { light: "#ffffff", dark: "#0a0a0a" };
+const themeColors = { light: "#f5f7f7", dark: "#080b0a" };
 
 useHead({
   titleTemplate: (title) => (title ? `${title} · Christoph Stach` : "Christoph Stach"),

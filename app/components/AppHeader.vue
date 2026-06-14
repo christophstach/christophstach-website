@@ -49,10 +49,17 @@ const links = [
 }
 
 .header__brand {
-  font-size: var(--text-lg);
-  font-weight: var(--font-semibold);
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
   letter-spacing: var(--tracking-tight);
   color: var(--color-heading);
+}
+
+.header__brand::before {
+  content: "~/";
+  color: var(--color-text-muted);
+  font-weight: var(--font-regular);
 }
 
 .header__brand-accent {
@@ -90,6 +97,7 @@ const links = [
 .header__link {
   padding: var(--space-2);
   border-radius: var(--radius-md);
+  font-family: var(--font-mono);
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   color: var(--color-text-soft);

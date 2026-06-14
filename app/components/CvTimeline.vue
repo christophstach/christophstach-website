@@ -57,7 +57,7 @@ defineProps<{
 .timeline {
   position: relative;
   margin-left: var(--space-4);
-  border-left: 1px solid var(--color-border);
+  border-left: 1px dashed var(--color-border-strong);
   list-style: none;
 }
 
@@ -73,39 +73,51 @@ defineProps<{
 
 .timeline__marker {
   position: absolute;
-  top: 0;
+  top: 0.1rem;
   left: -1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   width: var(--space-8);
   height: var(--space-8);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
   color: var(--color-text-soft);
-  box-shadow: 0 0 0 4px var(--color-bg);
+  box-shadow: 0 0 0 5px var(--color-bg);
 }
 
 .timeline__marker--current {
-  background-color: var(--color-accent-subtle-bg);
-  color: var(--color-accent-subtle-text);
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+  box-shadow:
+    0 0 0 5px var(--color-bg),
+    var(--glow-accent);
 }
 
 .timeline__title {
-  font-size: var(--text-base);
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
   font-weight: var(--font-semibold);
   line-height: var(--leading-snug);
 }
 
 .timeline__organization {
+  display: block;
+  margin-top: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
   font-weight: var(--font-regular);
-  color: var(--color-text-muted);
+  color: var(--color-accent);
 }
 
 .timeline__time {
   display: block;
-  margin-top: var(--space-1);
-  font-size: var(--text-sm);
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
   color: var(--color-text-muted);
 }
 
@@ -120,11 +132,25 @@ defineProps<{
 .timeline__bullets {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1-5);
-  margin-top: var(--space-3);
-  padding-left: var(--space-4);
-  font-size: var(--text-sm);
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  list-style: none;
+  font-size: var(--text-base);
+  line-height: var(--leading-snug);
   color: var(--color-text-soft);
+}
+
+.timeline__bullets li {
+  position: relative;
+  padding-left: var(--space-5);
+}
+
+.timeline__bullets li::before {
+  content: "+";
+  position: absolute;
+  left: 0;
+  font-family: var(--font-mono);
+  color: var(--color-accent);
 }
 
 .timeline__links {
