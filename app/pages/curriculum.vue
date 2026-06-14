@@ -12,10 +12,10 @@ useSeoMeta({
     <h1 class="page__title">Curriculum</h1>
 
     <p class="page__intro">
-      A concise overview of my professional experience and education: current work on a Python
-      platform for LLM agents at MBition (Mercedes-Benz), years of full-stack engineering with
-      Vue/Nuxt, React/Next.js, and NestJS, and a B.Sc. and M.Sc. in Applied Computer Science focused
-      on AI, bioinformatics, deep learning, and data science.
+      A concise overview of my professional experience and education: a decade of full-stack
+      engineering with Vue/Nuxt, React/Next.js, and NestJS, more recently extending into Python for
+      AI and LLM agents at MBition (Mercedes-Benz), and a B.Sc. and M.Sc. in Applied Computer
+      Science focused on AI, bioinformatics, deep learning, and data science.
     </p>
 
     <div class="page__columns">
