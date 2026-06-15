@@ -11,9 +11,7 @@ useSeoMeta({
   <div class="container page">
     <p class="page__kicker reveal"><span class="terminal__prompt">$</span> cat curriculum.md</p>
 
-    <h1 class="page__title reveal" style="animation-delay: 60ms">
-      Curriculum<span class="cursor" />
-    </h1>
+    <h1 class="page__title reveal" style="animation-delay: 60ms">Curriculum</h1>
 
     <p class="page__intro reveal" style="animation-delay: 140ms">
       A concise overview of my professional experience and education: a decade of full-stack
