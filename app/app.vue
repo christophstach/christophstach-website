@@ -14,8 +14,13 @@ useSeoMeta({
   ogDescription: description,
   ogUrl: () => canonicalUrl.value,
   ogLocale: "en_US",
-  ogImage: "https://christophstach.de/images/hero.png",
-  twitterCard: "summary",
+  ogImage: `${siteUrl}/images/og.png`,
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
+  ogImageType: "image/png",
+  ogImageAlt: "Christoph Stach — Senior Full-Stack Engineer based in Berlin",
+  twitterCard: "summary_large_image",
+  twitterImage: `${siteUrl}/images/og.png`,
 });
 
 const personJsonLd = {
@@ -56,9 +61,7 @@ useHead({
     { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
     { rel: "canonical", href: () => canonicalUrl.value },
   ],
-  script: [
-    { type: "application/ld+json", innerHTML: JSON.stringify(personJsonLd) },
-  ],
+  script: [{ type: "application/ld+json", innerHTML: JSON.stringify(personJsonLd) }],
   meta: [
     // One tag per system scheme so the browser chrome is correct before
     // hydration. A manual preference overrides both reactively.
