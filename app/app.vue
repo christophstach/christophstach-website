@@ -18,6 +18,34 @@ useSeoMeta({
   twitterCard: "summary",
 });
 
+const personJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Christoph Stach",
+  url: siteUrl,
+  image: `${siteUrl}/images/hero.png`,
+  jobTitle: "Senior Full-Stack Engineer",
+  description,
+  worksFor: { "@type": "Organization", name: "MBition GmbH (Mercedes-Benz)" },
+  address: { "@type": "PostalAddress", addressLocality: "Berlin", addressCountry: "DE" },
+  alumniOf: { "@type": "CollegeOrUniversity", name: "HTW Berlin" },
+  knowsAbout: [
+    "Vue",
+    "Nuxt",
+    "React",
+    "Next.js",
+    "TypeScript",
+    "Python",
+    "LLM Agents",
+    "NestJS",
+    "Kubernetes",
+  ],
+  sameAs: [
+    "https://www.linkedin.com/in/christoph-stach-7586b958",
+    "https://github.com/christophstach",
+  ],
+};
+
 const colorMode = useColorMode();
 
 const themeColors = { light: "#f5f7f7", dark: "#080b0a" };
@@ -27,6 +55,9 @@ useHead({
   link: [
     { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
     { rel: "canonical", href: () => canonicalUrl.value },
+  ],
+  script: [
+    { type: "application/ld+json", innerHTML: JSON.stringify(personJsonLd) },
   ],
   meta: [
     // One tag per system scheme so the browser chrome is correct before
