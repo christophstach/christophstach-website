@@ -118,7 +118,7 @@ useSeoMeta({
 .projects {
   margin-top: var(--space-16);
   padding-top: var(--space-16);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-strong);
 }
 
 .projects__grid {
