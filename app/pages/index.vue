@@ -333,12 +333,12 @@ const techs = useCountUp(totalSkills);
   height: auto;
   aspect-ratio: 1;
   object-fit: cover;
-  filter: grayscale(1) sepia(0.4) hue-rotate(90deg) saturate(1.3) contrast(1.05);
-  transition: filter var(--transition-fast);
+  filter: grayscale(1) contrast(1.03);
+  transition: filter 300ms ease;
 }
 
 .hero__figure:hover .hero__portrait {
-  filter: none;
+  filter: grayscale(0) contrast(1);
 }
 
 .hero__figcaption {
