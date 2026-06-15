@@ -2,11 +2,18 @@
 const description =
   "Christoph Stach is a full-stack engineer based in Berlin with 10+ years of experience building modern web applications with Vue/Nuxt and React/Next.js, and more recently Python backends for AI and LLM agents.";
 
+const siteUrl = "https://christophstach.de";
+const route = useRoute();
+const canonicalUrl = computed(() => `${siteUrl}${route.path}`);
+
 useSeoMeta({
   description,
   ogType: "website",
   ogSiteName: "Christoph Stach",
+  ogTitle: "Christoph Stach",
   ogDescription: description,
+  ogUrl: () => canonicalUrl.value,
+  ogLocale: "en_US",
   ogImage: "https://christophstach.de/images/hero.png",
   twitterCard: "summary",
 });
@@ -17,7 +24,10 @@ const themeColors = { light: "#f5f7f7", dark: "#080b0a" };
 
 useHead({
   titleTemplate: (title) => (title ? `${title} · Christoph Stach` : "Christoph Stach"),
-  link: [{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
+  link: [
+    { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+    { rel: "canonical", href: () => canonicalUrl.value },
+  ],
   meta: [
     // One tag per system scheme so the browser chrome is correct before
     // hydration. A manual preference overrides both reactively.
