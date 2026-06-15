@@ -131,6 +131,7 @@
 
   --color-border: var(--slate-200);
   --color-border-strong: var(--slate-300);
+  --color-rule: var(--slate-400);
   --color-grid: rgb(11 21 20 / 0.04);
 
   --color-hover: var(--slate-100);
@@ -162,6 +163,7 @@
 
   --color-border: var(--slate-800);
   --color-border-strong: var(--slate-700);
+  --color-rule: var(--slate-500);
   --color-grid: rgb(52 230 163 / 0.05);
 
   --color-hover: var(--slate-800);

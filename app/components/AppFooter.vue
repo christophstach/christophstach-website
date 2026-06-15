@@ -33,7 +33,7 @@ const year = new Date().getFullYear();
 
 <style scoped>
 .footer {
-  border-top: 1px solid var(--color-border-strong);
+  border-top: 1px solid var(--color-rule);
 }
 
 .footer__inner {

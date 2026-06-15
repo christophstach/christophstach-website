@@ -36,7 +36,7 @@ const links = [
   position: sticky;
   top: 0;
   z-index: var(--z-header);
-  border-bottom: 1px solid var(--color-border-strong);
+  border-bottom: 1px solid var(--color-rule);
   background-color: var(--color-bg-translucent);
   backdrop-filter: blur(8px);
 }
