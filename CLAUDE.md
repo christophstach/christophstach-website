@@ -61,7 +61,12 @@ config in `nuxt.config.ts` rather than fetched. `app.vue` emits per-scheme `them
 tags so browser chrome is correct before hydration.
 
 **Routing/prerender** is declared in `nuxt.config.ts` `routeRules`: `/` and `/curriculum` are
-prerendered; `/about-me` 301-redirects to `/`. Add new prerendered routes there.
+prerendered; `/about-me` 301-redirects to `/`. Add new prerendered routes there — and also add
+the URL to `public/sitemap.xml`, a hand-maintained static file (no sitemap module), or it goes
+stale.
+
+**SEO/meta** (per-route canonical, OG/Twitter tags, `og:locale`, and the JSON-LD `Person`
+block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via `useSeoMeta`.
 
 ## Gotchas
 
@@ -70,3 +75,6 @@ prerendered; `/about-me` 301-redirects to `/`. Add new prerendered routes there.
   `@nuxt/icon`; `compatibilityVersion: 5`). Preserve those comments if you touch that file.
 - Icons use `@nuxt/icon` with the Tabler set (`@iconify-json/tabler`). New icons used by the
   theme toggle must be added to `icon.clientBundle.icons`.
+- The Open Graph social card (`public/images/og.png`, 1200×630) is generated from the
+  `tools/og-card.html` template, not hand-painted. Regenerate after editing the template with:
+  `google-chrome --headless=new --hide-scrollbars --window-size=1200,630 --screenshot=public/images/og.png tools/og-card.html`
