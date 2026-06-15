@@ -128,28 +128,6 @@
   text-decoration-color: var(--color-accent);
 }
 
-/* Blinking caret — a gentle pulse rather than a hard on/off. */
-@keyframes blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0;
-  }
-}
-
-.cursor {
-  display: inline-block;
-  width: 0.5em;
-  height: 1em;
-  margin-left: 0.08em;
-  vertical-align: -0.08em;
-  background-color: var(--color-accent);
-  animation: blink 1.15s ease-in-out infinite;
-}
-
 /* Staggered page-load reveal. */
 @keyframes rise-in {
   from {

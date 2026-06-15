@@ -56,7 +56,7 @@ const techs = useCountUp(totalSkills);
 
           <div class="terminal__body">
             <p class="terminal__cmd"><span class="terminal__prompt">$</span> whoami</p>
-            <h1 class="hero__title">Christoph Stach<span class="cursor" aria-hidden="true" /></h1>
+            <h1 class="hero__title">Christoph Stach</h1>
             <p class="hero__role">
               Senior Full-Stack Engineer<span class="hero__sep">//</span>Berlin<span
                 class="hero__sep"
@@ -333,12 +333,6 @@ const techs = useCountUp(totalSkills);
   height: auto;
   aspect-ratio: 1;
   object-fit: cover;
-  filter: grayscale(1) contrast(1.03);
-  transition: filter 300ms ease;
-}
-
-.hero__figure:hover .hero__portrait {
-  filter: grayscale(0) contrast(1);
 }
 
 .hero__figcaption {
