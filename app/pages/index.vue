@@ -197,7 +197,7 @@ const techs = useCountUp(totalSkills);
 
 <style scoped>
 .hero {
-  padding-block: var(--space-12) var(--space-16);
+  padding-block: var(--space-10) var(--space-12);
 }
 
 .hero__grid {
@@ -351,14 +351,14 @@ const techs = useCountUp(totalSkills);
 
 /* Stat tiles */
 .stats {
-  padding-block: var(--space-12) var(--space-4);
+  padding-block: var(--space-8) 0;
 }
 
 .stats__grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-4);
-  margin-top: var(--space-6);
+  gap: var(--space-3);
+  margin-top: var(--space-4);
   list-style: none;
 }
 
@@ -369,7 +369,7 @@ const techs = useCountUp(totalSkills);
 }
 
 .stat {
-  padding: var(--space-5);
+  padding: var(--space-4);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   background-color: var(--color-surface);
@@ -412,17 +412,17 @@ const techs = useCountUp(totalSkills);
 
 /* About */
 .about {
-  padding-block: var(--space-12);
-  margin-top: var(--space-12);
+  padding-block: var(--space-10);
+  margin-top: var(--space-10);
   border-top: 1px solid var(--color-border);
 }
 
 .about__content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-4);
   max-width: var(--content-max);
-  margin-top: var(--space-6);
+  margin-top: var(--space-5);
   line-height: var(--leading-relaxed);
   color: var(--color-text-soft);
 }
@@ -434,15 +434,15 @@ const techs = useCountUp(totalSkills);
 
 /* Stack distribution meters */
 .stack {
-  padding-block: var(--space-12) var(--space-16);
+  padding-block: var(--space-10) var(--space-12);
   border-top: 1px solid var(--color-border);
 }
 
 .meters {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
-  margin-top: var(--space-8);
+  gap: var(--space-5);
+  margin-top: var(--space-6);
   list-style: none;
 }
 
