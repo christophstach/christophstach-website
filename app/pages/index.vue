@@ -414,7 +414,7 @@ const techs = useCountUp(totalSkills);
 .about {
   padding-block: var(--space-10);
   margin-top: var(--space-10);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-strong);
 }
 
 .about__content {
@@ -435,7 +435,7 @@ const techs = useCountUp(totalSkills);
 /* Stack distribution meters */
 .stack {
   padding-block: var(--space-10) var(--space-12);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-strong);
 }
 
 .meters {
