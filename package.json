@@ -17,18 +17,18 @@
   },
   "dependencies": {
     "@nuxt/fonts": "^0.14.0",
-    "@nuxt/icon": "^2.2.3",
+    "@nuxt/icon": "^2.5.0",
     "@nuxtjs/color-mode": "^4.0.1",
     "nuxt": "npm:nuxt-nightly@latest",
-    "vue": "^3.5.38",
-    "vue-router": "^5.1.0"
+    "vue": "^3.5.41",
+    "vue-router": "^5.2.0"
   },
   "devDependencies": {
-    "@iconify-json/tabler": "^1.2.35",
-    "oxfmt": "^0.54.0",
-    "oxlint": "^1.69.0",
+    "@iconify-json/tabler": "^1.2.38",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0",
     "typescript": "^6.0.3",
-    "vue-tsc": "^3.3.5"
+    "vue-tsc": "^3.3.9"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

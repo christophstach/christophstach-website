@@ -1,3 +1,5 @@
 {
-  "ignorePatterns": [".nuxt/**", ".output/**", "dist/**", "node_modules/**"]
+  // docs/ holds plan documents whose code fences intentionally show partial,
+  // in-context snippets; oxfmt reformats embedded HTML and breaks them.
+  "ignorePatterns": [".nuxt/**", ".output/**", "dist/**", "node_modules/**", "docs/**"]
 }
