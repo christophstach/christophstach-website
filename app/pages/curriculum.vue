@@ -14,13 +14,20 @@ useSeoMeta({
     <h1 class="page__title reveal" style="animation-delay: 60ms">Curriculum</h1>
 
     <p class="page__intro reveal" style="animation-delay: 140ms">
-      A concise overview of my professional experience and education: a decade of full-stack
+      A concise overview of my professional experience and education: over a decade of full-stack
       engineering with Vue/Nuxt, React/Next.js, and NestJS, more recently extending into Python for
       AI and LLM agents at MBition (Mercedes-Benz), and a B.Sc. and M.Sc. in Applied Computer
       Science focused on AI, bioinformatics, deep learning, and data science.
     </p>
 
-    <div class="page__columns reveal" style="animation-delay: 200ms">
+    <div class="page__actions reveal" style="animation-delay: 180ms">
+      <a href="/christoph-stach-cv.pdf" download class="button button--primary">
+        <Icon name="tabler:download" size="16" />
+        Download CV (PDF)
+      </a>
+    </div>
+
+    <div class="page__columns reveal--scroll">
       <section>
         <h2 class="section-label page__section-label">experience</h2>
 
@@ -42,7 +49,7 @@ useSeoMeta({
       </section>
     </div>
 
-    <section class="projects reveal">
+    <section class="projects reveal--scroll">
       <h2 class="section-label page__section-label">projects --recent</h2>
 
       <ul class="projects__grid">
@@ -93,6 +100,10 @@ useSeoMeta({
   font-size: var(--text-lg);
   line-height: var(--leading-relaxed);
   color: var(--color-text-soft);
+}
+
+.page__actions {
+  margin-top: var(--space-6);
 }
 
 .page__columns {

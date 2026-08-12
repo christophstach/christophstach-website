@@ -37,6 +37,7 @@ export default defineNuxtConfig({
   routeRules: {
     "/": { prerender: true },
     "/curriculum": { prerender: true },
+    "/cv-print": { prerender: true },
     "/about-me": { redirect: { to: "/", statusCode: 301 } },
   },
 });

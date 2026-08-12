@@ -7,6 +7,7 @@
     "dev": "nuxt dev",
     "build": "nuxt build",
     "generate": "nuxt generate",
+    "generate:cv": "nuxt generate && node scripts/generate-cv-pdf.mjs",
     "preview": "nuxt preview",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",

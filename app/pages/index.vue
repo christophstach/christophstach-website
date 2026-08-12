@@ -1,64 +1,14 @@
 <script setup lang="ts">
-import { experience } from "~/data/cv";
+import { experience, skills } from "~/data/cv";
 import heroImage from "~/assets/images/hero.webp";
 
-const skillGroups = [
-  {
-    label: "frontend",
-    items: [
-      "React",
-      "Next.js",
-      "Vue",
-      "Nuxt",
-      "Remix",
-      "TypeScript",
-      "JavaScript",
-      "Tailwind",
-      "TanStack",
-      "React Server Components",
-    ],
-  },
-  {
-    label: "ai_llm",
-    items: [
-      "LLMs",
-      "AI Agents",
-      "A2A",
-      "MCP",
-      "OKF",
-      "RAG",
-      "LangChain",
-      "OpenAI API",
-      "Prompt Engineering",
-    ],
-  },
-  {
-    label: "backend_api",
-    items: ["Python", "Async Python", "Node.js", "NestJS", "REST APIs", "zod"],
-  },
-  { label: "data", items: ["PostgreSQL", "MongoDB", "Prisma", "Drizzle"] },
-  {
-    label: "infra_cicd",
-    items: ["Docker", "Kubernetes", "Git", "GitLab CI", "Azure DevOps", "pnpm Monorepos"],
-  },
-  {
-    label: "practices",
-    items: [
-      "AI-Assisted Development",
-      "Unit Testing",
-      "Mocking",
-      "Dependency Injection",
-      "Linting",
-      "Static Type Checking",
-      "Code Review",
-      "Agile",
-      "Scrum",
-    ],
-  },
-];
+useSeoMeta({
+  title: "Senior Full-Stack Engineer in Berlin",
+  ogTitle: "Christoph Stach — Senior Full-Stack Engineer in Berlin",
+});
 
-const totalSkills = skillGroups.reduce((sum, group) => sum + group.items.length, 0);
-const maxGroup = Math.max(...skillGroups.map((group) => group.items.length));
+const totalSkills = skills.reduce((sum, group) => sum + group.items.length, 0);
+const maxGroup = Math.max(...skills.map((group) => group.items.length));
 
 function useCountUp(target: number, duration = 1100) {
   const value = ref(target);
@@ -134,6 +84,11 @@ const techs = useCountUp(totalSkills);
                 <Icon name="tabler:arrow-right" size="16" />
               </NuxtLink>
 
+              <a href="/christoph-stach-cv.pdf" download class="button button--outline">
+                <Icon name="tabler:download" size="16" />
+                cv.pdf
+              </a>
+
               <a
                 href="https://www.linkedin.com/in/christoph-stach-7586b958"
                 target="_blank"
@@ -161,8 +116,9 @@ const techs = useCountUp(totalSkills);
           <img
             :src="heroImage"
             alt="Portrait of Christoph Stach"
-            width="288"
-            height="288"
+            width="272"
+            height="272"
+            fetchpriority="high"
             class="hero__portrait"
           />
           <figcaption class="hero__figcaption">portrait.webp — 1 image rendered</figcaption>
@@ -170,7 +126,7 @@ const techs = useCountUp(totalSkills);
       </div>
     </section>
 
-    <section class="stats reveal" style="animation-delay: 120ms">
+    <section class="stats reveal--scroll">
       <h2 class="section-label">stats --summary</h2>
       <ul class="stats__grid" aria-label="Career at a glance">
         <li class="stat">
@@ -192,7 +148,7 @@ const techs = useCountUp(totalSkills);
       </ul>
     </section>
 
-    <section class="about reveal" style="animation-delay: 120ms">
+    <section class="about reveal--scroll">
       <h2 class="section-label">about</h2>
 
       <div class="about__content">
@@ -226,11 +182,11 @@ const techs = useCountUp(totalSkills);
       </div>
     </section>
 
-    <section class="stack reveal">
+    <section class="stack reveal--scroll">
       <h2 class="section-label">stack --distribution</h2>
 
       <ul class="meters">
-        <li v-for="group in skillGroups" :key="group.label" class="meter">
+        <li v-for="group in skills" :key="group.label" class="meter">
           <div class="meter__head">
             <span class="meter__label">{{ group.label }}</span>
             <span class="meter__count">[{{ group.items.length }}]</span>

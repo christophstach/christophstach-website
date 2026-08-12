@@ -26,5 +26,18 @@
     "import/group-exports": "off",
     "unicorn/filename-case": ["error", { "cases": { "kebabCase": true, "pascalCase": true } }]
   },
-  "ignorePatterns": [".nuxt", ".output", "dist", "node_modules"]
+  "ignorePatterns": [".nuxt", ".output", "dist", "node_modules"],
+  "overrides": [
+    {
+      "files": ["scripts/**"],
+      "env": { "node": true, "browser": false },
+      "rules": {
+        "import/no-nodejs-modules": "off",
+        "no-console": "off",
+        "no-promise-executor-return": "off",
+        "node/no-sync": "off",
+        "promise/avoid-new": "off"
+      }
+    }
+  ]
 }

@@ -33,8 +33,8 @@ defineProps<{
         </li>
       </ul>
 
-      <ul v-if="entry.bullets?.length" class="timeline__bullets">
-        <li v-for="bullet in entry.bullets" :key="bullet">{{ bullet }}</li>
+      <ul v-if="bulletsFor('web', entry.bullets).length" class="timeline__bullets">
+        <li v-for="bullet in bulletsFor('web', entry.bullets)" :key="bullet">{{ bullet }}</li>
       </ul>
 
       <p v-if="entry.links?.length" class="timeline__links">
