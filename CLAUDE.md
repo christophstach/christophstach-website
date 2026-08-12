@@ -63,7 +63,8 @@ tags so browser chrome is correct before hydration.
 **Routing/prerender** is declared in `nuxt.config.ts` `routeRules`: `/` and `/curriculum` are
 prerendered; `/about-me` 301-redirects to `/`. Add new prerendered routes there — and also add
 the URL to `public/sitemap.xml`, a hand-maintained static file (no sitemap module), or it goes
-stale.
+stale. `/cv-print` is a prerendered, `noindex`, unlinked print-only page used solely as the
+source for the CV PDF.
 
 **SEO/meta** (per-route canonical, OG/Twitter tags, `og:locale`, and the JSON-LD `Person`
 block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via `useSeoMeta`.
@@ -78,3 +79,8 @@ block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via
 - The Open Graph social card (`public/images/og.png`, 1200×630) is generated from the
   `tools/og-card.html` template, not hand-painted. Regenerate after editing the template with:
   `google-chrome --headless=new --hide-scrollbars --window-size=1200,630 --screenshot=public/images/og.png tools/og-card.html`
+- The downloadable CV (`public/christoph-stach-cv.pdf`) is generated from the hidden `/cv-print`
+  route via `pnpm generate:cv` (headless Chrome → `--print-to-pdf`) and committed. Regenerate it
+  after editing `app/data/cv.ts`, the same as the OG card and sitemap.
+- `public/images/hero.png` is a crawler-facing copy of `app/assets/images/hero.webp` for the
+  JSON-LD `Person.image` (the bundled asset gets a hashed URL). Keep the two in sync.

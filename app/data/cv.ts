@@ -3,6 +3,13 @@ export interface TimelineLink {
   href: string;
 }
 
+/**
+ * A bullet. A plain string appears everywhere; the object form limits it to one
+ * output, so the PDF can stay as lean as a recruiter expects while the site
+ * keeps the full detail. Same text, one place.
+ */
+export type Bullet = string | { text: string; only: "web" | "print" };
+
 export interface TimelineEntry {
   title: string;
   organization: string;
@@ -10,7 +17,7 @@ export interface TimelineEntry {
   from: string;
   to?: string;
   tech?: string[];
-  bullets?: string[];
+  bullets?: Bullet[];
   links?: TimelineLink[];
 }
 
@@ -27,16 +34,16 @@ export const experience: TimelineEntry[] = [
     location: "Berlin",
     from: "2023-10",
     tech: [
-      "Python",
-      "LLMs",
-      "A2A",
-      "MCP",
-      "Kubernetes",
-      "GitLab CI",
+      "TypeScript",
       "Vue",
       "Nuxt",
-      "TypeScript",
       "NestJS",
+      "Python",
+      "LLMs",
+      "Agent-to-Agent (A2A)",
+      "Model Context Protocol (MCP)",
+      "Kubernetes",
+      "GitLab CI",
       "PostgreSQL",
       "MongoDB",
       "Azure DevOps",
@@ -72,8 +79,11 @@ export const experience: TimelineEntry[] = [
     to: "2014-11",
     tech: ["JavaScript", "ExtJS", "REST", "PHP", "Symfony", "MySQL"],
     bullets: [
-      "Modernized a legacy frameset-based PHP/HTML/CSS/JS application into a modular frontend/backend architecture, rebuilding the UI with ExtJS and establishing a clean PHP backend to improve maintainability and feature velocity",
-      "Collaborated with stakeholders to prioritize requirements, deliver new features, and resolve defects quickly",
+      "Modernized a legacy frameset-based PHP application into a modular front-end/back-end architecture, rebuilding the UI with ExtJS on a clean PHP backend",
+      {
+        text: "Collaborated with stakeholders to prioritize requirements, deliver new features, and resolve defects quickly",
+        only: "web",
+      },
     ],
   },
 ];
@@ -85,8 +95,13 @@ export const education: TimelineEntry[] = [
     from: "2019-10",
     to: "2023-10",
     bullets: [
-      "Thesis: Explorative Analysis of Data from Nanopore-Based DNA Sequencing to Identify Dilution Effects — Grade: 1.1",
-      "Specialisations: AI, Bioinformatics, Deep Learning, Data Science",
+      // The full thesis title runs two lines in print, where the reference CV omits it.
+      {
+        text: "Thesis: Explorative Analysis of Data from Nanopore-Based DNA Sequencing to Identify Dilution Effects",
+        only: "web",
+      },
+      "Specialisations: AI, Deep Learning, Data Science, Bioinformatics",
+      "Grade: 1.1",
       "Exchange: NTUST, Taipei",
     ],
     links: [{ text: "Read the thesis (PDF)", href: "/christoph-stach-master-thesis.pdf" }],
@@ -97,7 +112,8 @@ export const education: TimelineEntry[] = [
     from: "2016-04",
     to: "2019-09",
     bullets: [
-      "Thesis: Style transfer for photos using deep learning — Grade: 1.6",
+      "Thesis: Style transfer for photos using deep learning",
+      "Grade: 1.6",
       "Exchange: UNINTER, Cuernavaca, Mexico",
     ],
   },
@@ -106,15 +122,121 @@ export const education: TimelineEntry[] = [
     organization: "Kortmann Beton GmbH & Co. KG",
     from: "2009-07",
     to: "2011-07",
-    bullets: ["Completed apprenticeship alongside theoretical studies — Grade: 2.0"],
+    bullets: [
+      { text: "Completed apprenticeship alongside theoretical studies", only: "web" },
+      { text: "Grade: 2.0", only: "web" },
+    ],
   },
 ];
+
+export interface SkillGroup {
+  /** Terminal-style identifier used on the site. */
+  label: string;
+  /** Prose heading used in the PDF, which recruiters and ATS parsers read. */
+  title: string;
+  items: string[];
+}
+
+export const skills: SkillGroup[] = [
+  {
+    label: "frontend",
+    title: "Frontend",
+    items: [
+      "React",
+      "Next.js",
+      "Vue",
+      "Nuxt",
+      "Remix",
+      "TypeScript",
+      "JavaScript",
+      "Tailwind",
+      "TanStack",
+      "React Server Components",
+    ],
+  },
+  {
+    label: "ai_llm",
+    title: "AI & LLM",
+    items: [
+      "LLMs",
+      "AI Agents",
+      "Agent-to-Agent (A2A)",
+      "Model Context Protocol (MCP)",
+      "Open Knowledge Format (OKF)",
+      "RAG",
+      "LangChain",
+      "OpenAI API",
+      "Prompt Engineering",
+    ],
+  },
+  {
+    label: "backend_api",
+    title: "Backend & API",
+    items: ["Python", "Async Python (async/await)", "Node.js", "NestJS", "REST APIs", "zod"],
+  },
+  { label: "data", title: "Data", items: ["PostgreSQL", "MongoDB", "Prisma", "Drizzle"] },
+  {
+    label: "infra_cicd",
+    title: "Infrastructure & CI/CD",
+    items: ["Docker", "Kubernetes", "Git", "GitLab CI", "Azure DevOps", "pnpm Monorepos"],
+  },
+  {
+    label: "practices",
+    title: "Practices",
+    items: [
+      "AI-Assisted Development (Claude Code, GitHub Copilot)",
+      "Unit Testing (pytest, Vitest, Jest)",
+      "Mocking",
+      "Dependency Injection",
+      "Linting (Ruff)",
+      "Static Type Checking (ty)",
+      "Code Review",
+      "Agile",
+      "Scrum",
+    ],
+  },
+];
+
+export interface ProfileLink {
+  label: string;
+  href: string;
+}
+
+export const profile = {
+  name: "Christoph Stach",
+  role: "Senior Full-Stack Engineer",
+  location: "Berlin, Germany",
+  email: "christoph.stach@gmail.com",
+  phone: "+49 176 480 97681",
+  summary:
+    "Full-Stack Engineer with 12+ years building modern web apps in TypeScript across Vue/Nuxt and React/Next.js, now also building Python platform infrastructure for LLM agents. Focused on type-safe, maintainable code, with an eye for detail in component design, accessibility, and performance.",
+  coreTechnologies: [
+    "TypeScript",
+    "Vue",
+    "Nuxt",
+    "React",
+    "Next.js",
+    "NestJS",
+    "Tailwind",
+    "Python",
+    "LLMs",
+    "AI Agents",
+    "RAG",
+    "Kubernetes",
+    "Azure DevOps",
+  ],
+  links: [
+    { label: "Website", href: "https://christophstach.de" },
+    { label: "GitHub", href: "https://github.com/christophstach" },
+    { label: "LinkedIn", href: "https://linkedin.com/in/christoph-stach-7586b958" },
+  ] satisfies ProfileLink[],
+};
 
 export const projects: Project[] = [
   {
     title: "TIGeR (Toolkit for Integration of Generative AI Resources)",
     description:
-      "Platform for orchestrating LLM agents, providing the shared service, base classes, and CI/CD that agent teams build their business logic on.",
+      "The common runtime multiple Mercedes-Benz agent teams build their LLM agents on, with Agent-to-Agent and Model Context Protocol interoperability.",
     tech: ["Python", "LLMs", "A2A", "MCP", "Kubernetes", "GitLab CI"],
   },
   {

@@ -13,8 +13,13 @@ from the site content.
 
 - **Look:** Clean & classic — black text on white, sans-serif (Inter), traditional CV layout.
   Optimised for human recruiters and ATS (resume-scanning) systems. No dark/terminal styling.
-- **Contact info:** Minimal / anti-scraping — LinkedIn, GitHub, and website URL only. **No email
-  or phone number** in the public PDF (avoids bot scraping; recruiters reach out via LinkedIn).
+  **Refined 2026-08-12:** the canonical design is the CV in the `cv-english-nextjs` repo
+  (`components/curriculum-vitea/*`, rendered A4 with a 48px margin). `cv-print.vue` ports its
+  Tailwind values as computed px. Sections: Summary, Technical Skills, Experience, Education —
+  no Projects section.
+- **Contact info:** ~~Minimal / anti-scraping — LinkedIn, GitHub, and website URL only. **No email
+  or phone number** in the public PDF.~~ **Superseded 2026-08-12:** the PDF mirrors the reference
+  CV in `cv-english-nextjs`, which carries email and phone. Both are now in `profile` and printed.
 - **Delivery:** A prebuilt `christoph-stach-cv.pdf` committed as a static asset, plus a
   "Download CV (PDF)" button on the site. Regenerated via a dedicated script (Approach A).
 

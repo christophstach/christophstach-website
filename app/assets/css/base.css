@@ -91,3 +91,19 @@ ol {
     scroll-behavior: auto !important;
   }
 }
+
+/* When printing (incl. the headless-Chrome CV export of /cv-print),
+   drop the site chrome so only the page content is rendered. */
+@media print {
+  .header,
+  .footer,
+  .skip-link {
+    display: none !important;
+  }
+
+  /* The graph-paper grid and page tint otherwise bleed onto the trailing page. */
+  body {
+    background-color: #ffffff;
+    background-image: none;
+  }
+}
