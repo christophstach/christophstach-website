@@ -44,6 +44,16 @@
   color: var(--color-heading);
 }
 
+/* Icon-only variant, for links whose icon already names them. Drops the `$`
+   prefix, which reads as a prompt waiting for a command that never comes. */
+.button--icon {
+  padding-inline: var(--space-3);
+}
+
+.button--outline.button--icon::before {
+  content: none;
+}
+
 /* Chips / tags — rendered like bracketed tokens. */
 .chip {
   display: inline-block;

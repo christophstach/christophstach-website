@@ -93,20 +93,20 @@ const techs = useCountUp(totalSkills);
                 href="https://www.linkedin.com/in/christoph-stach-7586b958"
                 target="_blank"
                 rel="noopener"
-                class="button button--outline"
+                aria-label="LinkedIn profile"
+                class="button button--outline button--icon"
               >
                 <Icon name="tabler:brand-linkedin" size="16" />
-                linkedin
               </a>
 
               <a
                 href="https://github.com/christophstach"
                 target="_blank"
                 rel="noopener"
-                class="button button--outline"
+                aria-label="GitHub profile"
+                class="button button--outline button--icon"
               >
                 <Icon name="tabler:brand-github" size="16" />
-                github
               </a>
             </div>
           </div>
