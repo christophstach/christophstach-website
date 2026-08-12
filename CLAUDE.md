@@ -11,26 +11,14 @@ hand-rolled pure-CSS design system.
 
 ## Commands
 
-Package manager is **pnpm**. Node version is pinned in `.nvmrc` (24.12.0).
-
-```bash
-pnpm install        # also runs `nuxt prepare` via postinstall
-pnpm dev            # dev server
-pnpm generate       # prerender static site to .output/public (production output)
-pnpm preview        # preview the production build
-pnpm lint           # oxlint
-pnpm lint:fix       # oxlint --fix
-pnpm format         # oxfmt (formatter)
-pnpm format:check   # oxfmt --check
-pnpm typecheck      # vue-tsc via nuxt
-```
+Package manager is **pnpm**; the Node version is pinned in `.nvmrc`. See `package.json`
+for the script list.
 
 There is no test suite. `pnpm build` exists but `pnpm generate` is the relevant command —
 the site ships as static files (`dist` symlinks to `.output/public`).
 
-Tooling is **oxlint + oxfmt** (the Oxc toolchain), not ESLint/Prettier. Lint runs with all
-strictness categories (`correctness`, `suspicious`, `pedantic`, `perf`, `style`) as errors;
-`no-console` is an error. Component/file names must be kebab-case or PascalCase.
+Tooling is **oxlint + oxfmt** (the Oxc toolchain), not ESLint/Prettier — see `.oxlintrc.json`
+for the enabled rule categories.
 
 ## Architecture
 
