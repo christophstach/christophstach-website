@@ -35,7 +35,10 @@
   --phosphor-400: #34e6a3;
   --phosphor-500: #14c98a;
   --phosphor-600: #0aa372;
-  --phosphor-700: #097c58;
+  /* 700 is the light-mode accent and carries small text, so it is tuned to
+     clear 4.5:1 on both --color-bg and --color-surface. */
+  --phosphor-700: #087a5e;
+  --phosphor-800: #065f45;
   --phosphor-900: #062b21;
   --phosphor-950: #04130d;
 
@@ -137,12 +140,12 @@
   --color-hover: var(--slate-100);
   --color-hover-text: var(--slate-900);
 
-  --color-accent: var(--phosphor-600);
-  --color-accent-strong: var(--phosphor-700);
+  --color-accent: var(--phosphor-700);
+  --color-accent-strong: var(--phosphor-800);
   --color-accent-contrast: var(--slate-50);
   --color-accent-subtle-bg: var(--phosphor-100);
   --color-accent-subtle-text: var(--phosphor-700);
-  --color-ring: rgb(10 163 114 / 0.3);
+  --color-ring: rgb(8 122 94 / 0.3);
 
   --color-signal: var(--amber-500);
 }
