@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const description =
-  "Christoph Stach is a full-stack engineer based in Berlin with 10+ years of experience building modern web applications with Vue/Nuxt and React/Next.js, and more recently Python backends for AI and LLM agents.";
+  "Christoph Stach is a full-stack engineer based in Berlin with over a decade of experience building modern web applications with Vue/Nuxt and React/Next.js, and more recently Python backends for AI and LLM agents.";
 
 const siteUrl = "https://christophstach.de";
 const route = useRoute();
@@ -28,6 +28,8 @@ const personJsonLd = {
   "@type": "Person",
   name: "Christoph Stach",
   url: siteUrl,
+  // Crawler-facing copy of the hero portrait: the bundled asset gets a hashed
+  // URL, so this needs a stable one. Keep it in sync with assets/images/hero.webp.
   image: `${siteUrl}/images/hero.png`,
   jobTitle: "Senior Full-Stack Engineer",
   description,
@@ -39,11 +41,22 @@ const personJsonLd = {
     "Nuxt",
     "React",
     "Next.js",
+    "Remix",
     "TypeScript",
+    "Tailwind CSS",
     "Python",
-    "LLM Agents",
     "NestJS",
+    "Node.js",
+    "LLM Agents",
+    "Retrieval-Augmented Generation",
+    "LangChain",
+    "Model Context Protocol",
+    "Agent-to-Agent Protocol",
+    "PostgreSQL",
+    "MongoDB",
+    "Docker",
     "Kubernetes",
+    "Continuous Integration",
   ],
   sameAs: [
     "https://www.linkedin.com/in/christoph-stach-7586b958",
