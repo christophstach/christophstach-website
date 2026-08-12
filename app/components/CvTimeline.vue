@@ -22,9 +22,10 @@ defineProps<{
         <span class="timeline__organization">@ {{ entry.organization }}</span>
       </h3>
 
-      <time class="timeline__time">
-        {{ formatMonth(entry.from) }} – {{ entry.to ? formatMonth(entry.to) : "Now" }}
-      </time>
+      <p class="timeline__meta">
+        <time>{{ formatMonth(entry.from) }} – {{ entry.to ? formatMonth(entry.to) : "Now" }}</time>
+        <span v-if="entry.location" class="timeline__location">{{ entry.location }}</span>
+      </p>
 
       <ul v-if="entry.tech?.length" class="timeline__tech" aria-label="Technologies">
         <li v-for="tech in entry.tech" :key="tech" class="chip chip--accent">
@@ -112,13 +113,16 @@ defineProps<{
   color: var(--color-accent);
 }
 
-.timeline__time {
-  display: block;
+.timeline__meta {
   margin-top: var(--space-2);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   letter-spacing: var(--tracking-wide);
   color: var(--color-text-muted);
+}
+
+.timeline__location::before {
+  content: " // ";
 }
 
 .timeline__tech {

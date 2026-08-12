@@ -1,11 +1,60 @@
 <script setup lang="ts">
+import { experience } from "~/data/cv";
 import heroImage from "~/assets/images/hero.webp";
 
 const skillGroups = [
-  { label: "frontend", items: ["Vue / Nuxt", "React / Next.js", "TypeScript", "Tailwind"] },
-  { label: "backend", items: ["NestJS", "Python", "PostgreSQL", "MongoDB"] },
-  { label: "ai_agents", items: ["LLMs & AI Agents", "A2A / MCP"] },
-  { label: "infra_devops", items: ["Kubernetes", "GitLab CI", "Azure DevOps"] },
+  {
+    label: "frontend",
+    items: [
+      "React",
+      "Next.js",
+      "Vue",
+      "Nuxt",
+      "Remix",
+      "TypeScript",
+      "JavaScript",
+      "Tailwind",
+      "TanStack",
+      "React Server Components",
+    ],
+  },
+  {
+    label: "ai_llm",
+    items: [
+      "LLMs",
+      "AI Agents",
+      "A2A",
+      "MCP",
+      "OKF",
+      "RAG",
+      "LangChain",
+      "OpenAI API",
+      "Prompt Engineering",
+    ],
+  },
+  {
+    label: "backend_api",
+    items: ["Python", "Async Python", "Node.js", "NestJS", "REST APIs", "zod"],
+  },
+  { label: "data", items: ["PostgreSQL", "MongoDB", "Prisma", "Drizzle"] },
+  {
+    label: "infra_cicd",
+    items: ["Docker", "Kubernetes", "Git", "GitLab CI", "Azure DevOps", "pnpm Monorepos"],
+  },
+  {
+    label: "practices",
+    items: [
+      "AI-Assisted Development",
+      "Unit Testing",
+      "Mocking",
+      "Dependency Injection",
+      "Linting",
+      "Static Type Checking",
+      "Code Review",
+      "Agile",
+      "Scrum",
+    ],
+  },
 ];
 
 const totalSkills = skillGroups.reduce((sum, group) => sum + group.items.length, 0);
@@ -38,8 +87,14 @@ function useCountUp(target: number, duration = 1100) {
   return value;
 }
 
-const years = useCountUp(10);
-const companies = useCountUp(4);
+// Counted as time actually employed, so the career gap between SLH and DERICON is not billed as experience.
+const monthsEmployed = experience.reduce(
+  (sum, entry) => sum + monthsBetween(entry.from, entry.to),
+  0,
+);
+
+const years = useCountUp(Math.floor(monthsEmployed / 12));
+const companies = useCountUp(experience.length);
 const degrees = useCountUp(2);
 const techs = useCountUp(totalSkills);
 </script>
@@ -61,13 +116,13 @@ const techs = useCountUp(totalSkills);
               Senior Full-Stack Engineer<span class="hero__sep">//</span>Berlin<span
                 class="hero__sep"
                 >//</span
-              >10+ yrs
+              >12+ yrs
             </p>
 
             <p class="terminal__cmd"><span class="terminal__prompt">$</span> cat about.txt</p>
             <p class="hero__text">
               Building modern web apps across <strong>Vue/Nuxt</strong> and
-              <strong>React/Next.js</strong> for a decade — and more recently
+              <strong>React/Next.js</strong> for over a decade — and more recently
               <strong>Python backends for AI and LLM agents</strong>. I care about clean, type-safe
               code, usability, accessibility, and performance, with an eye for detail in component
               design.

@@ -6,6 +6,7 @@ export interface TimelineLink {
 export interface TimelineEntry {
   title: string;
   organization: string;
+  location?: string;
   from: string;
   to?: string;
   tech?: string[];
@@ -23,6 +24,7 @@ export const experience: TimelineEntry[] = [
   {
     title: "Senior Full Stack Engineer",
     organization: "MBition GmbH (Mercedes-Benz)",
+    location: "Berlin",
     from: "2023-10",
     tech: [
       "Python",
@@ -40,16 +42,19 @@ export const experience: TimelineEntry[] = [
       "Azure DevOps",
     ],
     bullets: [
-      "Build and operate a Python platform that hosts multiple LLM agents on Kubernetes — providing the shared web service, base classes, and CI/CD that individual agent teams plug their business logic into",
-      "Migrated the project from GitHub to GitLab, rebuilding CI/CD pipelines and merging a separate agent-instructions repo into the main one to streamline releases",
+      "Build and operate a Python platform that hosts multiple LLM agents on Kubernetes — providing the shared web service, base classes, and CI/CD that individual agent teams plug their business logic into, built on LangChain, OpenAI APIs, and retrieval-augmented generation (RAG)",
+      "Shipped end-to-end features across Nuxt and NestJS with strict TypeScript and zod-validated REST contracts, including a Role-Based Access Control (RBAC) system using CASL.js",
+      "Drove AI-assisted development across the team: authored the AGENTS.md instruction set and reusable agent skills, and set up a team wiki in the Open Knowledge Format (OKF) to make organizational knowledge agent-consumable",
+      "Re-architected the platform from synchronous to fully asynchronous Python (async/await), removing the need for multiple worker processes and cutting memory consumption by 75% (4 GB to 1 GB); right-sized Kubernetes requests, limits, and autoscaling to realize the saving across the cluster",
+      "Decoupled the codebase with dependency injection so components can be mocked and unit-tested in isolation, then enforced quality gates in CI — Ruff linting, ty static type checking, and a pytest suite — surfacing and fixing ~5,000 pre-existing type errors",
+      "Migrated the project from GitHub to GitLab and parallelized the CI/CD pipelines, halving runtime; each merge request now spins up its own Kubernetes pod, giving 140 contributors a production-like environment to validate changes in",
       "Consolidated multiple products into a pnpm monorepo, cutting build times by ~50% and enabling end-to-end type-safety and better DX",
-      "Shipped end-to-end features across Nuxt and NestJS with strict TypeScript and zod-validated REST contracts, reducing runtime errors",
-      "Implemented a Role-Based Access Control (RBAC) system using CASL.js",
     ],
   },
   {
     title: "Frontend Engineer",
     organization: "DERICON GmbH",
+    location: "Berlin & Frankfurt",
     from: "2016-12",
     to: "2023-10",
     tech: ["React", "Remix", "Vue", "Nuxt", "Angular", "TypeScript"],
@@ -62,6 +67,7 @@ export const experience: TimelineEntry[] = [
   {
     title: "Full Stack Developer",
     organization: "SLH GmbH",
+    location: "Schüttorf",
     from: "2011-10",
     to: "2014-11",
     tech: ["JavaScript", "ExtJS", "REST", "PHP", "Symfony", "MySQL"],
@@ -69,12 +75,6 @@ export const experience: TimelineEntry[] = [
       "Modernized a legacy frameset-based PHP/HTML/CSS/JS application into a modular frontend/backend architecture, rebuilding the UI with ExtJS and establishing a clean PHP backend to improve maintainability and feature velocity",
       "Collaborated with stakeholders to prioritize requirements, deliver new features, and resolve defects quickly",
     ],
-  },
-  {
-    title: "Full Stack Developer",
-    organization: "CREAVIVA GmbH & Co. KG",
-    from: "2011-07",
-    to: "2011-10",
   },
 ];
 
