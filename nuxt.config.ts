@@ -13,6 +13,13 @@ export default defineNuxtConfig({
     classSuffix: "",
   },
 
+  fonts: {
+    families: [
+      { name: "IBM Plex Sans", preload: true },
+      { name: "JetBrains Mono", preload: true },
+    ],
+  },
+
   icon: {
     // The theme toggle swaps icons client-side on a statically hosted site,
     // so its icons must ship in the client bundle instead of being fetched.
