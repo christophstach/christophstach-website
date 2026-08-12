@@ -367,14 +367,6 @@ const techs = useCountUp(totalSkills);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   background-color: var(--color-surface);
-  transition:
-    border-color var(--transition-fast),
-    box-shadow var(--transition-fast);
-}
-
-.stat:hover {
-  border-color: var(--color-accent);
-  box-shadow: var(--glow-accent);
 }
 
 .stat__value {
