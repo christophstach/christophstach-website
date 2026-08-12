@@ -18,6 +18,7 @@
     "capitalized-comments": "off",
     "sort-keys": "off",
     "no-ternary": "off",
+    "one-var": "off",
     "func-style": "off",
     "no-magic-numbers": "off",
     "import/no-named-export": "off",
