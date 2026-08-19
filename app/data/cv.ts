@@ -39,6 +39,7 @@ export const experience: TimelineEntry[] = [
       "Nuxt",
       "NestJS",
       "Python",
+      "FastAPI",
       "LLMs",
       "Agent-to-Agent (A2A)",
       "Model Context Protocol (MCP)",
@@ -49,7 +50,7 @@ export const experience: TimelineEntry[] = [
       "Azure DevOps",
     ],
     bullets: [
-      "Build and operate a Python platform that hosts multiple LLM agents on Kubernetes — providing the shared web service, base classes, and CI/CD that individual agent teams plug their business logic into, built on LangChain, OpenAI APIs, and retrieval-augmented generation (RAG)",
+      "Build and operate a Python platform that hosts multiple LLM agents on Kubernetes — providing the shared FastAPI web service, base classes, and CI/CD that individual agent teams plug their business logic into, built on LangChain, OpenAI APIs, and retrieval-augmented generation (RAG)",
       "Shipped end-to-end features across Nuxt and NestJS with strict TypeScript and zod-validated REST contracts, including a Role-Based Access Control (RBAC) system using CASL.js",
       "Drove AI-assisted development across the team: authored the AGENTS.md instruction set and reusable agent skills, and set up a team wiki in the Open Knowledge Format (OKF) to make organizational knowledge agent-consumable",
       "Re-architected the platform from synchronous to fully asynchronous Python (async/await), removing the need for multiple worker processes and cutting memory consumption by 75% (4 GB to 1 GB); right-sized Kubernetes requests, limits, and autoscaling to realize the saving across the cluster",
@@ -172,7 +173,15 @@ export const skills: SkillGroup[] = [
   {
     label: "backend_api",
     title: "Backend & API",
-    items: ["Python", "Async Python (async/await)", "Node.js", "NestJS", "REST APIs", "zod"],
+    items: [
+      "Python",
+      "Async Python (async/await)",
+      "FastAPI",
+      "Node.js",
+      "NestJS",
+      "REST APIs",
+      "zod",
+    ],
   },
   { label: "data", title: "Data", items: ["PostgreSQL", "MongoDB", "Prisma", "Drizzle"] },
   {
@@ -237,7 +246,7 @@ export const projects: Project[] = [
     title: "TIGeR (Toolkit for Integration of Generative AI Resources)",
     description:
       "The common runtime multiple Mercedes-Benz agent teams build their LLM agents on, with Agent-to-Agent and Model Context Protocol interoperability.",
-    tech: ["Python", "LLMs", "A2A", "MCP", "Kubernetes", "GitLab CI"],
+    tech: ["Python", "FastAPI", "LLMs", "A2A", "MCP", "Kubernetes", "GitLab CI"],
   },
   {
     title: "SDP (Speech Development Platform)",
