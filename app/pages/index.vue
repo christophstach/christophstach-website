@@ -154,10 +154,10 @@ const techs = useCountUp(totalSkills);
       <div class="about__content">
         <p>
           At <strong>MBition (Mercedes-Benz)</strong>, I work as a Senior Full Stack Engineer. My
-          home base is the web: I ship features end-to-end across
-          <strong>Nuxt and NestJS</strong> with strict <strong>TypeScript</strong> and zod-validated
+          home base is the web: I ship product features end-to-end in
+          <strong>Vue and Nuxt</strong> with strict <strong>TypeScript</strong> and zod-validated
           REST contracts, maintain pnpm monorepos for better DX, and build reliable CI/CD pipelines
-          in <strong>GitLab CI and Azure DevOps</strong>. More recently I've moved into
+          in <strong>GitLab CI and Azure DevOps</strong>. Alongside that I work in
           <strong>Python</strong>, building and operating a platform that hosts LLM agents on
           Kubernetes — the shared service, base classes, and CI/CD that agent teams plug their
           business logic into.
@@ -165,10 +165,10 @@ const techs = useCountUp(totalSkills);
 
         <p>
           Before that, I spent several years at DERICON building frontends with
-          <strong>React, Remix, Vue, Nuxt, and Angular</strong>, including a graph-based no-code
-          workflow builder that empowered non-technical users to model and deploy workflows
-          themselves. Earlier in my career I worked as a PHP/JavaScript full-stack developer,
-          modernising legacy systems and improving maintainability and feature velocity.
+          <strong>Vue, Nuxt, React, and Remix</strong>, including a graph-based no-code workflow
+          builder that empowered non-technical users to model and deploy workflows themselves.
+          Earlier in my career I worked as a PHP/JavaScript full-stack developer, modernising legacy
+          systems and improving maintainability and feature velocity.
         </p>
 
         <p>
