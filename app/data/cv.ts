@@ -41,13 +41,10 @@ export const experience: TimelineEntry[] = [
       "Python",
       "FastAPI",
       "LLMs",
-      "Agent-to-Agent (A2A)",
       "Model Context Protocol (MCP)",
       "Kubernetes",
-      "GitLab CI",
       "PostgreSQL",
       "MongoDB",
-      "Azure DevOps",
     ],
     bullets: [
       "Ship product features end-to-end in Vue and Nuxt with strict TypeScript — component architecture, composables, and zod-validated REST contracts shared across the stack",
@@ -55,9 +52,18 @@ export const experience: TimelineEntry[] = [
       "Consolidated multiple products into a pnpm monorepo, cutting build times by ~50% and enabling end-to-end type-safety and better DX",
       "Build and operate a Python platform that hosts multiple LLM agents on Kubernetes — providing the shared FastAPI web service, base classes, and CI/CD that individual agent teams plug their business logic into, built on LangChain, OpenAI APIs, and retrieval-augmented generation (RAG)",
       "Drove AI-assisted development across the team: authored the AGENTS.md instruction set and reusable agent skills, and set up a team wiki in the Open Knowledge Format (OKF) to make organizational knowledge agent-consumable",
-      "Re-architected the platform from synchronous to fully asynchronous Python (async/await), removing the need for multiple worker processes and cutting memory consumption by 75% (4 GB to 1 GB); right-sized Kubernetes requests, limits, and autoscaling to realize the saving across the cluster",
-      "Decoupled the codebase with dependency injection so components can be mocked and unit-tested in isolation, then enforced quality gates in CI — Ruff linting, ty static type checking, and a pytest suite — surfacing and fixing ~5,000 pre-existing type errors",
-      "Migrated the project from GitHub to GitLab and parallelized the CI/CD pipelines, halving runtime; each merge request now spins up its own Kubernetes pod, giving 140 contributors a production-like environment to validate changes in",
+      {
+        text: "Re-architected the platform from synchronous to fully asynchronous Python (async/await), removing the need for multiple worker processes and cutting memory consumption by 75% (4 GB to 1 GB); right-sized Kubernetes requests, limits, and autoscaling to realize the saving across the cluster",
+        only: "web",
+      },
+      {
+        text: "Decoupled the codebase with dependency injection so components can be mocked and unit-tested in isolation, then enforced quality gates in CI — Ruff linting, ty static type checking, and a pytest suite — surfacing and fixing ~5,000 pre-existing type errors",
+        only: "web",
+      },
+      {
+        text: "Migrated the project from GitHub to GitLab and parallelized the CI/CD pipelines, halving runtime; each merge request now spins up its own Kubernetes pod, giving 140 contributors a production-like environment to validate changes in",
+        only: "web",
+      },
     ],
   },
   {
@@ -66,7 +72,7 @@ export const experience: TimelineEntry[] = [
     location: "Berlin & Frankfurt",
     from: "2016-12",
     to: "2023-10",
-    tech: ["React", "Remix", "Vue", "Nuxt", "Angular", "TypeScript"],
+    tech: ["Vue", "Nuxt", "React", "Remix", "TypeScript", "Angular"],
     bullets: [
       "Launched a graph-based no-code workflow builder (React/Remix) that let non-technical users model and deploy workflows independently",
       "Delivered new features on an Angular-based frontend, modernizing components and improving performance and accessibility",
@@ -157,6 +163,12 @@ export const skills: SkillGroup[] = [
     ],
   },
   {
+    label: "backend_api",
+    title: "Backend & API",
+    items: ["Python", "FastAPI", "Node.js", "NestJS", "REST APIs", "zod"],
+  },
+  { label: "data", title: "Data", items: ["PostgreSQL", "MongoDB", "Prisma", "Drizzle"] },
+  {
     label: "ai_llm",
     title: "AI & LLM",
     items: [
@@ -172,34 +184,17 @@ export const skills: SkillGroup[] = [
     ],
   },
   {
-    label: "backend_api",
-    title: "Backend & API",
-    items: [
-      "Python",
-      "Async Python (async/await)",
-      "FastAPI",
-      "Node.js",
-      "NestJS",
-      "REST APIs",
-      "zod",
-    ],
-  },
-  { label: "data", title: "Data", items: ["PostgreSQL", "MongoDB", "Prisma", "Drizzle"] },
-  {
     label: "infra_cicd",
     title: "Infrastructure & CI/CD",
-    items: ["Docker", "Kubernetes", "Git", "GitLab CI", "Azure DevOps", "pnpm Monorepos"],
+    items: ["Docker", "Kubernetes", "GitLab CI", "pnpm Monorepos"],
   },
   {
     label: "practices",
     title: "Practices",
     items: [
       "AI-Assisted Development (Claude Code, GitHub Copilot)",
-      "Unit Testing (pytest, Vitest, Jest)",
-      "Mocking",
+      "Unit Testing (Vitest, Jest, pytest)",
       "Dependency Injection",
-      "Linting (Ruff)",
-      "Static Type Checking (ty)",
       "Code Review",
       "Agile",
       "Scrum",
