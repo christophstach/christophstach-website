@@ -48,6 +48,7 @@ export const experience: TimelineEntry[] = [
     ],
     bullets: [
       "Ship product features end-to-end in Vue and Nuxt with strict TypeScript — component architecture, composables, and zod-validated REST contracts shared across the stack",
+      "Built SDP, a no-code platform for configuring and deploying Mercedes-Benz speech applications, as a Vue/Nuxt frontend on NestJS with realtime updates over WebSockets",
       "Built a Role-Based Access Control (RBAC) system with CASL.js, enforcing one permission definition across both the Nuxt UI and the NestJS API",
       "Consolidated multiple products into a pnpm monorepo, cutting build times by ~50% and enabling end-to-end type-safety and better DX",
       "Build and operate the Python platform that hosts our LLM agents on Kubernetes — the shared FastAPI service, base classes, and CI/CD that agent teams build on",
