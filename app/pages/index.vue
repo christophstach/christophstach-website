@@ -4,7 +4,7 @@ import heroImage from "~/assets/images/hero.webp";
 
 useSeoMeta({
   title: "Senior Full-Stack Engineer in Berlin",
-  ogTitle: "Christoph Stach — Senior Full-Stack Engineer in Berlin",
+  ogTitle: "Christoph Stach, Senior Full-Stack Engineer in Berlin",
 });
 
 const totalSkills = skills.reduce((sum, group) => sum + group.items.length, 0);
@@ -72,7 +72,7 @@ const techs = useCountUp(totalSkills);
             <p class="terminal__cmd"><span class="terminal__prompt">$</span> cat about.txt</p>
             <p class="hero__text">
               Building modern web apps in <strong>TypeScript</strong> across
-              <strong>Vue/Nuxt</strong> and <strong>React/Next.js</strong> for over a decade —
+              <strong>Vue/Nuxt</strong> and <strong>React/Next.js</strong> for over a decade,
               alongside the <strong>Python</strong> services behind them. I care about clean,
               type-safe code, usability, accessibility, and performance, with an eye for detail in
               component design.
@@ -121,7 +121,7 @@ const techs = useCountUp(totalSkills);
             fetchpriority="high"
             class="hero__portrait"
           />
-          <figcaption class="hero__figcaption">portrait.webp — 1 image rendered</figcaption>
+          <figcaption class="hero__figcaption">portrait.webp, 1 image rendered</figcaption>
         </figure>
       </div>
     </section>
@@ -159,8 +159,8 @@ const techs = useCountUp(totalSkills);
           REST contracts, maintain pnpm monorepos for better DX, and build reliable CI/CD pipelines
           in <strong>GitLab CI and Azure DevOps</strong>. Alongside that I work in
           <strong>Python</strong>, building and operating a platform that hosts LLM agents on
-          Kubernetes — the shared service, base classes, and CI/CD that agent teams plug their
-          business logic into.
+          Kubernetes, providing the shared service, base classes, and CI/CD that agent teams plug
+          their business logic into.
         </p>
 
         <p>
