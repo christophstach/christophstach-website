@@ -47,15 +47,15 @@ export const experience: TimelineEntry[] = [
       "MongoDB",
     ],
     bullets: [
-      "Built the shared datatable behind every list screen — a fully typed Vue component with server-side pagination, sorting, and configurable filters that compile into a single database query, replacing tables that had been hand-built per screen",
-      "Ship product features end-to-end in Vue and Nuxt with strict TypeScript and zod-validated REST contracts — including SDP, a no-code platform for configuring and deploying Mercedes-Benz speech applications, on NestJS with realtime updates over WebSockets",
+      "Built the fully typed Vue datatable behind every list screen, with server-side pagination, sorting, and configurable filters that compile into a single database query, replacing tables that had been hand-built per screen",
+      "Built SDP, a no-code platform for configuring and deploying Mercedes-Benz speech applications, and ship features on it end-to-end in Vue and Nuxt with strict TypeScript, zod-validated REST contracts, and realtime updates over WebSockets",
       "Built a Role-Based Access Control (RBAC) system with CASL.js, enforcing one permission definition across both the Nuxt UI and the NestJS API",
-      "Consolidated multiple products into a pnpm monorepo and hardened type safety across the TypeScript codebase — types shared end to end and enforced in CI, with build times down ~50%",
-      "Build and operate the Python platform that hosts our LLM agents on Kubernetes — the shared FastAPI service, base classes, and CI/CD that agent teams build on",
+      "Consolidated multiple products into a pnpm monorepo and hardened type safety across the TypeScript codebase, sharing types end to end and enforcing them in CI, with build times down ~50%",
+      "Build and operate the Python platform that hosts our LLM agents on Kubernetes, providing the shared FastAPI service, base classes, and CI/CD that agent teams build on",
       "Drove AI-assisted development across the team: authored the AGENTS.md instruction set and reusable agent skills, and set up a team wiki in the Open Knowledge Format (OKF) to make organizational knowledge agent-consumable",
       "Re-architected the platform from synchronous to fully asynchronous Python, cutting memory consumption by 75% (4 GB to 1 GB) and removing the need for multiple worker processes",
       {
-        text: "Decoupled the codebase with dependency injection so components can be mocked and unit-tested in isolation, then enforced quality gates in CI — Ruff linting, ty static type checking, and a pytest suite — surfacing and fixing ~5,000 pre-existing type errors",
+        text: "Decoupled the codebase with dependency injection so components can be mocked and unit-tested in isolation, then enforced quality gates in CI (Ruff linting, ty static type checking, and a pytest suite), surfacing and fixing ~5,000 pre-existing type errors",
         only: "web",
       },
       {
