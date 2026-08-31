@@ -52,10 +52,7 @@ export const experience: TimelineEntry[] = [
       "Consolidated multiple products into a pnpm monorepo, cutting build times by ~50% and enabling end-to-end type-safety and better DX",
       "Build and operate a Python platform that hosts multiple LLM agents on Kubernetes — providing the shared FastAPI web service, base classes, and CI/CD that individual agent teams plug their business logic into, built on LangChain, OpenAI APIs, and retrieval-augmented generation (RAG)",
       "Drove AI-assisted development across the team: authored the AGENTS.md instruction set and reusable agent skills, and set up a team wiki in the Open Knowledge Format (OKF) to make organizational knowledge agent-consumable",
-      {
-        text: "Re-architected the platform from synchronous to fully asynchronous Python (async/await), removing the need for multiple worker processes and cutting memory consumption by 75% (4 GB to 1 GB); right-sized Kubernetes requests, limits, and autoscaling to realize the saving across the cluster",
-        only: "web",
-      },
+      "Re-architected the platform from synchronous to fully asynchronous Python (async/await), removing the need for multiple worker processes and cutting memory consumption by 75% (4 GB to 1 GB); right-sized Kubernetes requests, limits, and autoscaling to realize the saving across the cluster",
       {
         text: "Decoupled the codebase with dependency injection so components can be mocked and unit-tested in isolation, then enforced quality gates in CI — Ruff linting, ty static type checking, and a pytest suite — surfacing and fixing ~5,000 pre-existing type errors",
         only: "web",
