@@ -5,7 +5,7 @@ export default defineNuxtConfig({
     compatibilityVersion: 5,
   },
 
-  modules: ["@nuxtjs/color-mode", "@nuxt/fonts", "@nuxt/icon"],
+  modules: ["@nuxtjs/color-mode", "@nuxt/fonts", "@nuxt/icon", "nuxt-auth-utils"],
 
   css: ["~/assets/css/main.css"],
 
@@ -35,9 +35,17 @@ export default defineNuxtConfig({
     },
   },
 
+  runtimeConfig: {
+    // Numeric GitHub user ID of the only account allowed into /desk.
+    // Set via NUXT_DESK_GITHUB_ID.
+    deskGithubId: "",
+  },
+
   nitro: {
-    // Re-enable Nitro auto-imports: @nuxt/icon's server handler still relies
-    // on `#imports`, which compatibilityVersion 5 disables (nuxt/icon#467).
+    // Re-enable Nitro auto-imports, which compatibilityVersion 5 disables:
+    // nuxt-auth-utils registers its server utils only as auto-imports and its
+    // runtime imports from `#imports`. (@nuxt/icon needed this too until it
+    // dropped `#imports` from its server handler, nuxt/icon#467.)
     imports: {},
   },
 
@@ -46,5 +54,8 @@ export default defineNuxtConfig({
     "/curriculum": { prerender: true },
     "/cv-print": { prerender: true },
     "/about-me": { redirect: { to: "/", statusCode: 301 } },
+    // Private, server-rendered behind a GitHub session (see app/middleware).
+    "/desk/**": { headers: { "X-Robots-Tag": "noindex, nofollow" } },
+    "/login": { headers: { "X-Robots-Tag": "noindex, nofollow" } },
   },
 });
