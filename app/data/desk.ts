@@ -8,4 +8,5 @@ export interface DeskSection {
 
 export const deskSections: DeskSection[] = [
   { to: "/desk", label: "overview", icon: "tabler:layout-dashboard" },
+  { to: "/desk/cv", label: "cv", icon: "tabler:file-cv" },
 ];
