@@ -20,16 +20,16 @@
     "@nuxt/fonts": "^0.14.0",
     "@nuxt/icon": "^2.5.1",
     "@nuxtjs/color-mode": "^4.0.1",
-    "nuxt": "npm:nuxt-nightly@4.6.0-29803612.ea5d49fb",
-    "vue": "^3.5.42",
+    "nuxt": "npm:nuxt-nightly@4.6.0-29844781.aec739e9",
+    "vue": "^3.5.43",
     "vue-router": "^5.3.1"
   },
   "devDependencies": {
-    "@iconify-json/tabler": "^1.2.38",
-    "oxfmt": "^0.66.0",
-    "oxlint": "^1.81.0",
+    "@iconify-json/tabler": "^1.2.41",
+    "oxfmt": "^0.71.0",
+    "oxlint": "^1.86.0",
     "typescript": "^6.0.3",
-    "vue-tsc": "^3.3.11"
+    "vue-tsc": "^3.3.12"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
