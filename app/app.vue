@@ -95,52 +95,7 @@ useHead({
 </script>
 
 <template>
-  <div class="layout">
-    <a class="skip-link" href="#main">Skip to content</a>
-
-    <AppHeader />
-
-    <main id="main" class="layout__main" tabindex="-1">
-      <NuxtPage />
-    </main>
-
-    <AppFooter />
-  </div>
+  <NuxtLayout>
+    <NuxtPage />
+  </NuxtLayout>
 </template>
-
-<style scoped>
-.layout {
-  display: flex;
-  flex-direction: column;
-  min-height: 100dvh;
-}
-
-.layout__main {
-  flex: 1;
-}
-
-.layout__main:focus {
-  outline: none;
-}
-
-/* Visible only when focused, so keyboard users can bypass the header nav. */
-.skip-link {
-  position: fixed;
-  top: var(--space-2);
-  left: var(--space-2);
-  z-index: calc(var(--z-header) + 1);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-accent);
-  border-radius: var(--radius-md);
-  background-color: var(--color-surface);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  color: var(--color-heading);
-  transform: translateY(calc(-100% - var(--space-4)));
-  transition: transform var(--transition-fast);
-}
-
-.skip-link:focus-visible {
-  transform: translateY(0);
-}
-</style>
