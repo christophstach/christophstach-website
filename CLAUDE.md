@@ -5,8 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 Personal CV website for Christoph Stach (christophstach.de), built with **Nuxt** on the
-nightly channel (`nuxt-nightly@latest`, `compatibilityVersion: 5`) and prerendered to a
-static site. No backend, no database — content is hardcoded TypeScript, styling is a
+nightly channel (`nuxt-nightly@latest`, `compatibilityVersion: 5`). Hybrid rendering: the
+public pages are prerendered, while the private `/desk` area is server-rendered behind GitHub
+auth (deployed on Vercel). No database — content is hardcoded TypeScript, styling is a
 hand-rolled pure-CSS design system.
 
 ## Commands
@@ -14,8 +15,9 @@ hand-rolled pure-CSS design system.
 Package manager is **pnpm**; the Node version is pinned in `.nvmrc`. See `package.json`
 for the script list.
 
-There is no test suite. `pnpm build` exists but `pnpm generate` is the relevant command —
-the site ships as static files (`dist` symlinks to `.output/public`).
+There is no test suite. `pnpm build` is the deploy build (Vercel): it prerenders the public
+routes and bundles the Nitro server for `/desk` and `/auth/github`. `pnpm generate` still
+works for a static-only build and for `generate:cv`, but it can't serve the desk.
 
 Tooling is **oxlint + oxfmt** (the Oxc toolchain), not ESLint/Prettier — see `.oxlintrc.json`
 for the enabled rule categories.
@@ -54,6 +56,19 @@ the URL to `public/sitemap.xml`, a hand-maintained static file (no sitemap modul
 stale. `/cv-print` is a prerendered, `noindex`, unlinked print-only page used solely as the
 source for the CV PDF.
 
+**Layouts.** `app/layouts/default.vue` holds the public chrome (skip link, `AppHeader`,
+`AppFooter`); `app/layouts/desk.vue` is the desk shell with the left sidebar. Pages opt into
+the desk with `definePageMeta({ layout: "desk" })`.
+
+**Desk and auth** use `nuxt-auth-utils` (sealed-cookie sessions, GitHub OAuth). The
+OAuth handler (`server/routes/auth/github.get.ts`) only creates a session for the GitHub
+user ID in `runtimeConfig.deskGithubId` (`NUXT_DESK_GITHUB_ID`). `app/middleware/desk.global.ts`
+redirects anonymous `/desk/**` requests to `/login`, including during SSR. Sidebar sections
+are data in `app/data/desk.ts`: a new section is one entry there plus a page under
+`app/pages/desk/`. Any server API for the desk goes under `server/api/desk/` and must call
+`requireUserSession(event)`; the page middleware does not protect API routes. Required env
+vars are listed in `.env.example`.
+
 **SEO/meta** (per-route canonical, OG/Twitter tags, `og:locale`, and the JSON-LD `Person`
 block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via `useSeoMeta`.
 
@@ -61,7 +76,13 @@ block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via
 
 - This tracks Nuxt **nightly**, so APIs can drift from stable docs. Two workarounds already
   live in `nuxt.config.ts` with explanatory comments (Nitro auto-imports re-enabled for
-  `@nuxt/icon`; `compatibilityVersion: 5`). Preserve those comments if you touch that file.
+  `nuxt-auth-utils`; `compatibilityVersion: 5`). Preserve those comments if you touch that file.
+- Imports are explicit from public package paths (`vue`, `nuxt/app`, `h3`, …). The exception
+  is nuxt-auth-utils, which exposes no import paths: `useUserSession` comes from `#imports` in
+  app code, and its server utils stay Nitro auto-imports. Don't import them from `#imports` in
+  `server/`, because typed `$fetch` also checks server routes in the app program.
+- `tsconfig.json` uses Nuxt's project references but leaves out `tsconfig.node.json`
+  (`nuxt.config.ts`); see the comment there.
 - Icons use `@nuxt/icon` with the Tabler set (`@iconify-json/tabler`). New icons used by the
   theme toggle must be added to `icon.clientBundle.icons`.
 - The Open Graph social card (`public/images/og.png`, 1200×630) is generated from the
