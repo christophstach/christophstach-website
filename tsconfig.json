@@ -1,3 +1,12 @@
 {
-  "extends": "./.nuxt/tsconfig.json"
+  // Nuxt's per-context projects, so server/ is checked against Nitro's types
+  // rather than the app's. tsconfig.node.json (nuxt.config.ts) is left out:
+  // on the nightly channel pnpm installs two copies of @nuxt/nitro-server, and
+  // its config augmentations land on the wrong one.
+  "files": [],
+  "references": [
+    { "path": "./.nuxt/tsconfig.app.json" },
+    { "path": "./.nuxt/tsconfig.server.json" },
+    { "path": "./.nuxt/tsconfig.shared.json" }
+  ]
 }
