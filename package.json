@@ -20,17 +20,17 @@
     "@nuxt/fonts": "^0.14.0",
     "@nuxt/icon": "^2.5.1",
     "@nuxtjs/color-mode": "^4.0.1",
-    "nuxt": "npm:nuxt-nightly@4.6.0-29844781.aec739e9",
-    "nuxt-auth-utils": "^0.5.30",
+    "nuxt": "npm:nuxt-nightly@4.6.0-29853280.6c7f9fd4",
+    "nuxt-auth-utils": "^0.5.31",
     "vue": "^3.5.43",
-    "vue-router": "^5.3.1"
+    "vue-router": "^5.4.0"
   },
   "devDependencies": {
-    "@iconify-json/tabler": "^1.2.41",
-    "oxfmt": "^0.71.0",
-    "oxlint": "^1.86.0",
+    "@iconify-json/tabler": "^1.2.42",
+    "oxfmt": "^0.72.0",
+    "oxlint": "^1.87.0",
     "typescript": "^6.0.3",
-    "vue-tsc": "^3.3.12"
+    "vue-tsc": "^3.3.13"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
