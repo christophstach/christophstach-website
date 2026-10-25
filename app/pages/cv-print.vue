@@ -36,9 +36,8 @@ function period(from: string, to?: string): string {
     </header>
 
     <section class="cv__section cv__section--tight">
-      <h2 class="cv__section-title">Professional Summary</h2>
-      <p class="cv__summary">{{ profile.summary }}</p>
-      <p class="cv__italic">Core technologies: {{ profile.coreTechnologies.join(", ") }}</p>
+      <h2 class="cv__section-title">Core Technologies</h2>
+      <p class="cv__italic">{{ profile.coreTechnologies.join(", ") }}</p>
     </section>
 
     <section class="cv__section cv__skills">
@@ -166,11 +165,6 @@ function period(from: string, to?: string): string {
 
 .cv__section-title--gap {
   margin-bottom: 16px;
-}
-
-.cv__summary {
-  line-height: 1.625;
-  text-align: justify;
 }
 
 .cv__italic {
