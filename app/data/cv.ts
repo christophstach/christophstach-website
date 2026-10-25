@@ -208,8 +208,6 @@ export const profile = {
   location: "Berlin, Germany",
   email: "christoph.stach@gmail.com",
   phone: "+49 176 480 97681",
-  summary:
-    "Frontend-focused Full-Stack Engineer with 12+ years building modern web apps in TypeScript, specialising in Vue/Nuxt and React/Next.js. Currently at Mercedes-Benz, building a product end to end in Vue, Nuxt, and NestJS, and a Python platform for AI agents alongside it. Focused on type-safe, maintainable code, with an eye for detail in component design, accessibility, and performance.",
   coreTechnologies: [
     "TypeScript",
     "Vue",

@@ -76,8 +76,6 @@ function bulletCounts(entry: Entry): string {
           <dd>{{ profile.email }}</dd>
           <dt>phone</dt>
           <dd>{{ profile.phone }}</dd>
-          <dt>summary</dt>
-          <dd class="profile__prose">{{ profile.summary }}</dd>
           <dt>core tech</dt>
           <dd>
             <ul class="tags">
@@ -251,11 +249,6 @@ function bulletCounts(entry: Entry): string {
   .profile dt {
     margin-top: 0;
   }
-}
-
-.profile__prose {
-  max-width: var(--content-max);
-  line-height: var(--leading-relaxed);
 }
 
 .profile__links {
