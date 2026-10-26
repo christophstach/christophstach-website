@@ -16,8 +16,8 @@ Package manager is **pnpm**; the Node version is pinned in `.nvmrc`. See `packag
 for the script list.
 
 There is no test suite. `pnpm build` is the deploy build (Vercel): it prerenders the public
-routes and bundles the Nitro server for `/desk` and `/auth/github`. `pnpm generate` still
-works for a static-only build and for `generate:cv`, but it can't serve the desk.
+routes and bundles the Nitro server for `/desk`, `/auth/github` and the CV PDF. `pnpm generate`
+still works for a static-only build, but it can't serve the desk or the PDF.
 
 Tooling is **oxlint + oxfmt** (the Oxc toolchain), not ESLint/Prettier — see `.oxlintrc.json`
 for the enabled rule categories.
@@ -88,8 +88,13 @@ block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via
 - The Open Graph social card (`public/images/og.png`, 1200×630) is generated from the
   `tools/og-card.html` template, not hand-painted. Regenerate after editing the template with:
   `google-chrome --headless=new --hide-scrollbars --window-size=1200,630 --screenshot=public/images/og.png tools/og-card.html`
-- The downloadable CV (`public/christoph-stach-cv.pdf`) is generated from the hidden `/cv-print`
-  route via `pnpm generate:cv` (headless Chrome → `--print-to-pdf`) and committed. Regenerate it
-  after editing `app/data/cv.ts`, the same as the OG card and sitemap.
+- The downloadable CV (`/christoph-stach-cv.pdf`) is not a file in the repo. The server route
+  `server/routes/christoph-stach-cv.pdf.get.ts` prints the prerendered `/cv-print` page with
+  `puppeteer-core` (`@sparticuz/chromium`, or the Chrome in `NUXT_CV_PDF_CHROME` off Linux), and
+  `routeRules` caches it with ISR until the next deployment, so it follows `app/data/cv.ts` with
+  no extra step. Once the CV data lives somewhere that changes without a deploy, the cache needs
+  an expiry or on-demand revalidation. Page breaks are CSS rules in `cv-print.vue`; don't tune
+  spacing to move a break. The serverless Chromium has no system fonts, so the page's Inter is
+  served from `public/fonts/inter` (latin, the weights the page uses).
 - `public/images/hero.png` is a crawler-facing copy of `app/assets/images/hero.webp` for the
   JSON-LD `Person.image` (the bundled asset gets a hashed URL). Keep the two in sync.
