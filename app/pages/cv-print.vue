@@ -26,6 +26,7 @@ function period(from: string, to?: string): string {
     <header class="cv__header">
       <h1 class="cv__name">{{ profile.name }}</h1>
       <p class="cv__role">{{ profile.role }}</p>
+      <p class="cv__summary">{{ profile.summary }}</p>
       <ul class="cv__contact">
         <li>{{ profile.location }}</li>
         <li>{{ profile.email }}</li>
@@ -118,6 +119,11 @@ function period(from: string, to?: string): string {
   font-size: 15px;
   font-weight: 500;
   color: var(--cv-accent);
+}
+
+.cv__summary {
+  margin-top: 6px;
+  color: var(--cv-soft);
 }
 
 .cv__contact {

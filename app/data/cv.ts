@@ -47,25 +47,25 @@ export const experience: TimelineEntry[] = [
       "MongoDB",
     ],
     bullets: [
-      "Built the fully typed Vue datatable behind every list screen, with server-side pagination, sorting, and configurable filters that compile into a single database query, replacing tables that had been hand-built per screen",
       "Built SDP, a no-code platform for configuring and deploying Mercedes-Benz speech applications, and ship features on it end-to-end in Vue and Nuxt with strict TypeScript, zod-validated REST contracts, and realtime updates over WebSockets",
-      "Built a Role-Based Access Control (RBAC) system with CASL.js, enforcing one permission definition across both the Nuxt UI and the NestJS API",
-      "Consolidated multiple products into a pnpm monorepo and hardened type safety across the TypeScript codebase, sharing types end to end and enforcing them in CI, with build times down ~50%",
-      "Build and operate the Python platform that hosts our LLM agents on Kubernetes, providing the shared FastAPI service, base classes, and CI/CD that agent teams build on",
-      "Drove AI-assisted development across the team: authored the AGENTS.md instruction set and reusable agent skills, and set up a team wiki in the Open Knowledge Format (OKF) to make organizational knowledge agent-consumable",
-      "Re-architected the platform from synchronous to fully asynchronous Python, cutting memory consumption by 75% (4 GB to 1 GB) and removing the need for multiple worker processes",
+      "Own the Python platform that hosts our LLM agents on Kubernetes, providing the shared FastAPI service, base classes, and CI/CD that agent teams build on",
+      "Cut the platform's memory use by 75% (4 GB to 1 GB) by re-architecting it from synchronous to fully asynchronous Python, removing the need for multiple worker processes",
+      "Halved CI/CD runtime by migrating the project from GitHub to GitLab and parallelizing the pipelines; each merge request now spins up its own Kubernetes pod, giving 140 contributors a production-like environment to validate changes in",
+      "Fixed ~5,000 pre-existing type errors and made the codebase unit-testable by decoupling it with dependency injection and enforcing quality gates in CI (Ruff linting, ty static type checking, and a pytest suite)",
+      "Cut build times by ~50% by consolidating multiple products into a pnpm monorepo, sharing types end to end and enforcing them in CI",
+      "Led AI-assisted development across the team: authored the AGENTS.md instruction set and reusable agent skills, and set up a team wiki in the Open Knowledge Format (OKF) to make organizational knowledge agent-consumable",
       {
-        text: "Decoupled the codebase with dependency injection so components can be mocked and unit-tested in isolation, then enforced quality gates in CI (Ruff linting, ty static type checking, and a pytest suite), surfacing and fixing ~5,000 pre-existing type errors",
+        text: "Replaced tables hand-built per screen with one fully typed Vue datatable behind every list screen, with server-side pagination, sorting, and configurable filters that compile into a single database query",
         only: "web",
       },
       {
-        text: "Migrated the project from GitHub to GitLab and parallelized the CI/CD pipelines, halving runtime; each merge request now spins up its own Kubernetes pod, giving 140 contributors a production-like environment to validate changes in",
+        text: "Built a Role-Based Access Control (RBAC) system with CASL.js, enforcing one permission definition across both the Nuxt UI and the NestJS API",
         only: "web",
       },
     ],
   },
   {
-    title: "Frontend Engineer",
+    title: "Frontend Engineer (Working Student)",
     organization: "DERICON GmbH",
     location: "Berlin & Frankfurt",
     from: "2016-12",
@@ -205,6 +205,9 @@ export interface ProfileLink {
 export const profile = {
   name: "Christoph Stach",
   role: "Senior Full-Stack Engineer",
+  /** One line under the name in the PDF: how the career fits together. */
+  summary:
+    "Started with an IT apprenticeship and a full-time developer role, then earned a B.Sc. and an M.Sc. (1.1) in computer science while working alongside. Now building platforms at Mercedes-Benz.",
   location: "Berlin, Germany",
   email: "christoph.stach@gmail.com",
   phone: "+49 176 480 97681",
