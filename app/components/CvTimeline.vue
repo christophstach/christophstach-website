@@ -8,11 +8,7 @@ defineProps<{
 
 <template>
   <ol class="timeline">
-    <li
-      v-for="entry in entries"
-      :key="`${entry.organization}-${entry.from}`"
-      class="timeline__item"
-    >
+    <li v-for="entry in entries" :key="entry.id" class="timeline__item">
       <span class="timeline__marker" :class="{ 'timeline__marker--current': !entry.to }">
         <slot name="icon" />
       </span>
@@ -33,8 +29,8 @@ defineProps<{
         </li>
       </ul>
 
-      <ul v-if="bulletsFor('web', entry.bullets).length" class="timeline__bullets">
-        <li v-for="bullet in bulletsFor('web', entry.bullets)" :key="bullet">{{ bullet }}</li>
+      <ul v-if="entry.bullets" class="timeline__bullets">
+        <li v-for="(bullet, id) in entry.bullets" :key="id">{{ bullet }}</li>
       </ul>
 
       <p v-if="entry.links?.length" class="timeline__links">

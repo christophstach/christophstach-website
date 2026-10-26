@@ -27,7 +27,12 @@ for the enabled rule categories.
 **Content is data, not markup.** All CV content lives in `app/data/cv.ts` as typed arrays
 (`experience`, `education`, `projects`, etc.) keyed by interfaces like `TimelineEntry`. Pages
 (`app/pages/index.vue`, `curriculum.vue`) and `CvTimeline.vue` render from this data. To
-change CV content, edit `cv.ts` — do not hardcode entries into templates. Dates are ISO
+change CV content, edit `cv.ts` — do not hardcode entries into templates. Timeline entries
+and their bullets carry stable ids: the site shows every bullet, while the printed CV comes
+in **variants** (`app/data/cv-variants.ts`) that pick entries and bullets by id, in order.
+`primaryVariantId` is the public one (`/cv-print`, `/christoph-stach-cv.pdf`); the others are
+private, at `/desk/cv-print/<id>` and `/api/desk/cv/<id>`. All variants render through the one
+`CvDocument.vue`, so a variant changes content, never layout; an unknown id throws at render. Dates are ISO
 month strings (`"2023-10"`) formatted for display via `app/utils/format.ts` (`formatMonth`).
 
 **CSS design system is layered, imported once via `app/assets/css/main.css`:**
@@ -89,12 +94,12 @@ block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via
   `tools/og-card.html` template, not hand-painted. Regenerate after editing the template with:
   `google-chrome --headless=new --hide-scrollbars --window-size=1200,630 --screenshot=public/images/og.png tools/og-card.html`
 - The downloadable CV (`/christoph-stach-cv.pdf`) is not a file in the repo. The server route
-  `server/routes/christoph-stach-cv.pdf.get.ts` prints the prerendered `/cv-print` page with
-  `puppeteer-core` (`@sparticuz/chromium`, or the Chrome in `NUXT_CV_PDF_CHROME` off Linux), and
+  `server/routes/christoph-stach-cv.pdf.get.ts` prints the prerendered `/cv-print` page through
+  `server/utils/cv-pdf.ts` (one Chrome at a time per instance) with `puppeteer-core` (`@sparticuz/chromium`, or the Chrome in `NUXT_CV_PDF_CHROME` off Linux), and
   `routeRules` caches it with ISR until the next deployment, so it follows `app/data/cv.ts` with
   no extra step. Once the CV data lives somewhere that changes without a deploy, the cache needs
-  an expiry or on-demand revalidation. Page breaks are CSS rules in `cv-print.vue`; don't tune
-  spacing to move a break; the desk CV page previews the PDF and shows how
+  an expiry or on-demand revalidation. Page breaks are CSS rules in `CvDocument.vue`; don't tune
+  spacing to move a break; the desk CV page previews each variant's PDF and shows how
   full each page is (`server/api/desk/cv-pdf.get.ts`, `DeskCvPdf.vue`), flagging more than two
   pages, a gap before the last page and a nearly empty last page. The serverless Chromium has no system fonts, so the PDF
   must only use the site's own web fonts (IBM Plex Sans, JetBrains Mono via `@nuxt/fonts`).

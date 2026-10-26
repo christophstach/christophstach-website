@@ -1,12 +1,40 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { primaryVariantId } from "~/data/cv-variants";
+import { useFetch } from "nuxt/app";
 
-const { pages, error = "" } = defineProps<{
-  /** Per-page fill of the printed CV, from /api/desk/cv-pdf; null while loading. */
-  pages: { fill: number }[] | null;
-  /** Why the PDF couldn't be read, from the desk API; empty when it could. */
-  error?: string;
+const { variant } = defineProps<{
+  /** Id of the CV variant to check and preview. */
+  variant: string;
 }>();
+
+const isPrimary = computed(() => variant === primaryVariantId);
+
+// The primary variant is the public PDF; the others are private desk routes.
+const src = computed(() =>
+  isPrimary.value ? "/christoph-stach-cv.pdf" : `/api/desk/cv/${variant}`,
+);
+
+// Loaded in the browser because rendering a PDF means a few seconds of Chrome.
+const { data, error: fetchError } = useFetch("/api/desk/cv-pdf", {
+  query: computed(() => ({ variant })),
+  server: false,
+  lazy: true,
+});
+
+const pages = computed(() => data.value?.pages);
+
+// The desk API puts the cause in its error body; show that over the generic
+// "[GET] … 502" message of the fetch error.
+const error = computed(() => {
+  if (!fetchError.value) {
+    return "";
+  }
+
+  const body = fetchError.value.data as { message?: string } | undefined;
+
+  return body?.message ?? fetchError.value.message;
+});
 
 // The CV is meant to fill two pages. A page before the last that ends this
 // early has a visible gap at the bottom, usually because a whole block moved to
@@ -45,7 +73,7 @@ function layoutWarnings(fills: { fill: number }[]): string[] {
   return found;
 }
 
-const warnings = computed(() => (pages ? layoutWarnings(pages) : []));
+const warnings = computed(() => (pages.value ? layoutWarnings(pages.value) : []));
 </script>
 
 <template>
@@ -70,11 +98,13 @@ const warnings = computed(() => (pages ? layoutWarnings(pages) : []));
       <p v-else class="cv-pdf__note">Layout looks fine.</p>
     </template>
 
-    <iframe
-      src="/christoph-stach-cv.pdf#view=FitH"
-      title="CV PDF preview"
-      class="cv-pdf__preview"
-    />
+    <p class="cv-pdf__actions">
+      <a :href="src" class="text-link" target="_blank">Open PDF</a>
+      <span v-if="isPrimary" class="cv-pdf__note">Public: the download on the site.</span>
+      <span v-else class="cv-pdf__note">Private: only reachable from the desk.</span>
+    </p>
+
+    <iframe :key="src" :src="`${src}#view=FitH`" title="CV PDF preview" class="cv-pdf__preview" />
   </div>
 </template>
 
@@ -135,11 +165,19 @@ const warnings = computed(() => (pages ? layoutWarnings(pages) : []));
   margin-top: var(--space-4);
 }
 
+.cv-pdf__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
 .cv-pdf__preview {
   display: block;
   inline-size: 100%;
   block-size: 80vh;
-  margin-top: var(--space-6);
+  margin-top: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
