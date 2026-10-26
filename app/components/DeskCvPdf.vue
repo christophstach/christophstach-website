@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-const { pages, status } = defineProps<{
+const { pages, error = "" } = defineProps<{
   /** Per-page fill of the printed CV, from /api/desk/cv-pdf; null while loading. */
   pages: { fill: number }[] | null;
-  status: string;
+  /** Why the PDF couldn't be read, from the desk API; empty when it could. */
+  error?: string;
 }>();
 
 // The CV is meant to fill two pages. A page before the last that ends this
@@ -49,7 +50,7 @@ const warnings = computed(() => (pages ? layoutWarnings(pages) : []));
 
 <template>
   <div class="cv-pdf">
-    <p v-if="status === 'error'" class="cv-pdf__note">Couldn't read the PDF.</p>
+    <p v-if="error" class="cv-pdf__note">Couldn't read the PDF. {{ error }}</p>
     <p v-else-if="!pages" class="cv-pdf__note">Rendering the PDF…</p>
 
     <template v-else>

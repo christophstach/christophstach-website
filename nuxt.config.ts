@@ -59,6 +59,13 @@ export default defineNuxtConfig({
     // runtime imports from `#imports`. (@nuxt/icon needed this too until it
     // dropped `#imports` from its server handler, nuxt/icon#467.)
     imports: {},
+    vercel: {
+      functions: {
+        // The CV PDF route unpacks and starts Chromium on a cold start, which
+        // can outlast the plan's default function timeout.
+        maxDuration: 60,
+      },
+    },
   },
 
   routeRules: {
