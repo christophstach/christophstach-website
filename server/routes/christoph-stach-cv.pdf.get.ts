@@ -16,12 +16,8 @@ async function launchOptions(localChrome: string) {
   return { executablePath: await chromium.executablePath(), args: chromium.args };
 }
 
-export default defineEventHandler(async (event) => {
-  const url = new URL("/cv-print", getRequestURL(event).origin).href;
-  const browser = await launch({
-    headless: true,
-    ...(await launchOptions(useRuntimeConfig(event).cvPdfChrome)),
-  });
+async function render(url: string, localChrome: string): Promise<Uint8Array> {
+  const browser = await launch({ headless: true, ...(await launchOptions(localChrome)) });
 
   try {
     const page = await browser.newPage();
@@ -30,15 +26,41 @@ export default defineEventHandler(async (event) => {
     await page.evaluate("document.fonts.ready");
 
     // Paper size and margins come from the page's own @page rule.
-    const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
-
-    setResponseHeaders(event, {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": 'inline; filename="christoph-stach-cv.pdf"',
-    });
-
-    return pdf;
+    return await page.pdf({ preferCSSPageSize: true, printBackground: true });
   } finally {
     await browser.close();
   }
+}
+
+// Requests that arrive while a render runs wait for it instead of starting
+// their own. On a cold start the first one is still unpacking Chromium, and a
+// second launch of the half-written binary fails (spawn ETXTBSY). After a
+// deploy that is the common case: the desk loads the PDF twice at once.
+const inFlight = new Map<string, Promise<Uint8Array>>();
+
+async function renderOnce(url: string, localChrome: string): Promise<Uint8Array> {
+  try {
+    return await render(url, localChrome);
+  } finally {
+    inFlight.delete(url);
+  }
+}
+
+export default defineEventHandler(async (event) => {
+  const url = new URL("/cv-print", getRequestURL(event).origin).href;
+  let rendering = inFlight.get(url);
+
+  if (!rendering) {
+    rendering = renderOnce(url, useRuntimeConfig(event).cvPdfChrome);
+    inFlight.set(url, rendering);
+  }
+
+  const pdf = await rendering;
+
+  setResponseHeaders(event, {
+    "Content-Type": "application/pdf",
+    "Content-Disposition": 'inline; filename="christoph-stach-cv.pdf"',
+  });
+
+  return pdf;
 });
