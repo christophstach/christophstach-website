@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { education, experience, profile, projects, skills } from "~/data/cv";
+import { useFetch, useSeoMeta } from "nuxt/app";
 import DeskCvSection from "~/components/DeskCvSection.vue";
 import { bulletsFor } from "~/utils/cv";
-import { useSeoMeta } from "nuxt/app";
+import { computed } from "vue";
 
 definePageMeta({ layout: "desk" });
 
@@ -10,6 +11,30 @@ useSeoMeta({
   title: "CV · Desk",
   robots: "noindex, nofollow",
 });
+
+// The printed CV is meant to stay on two pages; the data has no say in where it
+// breaks, so the page count is the thing to watch after editing it. Loaded in
+// the browser because a cold PDF cache means a few seconds of Chrome.
+const MAX_PDF_PAGES = 2;
+
+const { data: pdf, status: pdfStatus } = useFetch("/api/desk/cv-pdf", {
+  server: false,
+  lazy: true,
+});
+
+const pdfPages = computed(() => {
+  if (pdfStatus.value === "error") {
+    return "page count unavailable";
+  }
+
+  if (!pdf.value) {
+    return "counting pages…";
+  }
+
+  return `${pdf.value.pages} ${pdf.value.pages === 1 ? "page" : "pages"}`;
+});
+
+const pdfTooLong = computed(() => (pdf.value?.pages ?? 0) > MAX_PDF_PAGES);
 
 const sections = [
   { id: "profile", label: "profile" },
@@ -48,7 +73,12 @@ function bulletCounts(entry: Entry): string {
 
       <p class="cv__outputs">
         <a href="/curriculum" class="text-link" target="_blank">Public page</a>
-        <a href="/christoph-stach-cv.pdf" class="text-link" target="_blank">PDF</a>
+        <span class="cv__pdf">
+          <a href="/christoph-stach-cv.pdf" class="text-link" target="_blank">PDF</a>
+          <span :class="['cv__pages', { 'cv__pages--over': pdfTooLong }]">
+            {{ pdfPages }}<template v-if="pdfTooLong"> (max {{ MAX_PDF_PAGES }})</template>
+          </span>
+        </span>
       </p>
     </header>
 
@@ -188,6 +218,22 @@ function bulletCounts(entry: Entry): string {
   display: flex;
   gap: var(--space-4);
   font-size: var(--text-sm);
+}
+
+.cv__pdf {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.cv__pages {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.cv__pages--over {
+  color: var(--color-signal);
 }
 
 .cv__jump {
