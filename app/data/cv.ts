@@ -4,20 +4,22 @@ export interface TimelineLink {
 }
 
 /**
- * A bullet. A plain string appears everywhere; the object form limits it to one
- * output, so the PDF can stay as lean as a recruiter expects while the site
- * keeps the full detail. Same text, one place.
+ * Bullets keyed by a stable id, in display order. The site shows all of them;
+ * each CV variant (cv-variants.ts) picks the ones it prints by id, so the text
+ * lives in one place however many variants use it.
  */
-export type Bullet = string | { text: string; only: "web" | "print" };
+export type Bullets = Record<string, string>;
 
 export interface TimelineEntry {
+  /** Stable id that CV variants refer to. */
+  id: string;
   title: string;
   organization: string;
   location?: string;
   from: string;
   to?: string;
   tech?: string[];
-  bullets?: Bullet[];
+  bullets?: Bullets;
   links?: TimelineLink[];
 }
 
@@ -29,6 +31,7 @@ export interface Project {
 
 export const experience: TimelineEntry[] = [
   {
+    id: "mbition",
     title: "Senior Full Stack Engineer",
     organization: "MBition GmbH (Mercedes-Benz)",
     location: "Berlin",
@@ -46,92 +49,98 @@ export const experience: TimelineEntry[] = [
       "PostgreSQL",
       "MongoDB",
     ],
-    bullets: [
-      "Built SDP, a no-code platform for configuring and deploying Mercedes-Benz speech applications, and ship features on it end-to-end in Vue and Nuxt with strict TypeScript, zod-validated REST contracts, and realtime updates over WebSockets",
-      "Own the Python platform that hosts our LLM agents on Kubernetes, providing the shared FastAPI service, base classes, and CI/CD that agent teams build on",
-      "Cut the platform's memory use by 75% (4 GB to 1 GB) by re-architecting it from synchronous to fully asynchronous Python, removing the need for multiple worker processes",
-      "Halved CI/CD runtime by migrating the project from GitHub to GitLab and parallelizing the pipelines; each merge request now spins up its own Kubernetes pod, giving 140 contributors a production-like environment to validate changes in",
-      "Fixed ~5,000 pre-existing type errors and made the codebase unit-testable by decoupling it with dependency injection and enforcing quality gates in CI (Ruff linting, ty static type checking, and a pytest suite)",
-      "Cut build times by ~50% by consolidating multiple products into a pnpm monorepo, sharing types end to end and enforcing them in CI",
-      "Led AI-assisted development across the team: authored the AGENTS.md instruction set and reusable agent skills, and set up a team wiki in the Open Knowledge Format (OKF) to make organizational knowledge agent-consumable",
-      {
-        text: "Replaced tables hand-built per screen with one fully typed Vue datatable behind every list screen, with server-side pagination, sorting, and configurable filters that compile into a single database query",
-        only: "web",
-      },
-      {
-        text: "Built a Role-Based Access Control (RBAC) system with CASL.js, enforcing one permission definition across both the Nuxt UI and the NestJS API",
-        only: "web",
-      },
-    ],
+    bullets: {
+      sdp: "Built SDP, a no-code platform for configuring and deploying Mercedes-Benz speech applications, and ship features on it end-to-end in Vue and Nuxt with strict TypeScript, zod-validated REST contracts, and realtime updates over WebSockets",
+      "agent-platform":
+        "Own the Python platform that hosts our LLM agents on Kubernetes, providing the shared FastAPI service, base classes, and CI/CD that agent teams build on",
+      "async-memory":
+        "Cut the platform's memory use by 75% (4 GB to 1 GB) by re-architecting it from synchronous to fully asynchronous Python, removing the need for multiple worker processes",
+      "ci-gitlab":
+        "Halved CI/CD runtime by migrating the project from GitHub to GitLab and parallelizing the pipelines; each merge request now spins up its own Kubernetes pod, giving 140 contributors a production-like environment to validate changes in",
+      "type-safety":
+        "Fixed ~5,000 pre-existing type errors and made the codebase unit-testable by decoupling it with dependency injection and enforcing quality gates in CI (Ruff linting, ty static type checking, and a pytest suite)",
+      monorepo:
+        "Cut build times by ~50% by consolidating multiple products into a pnpm monorepo, sharing types end to end and enforcing them in CI",
+      "ai-dev":
+        "Led AI-assisted development across the team: authored the AGENTS.md instruction set and reusable agent skills, and set up a team wiki in the Open Knowledge Format (OKF) to make organizational knowledge agent-consumable",
+      datatable:
+        "Replaced tables hand-built per screen with one fully typed Vue datatable behind every list screen, with server-side pagination, sorting, and configurable filters that compile into a single database query",
+      rbac: "Built a Role-Based Access Control (RBAC) system with CASL.js, enforcing one permission definition across both the Nuxt UI and the NestJS API",
+    },
   },
   {
+    id: "dericon",
     title: "Frontend Engineer (Working Student)",
     organization: "DERICON GmbH",
     location: "Berlin & Frankfurt",
     from: "2016-12",
     to: "2023-10",
     tech: ["Vue", "Nuxt", "React", "Remix", "TypeScript", "Angular"],
-    bullets: [
-      "Launched a graph-based no-code workflow builder (React/Remix) that let non-technical users model and deploy workflows independently",
-      "Delivered new features on an Angular-based frontend, modernizing components and improving performance and accessibility",
-      "Built middleware and UI integrations to bridge legacy systems with modern REST APIs, simplifying data flows and de-risking migrations",
-    ],
+    bullets: {
+      "workflow-builder":
+        "Launched a graph-based no-code workflow builder (React/Remix) that let non-technical users model and deploy workflows independently",
+      angular:
+        "Delivered new features on an Angular-based frontend, modernizing components and improving performance and accessibility",
+      integrations:
+        "Built middleware and UI integrations to bridge legacy systems with modern REST APIs, simplifying data flows and de-risking migrations",
+    },
   },
   {
+    id: "slh",
     title: "Full Stack Developer",
     organization: "SLH GmbH",
     location: "Schüttorf",
     from: "2011-10",
     to: "2014-11",
     tech: ["JavaScript", "ExtJS", "REST", "PHP", "Symfony", "MySQL"],
-    bullets: [
-      "Modernized a legacy frameset-based PHP application into a modular front-end/back-end architecture, rebuilding the UI with ExtJS on a clean PHP backend",
-      {
-        text: "Collaborated with stakeholders to prioritize requirements, deliver new features, and resolve defects quickly",
-        only: "web",
-      },
-    ],
+    bullets: {
+      "php-modernization":
+        "Modernized a legacy frameset-based PHP application into a modular front-end/back-end architecture, rebuilding the UI with ExtJS on a clean PHP backend",
+      stakeholders:
+        "Collaborated with stakeholders to prioritize requirements, deliver new features, and resolve defects quickly",
+    },
   },
 ];
 
 export const education: TimelineEntry[] = [
   {
+    id: "msc",
     title: "M.Sc. Applied Computer Science",
     organization: "HTW Berlin",
     from: "2019-10",
     to: "2023-10",
-    bullets: [
+    bullets: {
       // The full thesis title runs two lines in print, where the reference CV omits it.
-      {
-        text: "Thesis: Explorative Analysis of Data from Nanopore-Based DNA Sequencing to Identify Dilution Effects",
-        only: "web",
-      },
-      "Specialisations: AI, Deep Learning, Data Science, Bioinformatics",
-      "Grade: 1.1",
-      "Exchange: NTUST, Taipei",
-    ],
+      thesis:
+        "Thesis: Explorative Analysis of Data from Nanopore-Based DNA Sequencing to Identify Dilution Effects",
+      specialisations: "Specialisations: AI, Deep Learning, Data Science, Bioinformatics",
+      grade: "Grade: 1.1",
+      exchange: "Exchange: NTUST, Taipei",
+    },
     links: [{ text: "Read the thesis (PDF)", href: "/christoph-stach-master-thesis.pdf" }],
   },
   {
+    id: "bsc",
     title: "B.Sc. Applied Computer Science",
     organization: "HTW Berlin",
     from: "2016-04",
     to: "2019-09",
-    bullets: [
-      "Thesis: Style transfer for photos using deep learning",
-      "Grade: 1.6",
-      "Exchange: UNINTER, Cuernavaca, Mexico",
-    ],
+    bullets: {
+      thesis: "Thesis: Style transfer for photos using deep learning",
+      grade: "Grade: 1.6",
+      exchange: "Exchange: UNINTER, Cuernavaca, Mexico",
+    },
   },
   {
+    id: "apprenticeship",
     title: "IT Management Assistant (Apprenticeship)",
     organization: "Kortmann Beton GmbH & Co. KG",
     from: "2009-07",
     to: "2011-07",
-    bullets: [
-      { text: "Completed apprenticeship alongside theoretical studies", only: "web" },
-      { text: "Grade: 2.0", only: "web" },
-    ],
+    bullets: {
+      theory: "Completed apprenticeship alongside theoretical studies",
+      grade: "Grade: 2.0",
+    },
   },
 ];
 
@@ -205,9 +214,6 @@ export interface ProfileLink {
 export const profile = {
   name: "Christoph Stach",
   role: "Senior Full-Stack Engineer",
-  /** One line under the name in the PDF: how the career fits together. */
-  summary:
-    "Started with an IT apprenticeship and a full-time developer role, then earned a B.Sc. and an M.Sc. (1.1) in computer science while working alongside. Now building platforms at Mercedes-Benz.",
   location: "Berlin, Germany",
   email: "christoph.stach@gmail.com",
   phone: "+49 176 480 97681",

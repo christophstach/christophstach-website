@@ -1,7 +1,9 @@
-import { createError, defineEventHandler, getRequestURL } from "h3";
+import { createError, defineEventHandler, getQuery, getRequestURL } from "h3";
+import { cvVariants, primaryVariantId } from "../../../app/data/cv-variants";
 import { getDocumentProxy } from "unpdf";
+import { renderPdf } from "../../utils/cv-pdf";
 
-// The @page margin in cv-print.vue (18mm), in PDF points.
+// The @page margin in CvDocument.vue (18mm), in PDF points.
 const PAGE_MARGIN = (18 / 25.4) * 72;
 
 /** How far down its printable area a page's text reaches, from 0 to 1. */
@@ -25,12 +27,32 @@ async function pageFill(pdf: Awaited<ReturnType<typeof getDocumentProxy>>, pageN
   return Math.min(1, Math.max(0, used / printable));
 }
 
-// requireUserSession is a Nitro auto-import (see server/routes/auth/github.get.ts).
-export default defineEventHandler(async (event) => {
-  await requireUserSession(event);
+async function pageFills(data: Uint8Array) {
+  try {
+    const pdf = await getDocumentProxy(data);
+    const pageNumbers = Array.from({ length: pdf.numPages }, (_unused, index) => index + 1);
 
-  // Fetched over HTTP rather than rendered here, so this reads the cached PDF
-  // that visitors download and only runs Chrome when that cache is cold.
+    return await Promise.all(
+      pageNumbers.map(async (pageNumber) => ({ fill: await pageFill(pdf, pageNumber) })),
+    );
+  } catch (error) {
+    throw createError({
+      statusCode: 500,
+      message: `Reading the PDF failed: ${error instanceof Error ? error.message : String(error)}`,
+    });
+  }
+}
+
+/**
+ * The primary variant is read from the public PDF, so this reads the cached
+ * file that visitors download and only runs Chrome when that cache is cold.
+ * Other variants are private and rendered for the request.
+ */
+async function variantPdf(event: Parameters<typeof renderPdf>[0], id: string) {
+  if (id !== primaryVariantId) {
+    return renderPdf(event, `/desk/cv-print/${id}`, true);
+  }
+
   const response = await fetch(new URL("/christoph-stach-cv.pdf", getRequestURL(event).origin));
 
   // Errors carry their cause to the desk, which shows it: the PDF route runs
@@ -42,18 +64,18 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  try {
-    const pdf = await getDocumentProxy(new Uint8Array(await response.arrayBuffer()));
-    const pageNumbers = Array.from({ length: pdf.numPages }, (_unused, index) => index + 1);
-    const pages = await Promise.all(
-      pageNumbers.map(async (pageNumber) => ({ fill: await pageFill(pdf, pageNumber) })),
-    );
+  return new Uint8Array(await response.arrayBuffer());
+}
 
-    return { pages };
-  } catch (error) {
-    throw createError({
-      statusCode: 500,
-      message: `Reading the PDF failed: ${error instanceof Error ? error.message : String(error)}`,
-    });
+// requireUserSession is a Nitro auto-import (see server/routes/auth/github.get.ts).
+export default defineEventHandler(async (event) => {
+  await requireUserSession(event);
+
+  const id = String(getQuery(event).variant ?? primaryVariantId);
+
+  if (!cvVariants.some((variant) => variant.id === id)) {
+    throw createError({ statusCode: 404, message: `No CV variant "${id}".` });
   }
+
+  return { pages: await pageFills(await variantPdf(event, id)) };
 });

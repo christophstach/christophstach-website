@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { cvVariants, primaryVariantId } from "~/data/cv-variants";
 import { education, experience, profile, projects, skills } from "~/data/cv";
-import { useFetch, useSeoMeta } from "nuxt/app";
 import DeskCvPdf from "~/components/DeskCvPdf.vue";
 import DeskCvSection from "~/components/DeskCvSection.vue";
-import { bulletsFor } from "~/utils/cv";
-import { computed } from "vue";
+import { ref } from "vue";
+import { useSeoMeta } from "nuxt/app";
 
 definePageMeta({ layout: "desk" });
 
@@ -13,41 +13,8 @@ useSeoMeta({
   robots: "noindex, nofollow",
 });
 
-// Loaded in the browser because a cold PDF cache means a few seconds of Chrome.
-const {
-  data: pdf,
-  status: pdfStatus,
-  error: pdfError,
-} = useFetch("/api/desk/cv-pdf", {
-  server: false,
-  lazy: true,
-});
-
-// The desk API puts the cause in its error body; show that over the generic
-// "[GET] … 502" message of the fetch error.
-const pdfErrorMessage = computed(() => {
-  if (!pdfError.value) {
-    return "";
-  }
-
-  const body = pdfError.value.data as { message?: string } | undefined;
-
-  return body?.message ?? pdfError.value.message;
-});
-
-const pdfPages = computed(() => {
-  if (pdfStatus.value === "error") {
-    return "page count unavailable";
-  }
-
-  if (!pdf.value) {
-    return "counting pages…";
-  }
-
-  const count = pdf.value.pages.length;
-
-  return `${count} ${count === 1 ? "page" : "pages"}`;
-});
+// The variant whose PDF the pdf section checks and previews.
+const selectedVariant = ref(primaryVariantId);
 
 const sections = [
   { id: "pdf", label: "pdf" },
@@ -69,14 +36,10 @@ function period(entry: Entry): string {
   return `${entry.from} – ${entry.to ?? "now"}`;
 }
 
-/** Bullet counts per output; they differ when a bullet is web- or print-only. */
-function bulletCounts(entry: Entry): string {
-  const web = bulletsFor("web", entry.bullets).length;
-  const print = bulletsFor("print", entry.bullets).length;
+function bulletCount(entry: Entry): string {
+  const count = Object.keys(entry.bullets ?? {}).length;
 
-  const noun = web === 1 ? "bullet" : "bullets";
-
-  return web === print ? `${web} ${noun}` : `${web} ${noun} on web, ${print} in PDF`;
+  return `${count} ${count === 1 ? "bullet" : "bullets"}`;
 }
 </script>
 
@@ -87,10 +50,7 @@ function bulletCounts(entry: Entry): string {
 
       <p class="cv__outputs">
         <a href="/curriculum" class="text-link" target="_blank">Public page</a>
-        <span class="cv__pdf">
-          <a href="/christoph-stach-cv.pdf" class="text-link" target="_blank">PDF</a>
-          <span class="cv__pages">{{ pdfPages }}</span>
-        </span>
+        <a href="/christoph-stach-cv.pdf" class="text-link" target="_blank">PDF</a>
       </p>
     </header>
 
@@ -106,8 +66,23 @@ function bulletCounts(entry: Entry): string {
     </nav>
 
     <div class="cv__sections">
-      <DeskCvSection id="pdf" label="pdf">
-        <DeskCvPdf :pages="pdf?.pages ?? null" :error="pdfErrorMessage" />
+      <DeskCvSection id="pdf" label="pdf" :count="cvVariants.length">
+        <div class="variants" role="tablist" aria-label="CV variants">
+          <button
+            v-for="variant in cvVariants"
+            :key="variant.id"
+            type="button"
+            role="tab"
+            :aria-selected="variant.id === selectedVariant"
+            class="variants__tab"
+            @click="selectedVariant = variant.id"
+          >
+            {{ variant.label }}
+            <span v-if="variant.id === primaryVariantId" class="variants__primary">primary</span>
+          </button>
+        </div>
+
+        <DeskCvPdf :variant="selectedVariant" />
       </DeskCvSection>
 
       <DeskCvSection id="profile" label="profile">
@@ -162,7 +137,7 @@ function bulletCounts(entry: Entry): string {
                 }}<template v-if="entry.location">, {{ entry.location }}</template>
               </p>
               <p class="row__meta">
-                <span v-if="entry.bullets?.length">{{ bulletCounts(entry) }}</span>
+                <span v-if="entry.bullets?.length">{{ bulletCount(entry) }}</span>
                 <span v-if="entry.tech?.length">{{ entry.tech.length }} tech</span>
                 <span v-if="entry.links?.length"
                   >{{ entry.links.length }} {{ entry.links.length === 1 ? "link" : "links" }}</span
@@ -236,16 +211,36 @@ function bulletCounts(entry: Entry): string {
   font-size: var(--text-sm);
 }
 
-.cv__pdf {
+/* Variant switcher: one tab per CV variant, the primary one marked. */
+.variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-6);
+}
+
+.variants__tab {
   display: inline-flex;
   align-items: baseline;
   gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-soft);
+  cursor: pointer;
 }
 
-.cv__pages {
-  font-family: var(--font-mono);
+.variants__tab[aria-selected="true"] {
+  border-color: var(--color-accent);
+  color: var(--color-heading);
+}
+
+.variants__primary {
   font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  color: var(--color-accent);
 }
 
 .cv__jump {
