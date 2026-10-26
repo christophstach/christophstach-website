@@ -51,14 +51,16 @@ function period(from: string, to?: string): string {
     <section class="cv__section cv__section--loose">
       <h2 class="cv__section-title">Professional Experience</h2>
       <div v-for="entry in experience" :key="`${entry.organization}-${entry.from}`" class="cv__job">
-        <h3 class="cv__entry-title">{{ entry.title }}</h3>
-        <div>
-          {{ entry.organization
-          }}<template v-if="entry.location">, {{ entry.location }}</template> |
-          {{ period(entry.from, entry.to) }}
-        </div>
-        <div v-if="entry.tech?.length" class="cv__italic cv__tech">
-          Tech: {{ entry.tech.join(", ") }}
+        <div class="cv__job-head">
+          <h3 class="cv__entry-title">{{ entry.title }}</h3>
+          <div>
+            {{ entry.organization
+            }}<template v-if="entry.location">, {{ entry.location }}</template> |
+            {{ period(entry.from, entry.to) }}
+          </div>
+          <div v-if="entry.tech?.length" class="cv__italic cv__tech">
+            Tech: {{ entry.tech.join(", ") }}
+          </div>
         </div>
         <ul v-if="bulletsFor('print', entry.bullets).length" class="cv__bullets">
           <li v-for="bullet in bulletsFor('print', entry.bullets)" :key="bullet">{{ bullet }}.</li>
@@ -124,11 +126,12 @@ function period(from: string, to?: string): string {
   line-height: 16px;
 }
 
-/* Tailwind's `font-mono` stack, so the PDF picks the same face the reference did. */
+/* Tailwind's `font-mono` stack, so the PDF picks the same face the reference did.
+   The serverless Chromium has none of these, so it ends on the site's mono face. */
 .cv__mono {
   font-family:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
-    monospace;
+    "JetBrains Mono", monospace;
 }
 
 .cv__section {
@@ -179,8 +182,28 @@ function period(from: string, to?: string): string {
   margin-bottom: 8px;
 }
 
-.cv__entry {
+/* Page breaks: the data changes often, so these rules decide where the PDF
+   breaks instead of hand-tuned spacing. A job never breaks inside its header,
+   never leaves the header or a single bullet alone on a page, and short jobs
+   move to the next page whole. */
+.cv__header,
+.cv__skill,
+.cv__entry,
+.cv__job-head {
   break-inside: avoid;
+}
+
+.cv__job-head {
+  break-after: avoid;
+}
+
+.cv__job:not(:has(.cv__bullets li:nth-child(4))) {
+  break-inside: avoid;
+}
+
+.cv__bullets li:first-child,
+.cv__bullets li:last-child {
+  break-before: avoid;
 }
 
 .cv__entry-title {
