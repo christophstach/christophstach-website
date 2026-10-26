@@ -17,14 +17,6 @@ export default defineNuxtConfig({
     families: [
       { name: "IBM Plex Sans", preload: true },
       { name: "JetBrains Mono", preload: true },
-      // The CV PDF face (/cv-print), served from public/fonts/inter: the serverless
-      // Chromium that renders the PDF has no system fonts to fall back on.
-      {
-        name: "Inter",
-        provider: "local",
-        weights: [400, 500, 600, 700],
-        styles: ["normal", "italic"],
-      },
     ],
   },
 

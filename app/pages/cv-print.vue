@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { education, experience, profile, skills } from "~/data/cv";
+import { education, experience, profile } from "~/data/cv";
 
 useSeoMeta({
   robots: "noindex, nofollow",
@@ -17,7 +17,7 @@ function stripScheme(url: string): string {
 }
 
 function period(from: string, to?: string): string {
-  return `${formatMonth(from)} - ${to ? formatMonth(to) : "Present"}`;
+  return `${formatMonth(from)} – ${to ? formatMonth(to) : "Present"}`;
 }
 </script>
 
@@ -25,42 +25,34 @@ function period(from: string, to?: string): string {
   <article class="cv">
     <header class="cv__header">
       <h1 class="cv__name">{{ profile.name }}</h1>
-      <div class="cv__line">{{ profile.location }}</div>
-      <div class="cv__line">{{ profile.email }} | {{ profile.phone }}</div>
-      <div class="cv__links">
-        <template v-for="(link, i) in profile.links" :key="link.href">
-          <template v-if="i > 0"> | </template
-          ><span class="cv__mono">{{ stripScheme(link.href) }}</span>
-        </template>
-      </div>
+      <p class="cv__role">{{ profile.role }}</p>
+      <ul class="cv__contact">
+        <li>{{ profile.location }}</li>
+        <li>{{ profile.email }}</li>
+        <li>{{ profile.phone }}</li>
+      </ul>
+      <ul class="cv__contact cv__contact--links">
+        <li v-for="link in profile.links" :key="link.href">{{ stripScheme(link.href) }}</li>
+      </ul>
     </header>
 
-    <section class="cv__section cv__section--tight">
-      <h2 class="cv__section-title">Core Technologies</h2>
-      <p class="cv__italic">{{ profile.coreTechnologies.join(", ") }}</p>
-    </section>
-
-    <section class="cv__section cv__skills">
-      <h2 class="cv__section-title cv__section-title--gap">Technical Skills</h2>
-      <div v-for="group in skills" :key="group.label" class="cv__skill">
-        <strong>{{ group.title }}:</strong>{{ " "
-        }}<span class="cv__italic">{{ group.items.join(", ") }}</span>
-      </div>
-    </section>
-
-    <section class="cv__section cv__section--loose">
+    <section class="cv__section">
       <h2 class="cv__section-title">Professional Experience</h2>
-      <div v-for="entry in experience" :key="`${entry.organization}-${entry.from}`" class="cv__job">
+      <div
+        v-for="entry in experience"
+        :key="`${entry.organization}-${entry.from}`"
+        class="cv__job cv__item"
+      >
         <div class="cv__job-head">
-          <h3 class="cv__entry-title">{{ entry.title }}</h3>
-          <div>
+          <div class="cv__item-row">
+            <h3 class="cv__item-title">{{ entry.title }}</h3>
+            <span class="cv__period">{{ period(entry.from, entry.to) }}</span>
+          </div>
+          <div class="cv__org">
             {{ entry.organization
-            }}<template v-if="entry.location">, {{ entry.location }}</template> |
-            {{ period(entry.from, entry.to) }}
+            }}<span v-if="entry.location" class="cv__location"> · {{ entry.location }}</span>
           </div>
-          <div v-if="entry.tech?.length" class="cv__italic cv__tech">
-            Tech: {{ entry.tech.join(", ") }}
-          </div>
+          <div v-if="entry.tech?.length" class="cv__tech">{{ entry.tech.join(" · ") }}</div>
         </div>
         <ul v-if="bulletsFor('print', entry.bullets).length" class="cv__bullets">
           <li v-for="bullet in bulletsFor('print', entry.bullets)" :key="bullet">{{ bullet }}.</li>
@@ -68,17 +60,20 @@ function period(from: string, to?: string): string {
       </div>
     </section>
 
-    <section class="cv__section cv__section--loose">
+    <section class="cv__section">
       <h2 class="cv__section-title">Education</h2>
       <div
         v-for="entry in education"
         :key="`${entry.organization}-${entry.from}`"
-        class="cv__entry"
+        class="cv__entry cv__item"
       >
-        <h3 class="cv__entry-title">{{ entry.title }}</h3>
-        <div>{{ entry.organization }} | {{ period(entry.from, entry.to) }}</div>
-        <div v-if="bulletsFor('print', entry.bullets).length" class="cv__italic cv__relaxed">
-          {{ bulletsFor("print", entry.bullets).join(" | ") }}
+        <div class="cv__item-row">
+          <h3 class="cv__item-title">{{ entry.title }}</h3>
+          <span class="cv__period">{{ period(entry.from, entry.to) }}</span>
+        </div>
+        <div class="cv__org">{{ entry.organization }}</div>
+        <div v-if="bulletsFor('print', entry.bullets).length" class="cv__details">
+          {{ bulletsFor("print", entry.bullets).join(" · ") }}
         </div>
       </div>
     </section>
@@ -86,56 +81,69 @@ function period(from: string, to?: string): string {
 </template>
 
 <style scoped>
-/* Mirrors the Tailwind/prose CV in the cv-english-nextjs repo, which is the
-   canonical design for this document — values are its computed px, not tokens. */
+/* The PDF's own look, matching the site: IBM Plex Sans for text, JetBrains Mono
+   for labels and metadata, and the site's green as the one accent. It is
+   always printed light, so it fixes its palette here instead of following the
+   site's theme tokens. Sizes are px because the page is laid out for A4. */
 .cv {
-  font-family:
-    "Inter",
-    system-ui,
-    -apple-system,
-    sans-serif;
-  font-size: 14px;
-  line-height: 20px;
-  /* The reference loads `prose` without @tailwindcss/typography installed, so it
-     has no prose palette — everything simply inherits black. */
-  color: #000000;
+  --cv-text: #1b2321;
+  --cv-soft: #45504d;
+  --cv-muted: #6b7672;
+  --cv-rule: #d6dcda;
+  --cv-accent: #087a5e;
+
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cv-text);
 }
 
 .cv__header {
-  margin-bottom: 32px;
+  padding-bottom: 14px;
+  margin-bottom: 22px;
+  border-bottom: 2px solid var(--cv-accent);
 }
 
 .cv__name {
-  margin-bottom: 8px;
   font-family: inherit;
   font-size: 30px;
-  font-weight: 700;
-  line-height: 36px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
   color: inherit;
 }
 
-.cv__line {
-  margin-bottom: 4px;
+.cv__role {
+  margin-top: 4px;
+  font-size: 15px;
   font-weight: 500;
+  color: var(--cv-accent);
 }
 
-/* The separators sit outside the monospace runs, as in the reference. */
-.cv__links {
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 16px;
+.cv__contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 0;
+  padding: 0;
+  margin-top: 10px;
+  list-style: none;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  color: var(--cv-soft);
 }
 
-/* Tailwind's `font-mono` stack, so the PDF picks the same face the reference did.
-   The serverless Chromium has none of these, so it ends on the site's mono face. */
-.cv__mono {
-  font-family:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
-    "JetBrains Mono", monospace;
+.cv__contact--links {
+  margin-top: 2px;
+}
+
+.cv__contact li + li::before {
+  content: "·";
+  margin-inline: 8px;
+  color: var(--cv-muted);
 }
 
 .cv__section {
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 
 /* A trailing margin still occupies space when paginating, which is enough to
@@ -144,42 +152,101 @@ function period(from: string, to?: string): string {
   margin-bottom: 0;
 }
 
-/* Block layout rather than flex + gap: Chrome fragments flex containers poorly
-   when printing and pushes whole entries to the next page early. Same spacing. */
-.cv__section--tight > * + * {
-  margin-top: 12px;
-}
-
-.cv__section--loose > * + * {
-  margin-top: 20px;
-}
-
+/* The site's section label: mono, accent, behind a muted "// ". */
 .cv__section-title {
-  margin-bottom: 4px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid currentColor;
-  font-family: inherit;
-  font-size: 20px;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--cv-rule);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11.5px;
   font-weight: 600;
-  line-height: 28px;
-  color: inherit;
+  line-height: 1.4;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cv-accent);
   break-after: avoid;
 }
 
-.cv__section-title--gap {
-  margin-bottom: 16px;
+.cv__section-title::before {
+  content: "// ";
+  color: var(--cv-muted);
 }
 
-.cv__italic {
-  font-style: italic;
+/* Block layout between entries rather than flex + gap: Chrome fragments flex
+   containers poorly when printing and pushes whole entries to the next page
+   early. Flex is fine inside an entry's head, which never breaks. */
+.cv__item + .cv__item {
+  margin-top: 16px;
 }
 
-.cv__skills {
-  line-height: 1.625;
+.cv__item-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.cv__skill {
-  margin-bottom: 8px;
+.cv__item-title {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: inherit;
+}
+
+.cv__period {
+  flex-shrink: 0;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  color: var(--cv-muted);
+}
+
+.cv__org {
+  font-weight: 500;
+  color: var(--cv-accent);
+}
+
+.cv__location {
+  font-weight: 400;
+  color: var(--cv-muted);
+}
+
+.cv__tech {
+  margin-top: 3px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--cv-muted);
+}
+
+.cv__details {
+  margin-top: 2px;
+  color: var(--cv-soft);
+}
+
+.cv__bullets {
+  padding-left: 16px;
+  margin-top: 6px;
+  list-style: none;
+}
+
+.cv__bullets li {
+  position: relative;
+  color: var(--cv-soft);
+}
+
+.cv__bullets li::before {
+  content: "";
+  position: absolute;
+  top: 0.62em;
+  left: -12px;
+  width: 4px;
+  height: 4px;
+  background: var(--cv-accent);
+}
+
+.cv__bullets li + li {
+  margin-top: 4px;
 }
 
 /* Page breaks: the data changes often, so these rules decide where the PDF
@@ -187,9 +254,9 @@ function period(from: string, to?: string): string {
    never leaves the header or a single bullet alone on a page, and short jobs
    move to the next page whole. */
 .cv__header,
-.cv__skill,
 .cv__entry,
-.cv__job-head {
+.cv__job-head,
+.cv__bullets li {
   break-inside: avoid;
 }
 
@@ -206,41 +273,8 @@ function period(from: string, to?: string): string {
   break-before: avoid;
 }
 
-.cv__entry-title {
-  font-family: inherit;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 28px;
-  color: inherit;
-  break-after: avoid;
-}
-
-.cv__tech {
-  margin-bottom: 8px;
-  break-after: avoid;
-}
-
-.cv__relaxed {
-  line-height: 1.625;
-}
-
-.cv__bullets {
-  padding-left: 20px;
-  line-height: 1.625;
-  list-style: disc;
-}
-
-.cv__bullets li {
-  break-inside: avoid;
-}
-
-.cv__bullets li + li {
-  margin-top: 8px;
-}
-
-/* Puppeteer renders the reference with `format: A4, margin: 48` (48px = 12.7mm). */
 @page {
   size: A4;
-  margin: 12.7mm;
+  margin: 14mm 15mm;
 }
 </style>

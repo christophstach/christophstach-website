@@ -1,8 +1,8 @@
 import { createError, defineEventHandler, getRequestURL } from "h3";
 import { getDocumentProxy } from "unpdf";
 
-// The @page margin in cv-print.vue (12.7mm), in PDF points.
-const PAGE_MARGIN = 36;
+// The vertical @page margin in cv-print.vue (14mm), in PDF points.
+const PAGE_MARGIN = (14 / 25.4) * 72;
 
 /** How far down its printable area a page's text reaches, from 0 to 1. */
 async function pageFill(pdf: Awaited<ReturnType<typeof getDocumentProxy>>, pageNumber: number) {
