@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { experience, skills } from "~/data/cv";
+import { cvDownloadVisible } from "~/data/cv-variants";
 import heroImage from "~/assets/images/hero.webp";
 
 useSeoMeta({
@@ -83,7 +84,12 @@ const techs = useCountUp(totalSkills);
                 <Icon name="tabler:arrow-right" size="16" />
               </NuxtLink>
 
-              <a href="/christoph-stach-cv.pdf" download class="button button--outline">
+              <a
+                v-if="cvDownloadVisible"
+                href="/christoph-stach-cv.pdf"
+                download
+                class="button button--outline"
+              >
                 <Icon name="tabler:download" size="16" />
                 cv.pdf
               </a>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { education, experience, projects } from "~/data/cv";
+import { cvDownloadVisible } from "~/data/cv-variants";
 
 useSeoMeta({
   title: "Curriculum",
@@ -20,7 +21,7 @@ useSeoMeta({
       Science focused on AI, bioinformatics, deep learning, and data science.
     </p>
 
-    <div class="page__actions reveal" style="animation-delay: 180ms">
+    <div v-if="cvDownloadVisible" class="page__actions reveal" style="animation-delay: 180ms">
       <a href="/christoph-stach-cv.pdf" download class="button button--primary">
         <Icon name="tabler:download" size="16" />
         Download CV (PDF)

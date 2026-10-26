@@ -93,5 +93,12 @@ const cvVariants: CvVariant[] = [
 /** The variant on the public site, downloadable as /christoph-stach-cv.pdf. */
 const primaryVariantId = "general";
 
+/**
+ * Shows the download buttons for the primary CV on the home and curriculum
+ * pages. Temporarily off while the CV is reworked; set back to true to show
+ * them again. The PDF route and the desk keep working either way.
+ */
+const cvDownloadVisible = false;
+
 export type { CvVariant, EntryPick };
-export { cvVariants, primaryVariantId };
+export { cvDownloadVisible, cvVariants, primaryVariantId };
