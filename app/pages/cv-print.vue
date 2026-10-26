@@ -99,8 +99,8 @@ function period(from: string, to?: string): string {
 }
 
 .cv__header {
-  padding-bottom: 14px;
-  margin-bottom: 22px;
+  padding-bottom: 16px;
+  margin-bottom: 28px;
   border-bottom: 2px solid var(--cv-accent);
 }
 
@@ -143,7 +143,7 @@ function period(from: string, to?: string): string {
 }
 
 .cv__section {
-  margin-bottom: 20px;
+  margin-bottom: 28px;
 }
 
 /* A trailing margin still occupies space when paginating, which is enough to
@@ -155,7 +155,7 @@ function period(from: string, to?: string): string {
 /* The site's section label: mono, accent, behind a muted "// ". */
 .cv__section-title {
   padding-bottom: 5px;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
   border-bottom: 1px solid var(--cv-rule);
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 11.5px;
@@ -176,7 +176,7 @@ function period(from: string, to?: string): string {
    containers poorly when printing and pushes whole entries to the next page
    early. Flex is fine inside an entry's head, which never breaks. */
 .cv__item + .cv__item {
-  margin-top: 16px;
+  margin-top: 24px;
 }
 
 .cv__item-row {
@@ -212,7 +212,7 @@ function period(from: string, to?: string): string {
 }
 
 .cv__tech {
-  margin-top: 3px;
+  margin-top: 5px;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 10px;
   line-height: 1.5;
@@ -220,13 +220,13 @@ function period(from: string, to?: string): string {
 }
 
 .cv__details {
-  margin-top: 2px;
+  margin-top: 4px;
   color: var(--cv-soft);
 }
 
 .cv__bullets {
   padding-left: 16px;
-  margin-top: 6px;
+  margin-top: 10px;
   list-style: none;
 }
 
@@ -246,7 +246,7 @@ function period(from: string, to?: string): string {
 }
 
 .cv__bullets li + li {
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 /* Page breaks: the data changes often, so these rules decide where the PDF
@@ -275,6 +275,6 @@ function period(from: string, to?: string): string {
 
 @page {
   size: A4;
-  margin: 14mm 15mm;
+  margin: 18mm;
 }
 </style>
