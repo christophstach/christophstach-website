@@ -1,4 +1,4 @@
-import { defineEventHandler, getRequestURL } from "h3";
+import { createError, defineEventHandler, getRequestURL } from "h3";
 import { getDocumentProxy } from "unpdf";
 
 // The @page margin in cv-print.vue (12.7mm), in PDF points.
@@ -33,15 +33,27 @@ export default defineEventHandler(async (event) => {
   // that visitors download and only runs Chrome when that cache is cold.
   const response = await fetch(new URL("/christoph-stach-cv.pdf", getRequestURL(event).origin));
 
+  // Errors carry their cause to the desk, which shows it: the PDF route runs
+  // Chrome on Vercel, and its failures are otherwise only in the function logs.
   if (!response.ok) {
-    throw new Error(`[cv-pdf] PDF request failed with ${response.status}`);
+    throw createError({
+      statusCode: 502,
+      message: `The PDF route answered ${response.status} ${response.statusText}.`,
+    });
   }
 
-  const pdf = await getDocumentProxy(new Uint8Array(await response.arrayBuffer()));
-  const pageNumbers = Array.from({ length: pdf.numPages }, (_unused, index) => index + 1);
-  const pages = await Promise.all(
-    pageNumbers.map(async (pageNumber) => ({ fill: await pageFill(pdf, pageNumber) })),
-  );
+  try {
+    const pdf = await getDocumentProxy(new Uint8Array(await response.arrayBuffer()));
+    const pageNumbers = Array.from({ length: pdf.numPages }, (_unused, index) => index + 1);
+    const pages = await Promise.all(
+      pageNumbers.map(async (pageNumber) => ({ fill: await pageFill(pdf, pageNumber) })),
+    );
 
-  return { pages };
+    return { pages };
+  } catch (error) {
+    throw createError({
+      statusCode: 500,
+      message: `Reading the PDF failed: ${error instanceof Error ? error.message : String(error)}`,
+    });
+  }
 });

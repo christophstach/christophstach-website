@@ -14,9 +14,25 @@ useSeoMeta({
 });
 
 // Loaded in the browser because a cold PDF cache means a few seconds of Chrome.
-const { data: pdf, status: pdfStatus } = useFetch("/api/desk/cv-pdf", {
+const {
+  data: pdf,
+  status: pdfStatus,
+  error: pdfError,
+} = useFetch("/api/desk/cv-pdf", {
   server: false,
   lazy: true,
+});
+
+// The desk API puts the cause in its error body; show that over the generic
+// "[GET] … 502" message of the fetch error.
+const pdfErrorMessage = computed(() => {
+  if (!pdfError.value) {
+    return "";
+  }
+
+  const body = pdfError.value.data as { message?: string } | undefined;
+
+  return body?.message ?? pdfError.value.message;
 });
 
 const pdfPages = computed(() => {
@@ -91,7 +107,7 @@ function bulletCounts(entry: Entry): string {
 
     <div class="cv__sections">
       <DeskCvSection id="pdf" label="pdf">
-        <DeskCvPdf :pages="pdf?.pages ?? null" :status="pdfStatus" />
+        <DeskCvPdf :pages="pdf?.pages ?? null" :error="pdfErrorMessage" />
       </DeskCvSection>
 
       <DeskCvSection id="profile" label="profile">
