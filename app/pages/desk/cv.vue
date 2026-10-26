@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { education, experience, profile, projects, skills } from "~/data/cv";
 import { useFetch, useSeoMeta } from "nuxt/app";
+import DeskCvPdf from "~/components/DeskCvPdf.vue";
 import DeskCvSection from "~/components/DeskCvSection.vue";
 import { bulletsFor } from "~/utils/cv";
 import { computed } from "vue";
@@ -12,11 +13,7 @@ useSeoMeta({
   robots: "noindex, nofollow",
 });
 
-// The printed CV is meant to stay on two pages; the data has no say in where it
-// breaks, so the page count is the thing to watch after editing it. Loaded in
-// the browser because a cold PDF cache means a few seconds of Chrome.
-const MAX_PDF_PAGES = 2;
-
+// Loaded in the browser because a cold PDF cache means a few seconds of Chrome.
 const { data: pdf, status: pdfStatus } = useFetch("/api/desk/cv-pdf", {
   server: false,
   lazy: true,
@@ -31,12 +28,13 @@ const pdfPages = computed(() => {
     return "counting pages…";
   }
 
-  return `${pdf.value.pages} ${pdf.value.pages === 1 ? "page" : "pages"}`;
+  const count = pdf.value.pages.length;
+
+  return `${count} ${count === 1 ? "page" : "pages"}`;
 });
 
-const pdfTooLong = computed(() => (pdf.value?.pages ?? 0) > MAX_PDF_PAGES);
-
 const sections = [
+  { id: "pdf", label: "pdf" },
   { id: "profile", label: "profile" },
   { id: "experience", label: "experience" },
   { id: "education", label: "education" },
@@ -75,9 +73,7 @@ function bulletCounts(entry: Entry): string {
         <a href="/curriculum" class="text-link" target="_blank">Public page</a>
         <span class="cv__pdf">
           <a href="/christoph-stach-cv.pdf" class="text-link" target="_blank">PDF</a>
-          <span :class="['cv__pages', { 'cv__pages--over': pdfTooLong }]">
-            {{ pdfPages }}<template v-if="pdfTooLong"> (max {{ MAX_PDF_PAGES }})</template>
-          </span>
+          <span class="cv__pages">{{ pdfPages }}</span>
         </span>
       </p>
     </header>
@@ -94,6 +90,10 @@ function bulletCounts(entry: Entry): string {
     </nav>
 
     <div class="cv__sections">
+      <DeskCvSection id="pdf" label="pdf">
+        <DeskCvPdf :pages="pdf?.pages ?? null" :status="pdfStatus" />
+      </DeskCvSection>
+
       <DeskCvSection id="profile" label="profile">
         <dl class="profile">
           <dt>name</dt>
@@ -230,10 +230,6 @@ function bulletCounts(entry: Entry): string {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   color: var(--color-text-muted);
-}
-
-.cv__pages--over {
-  color: var(--color-signal);
 }
 
 .cv__jump {

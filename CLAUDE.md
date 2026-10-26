@@ -94,8 +94,9 @@ block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via
   `routeRules` caches it with ISR until the next deployment, so it follows `app/data/cv.ts` with
   no extra step. Once the CV data lives somewhere that changes without a deploy, the cache needs
   an expiry or on-demand revalidation. Page breaks are CSS rules in `cv-print.vue`; don't tune
-  spacing to move a break; the desk CV page shows the resulting page count
-  (`server/api/desk/cv-pdf.get.ts`) and flags more than two. The serverless Chromium has no system fonts, so the page's Inter is
+  spacing to move a break; the desk CV page previews the PDF and shows how
+  full each page is (`server/api/desk/cv-pdf.get.ts`, `DeskCvPdf.vue`), flagging more than two
+  pages, a gap before the last page and a nearly empty last page. The serverless Chromium has no system fonts, so the page's Inter is
   served from `public/fonts/inter` (latin, the weights the page uses).
 - `public/images/hero.png` is a crawler-facing copy of `app/assets/images/hero.webp` for the
   JSON-LD `Person.image` (the bundled asset gets a hashed URL). Keep the two in sync.

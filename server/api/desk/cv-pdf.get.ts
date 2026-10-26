@@ -1,8 +1,29 @@
 import { defineEventHandler, getRequestURL } from "h3";
+import { getDocumentProxy } from "unpdf";
 
-// Page objects in the PDF. Chrome writes each page as a plain `/Type /Page`
-// dictionary (no object streams), so counting them needs no PDF parser.
-const PAGE_OBJECT = /\/Type\s*\/Page(?!s)/gu;
+// The @page margin in cv-print.vue (12.7mm), in PDF points.
+const PAGE_MARGIN = 36;
+
+/** How far down its printable area a page's text reaches, from 0 to 1. */
+async function pageFill(pdf: Awaited<ReturnType<typeof getDocumentProxy>>, pageNumber: number) {
+  const page = await pdf.getPage(pageNumber);
+  const pageHeight = page.view[3] ?? 0;
+  const { items } = await page.getTextContent();
+
+  // PDF y runs bottom-up, so the lowest line of text has the smallest baseline.
+  const baselines = items.flatMap((item) =>
+    "str" in item && item.str.trim() ? [item.transform[5] as number] : [],
+  );
+
+  if (baselines.length === 0) {
+    return 0;
+  }
+
+  const printable = pageHeight - 2 * PAGE_MARGIN;
+  const used = pageHeight - PAGE_MARGIN - Math.min(...baselines);
+
+  return Math.min(1, Math.max(0, used / printable));
+}
 
 // requireUserSession is a Nitro auto-import (see server/routes/auth/github.get.ts).
 export default defineEventHandler(async (event) => {
@@ -16,7 +37,11 @@ export default defineEventHandler(async (event) => {
     throw new Error(`[cv-pdf] PDF request failed with ${response.status}`);
   }
 
-  const pdf = new TextDecoder("latin1").decode(await response.arrayBuffer());
+  const pdf = await getDocumentProxy(new Uint8Array(await response.arrayBuffer()));
+  const pageNumbers = Array.from({ length: pdf.numPages }, (_unused, index) => index + 1);
+  const pages = await Promise.all(
+    pageNumbers.map(async (pageNumber) => ({ fill: await pageFill(pdf, pageNumber) })),
+  );
 
-  return { pages: pdf.match(PAGE_OBJECT)?.length ?? 0 };
+  return { pages };
 });
