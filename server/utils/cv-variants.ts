@@ -2,7 +2,7 @@ import type { CvVariant, EntryPick } from "../../app/data/cv-variants";
 import { asc, eq, sql } from "drizzle-orm";
 import { cvVariantEntries, cvVariants } from "../db/schema";
 import { createError } from "h3";
-import { listProjects } from "./projects";
+import { loadCvContent } from "./cv-content";
 import { printVariant } from "../../app/utils/cv-variant";
 import { useDb } from "./db";
 import { useRuntimeConfig } from "nitropack/runtime";
@@ -129,10 +129,10 @@ function variantColumns(variant: CvVariant) {
  * checked against cv.ts first, so a stored variant always prints.
  */
 async function saveVariant(variant: CvVariant, { create }: { create: boolean }) {
-  const projects = await listProjects();
+  const content = await loadCvContent();
 
   try {
-    printVariant(variant, projects);
+    printVariant(variant, content);
   } catch (error) {
     throw createError({ statusCode: 400, message: (error as Error).message });
   }
@@ -166,9 +166,9 @@ async function saveVariant(variant: CvVariant, { create }: { create: boolean }) 
   });
 }
 
-/** A variant's printed content, its projects resolved from the database. */
+/** A variant's printed content, resolved against the content in the database. */
 async function printStoredVariant(variant: CvVariant) {
-  return printVariant(variant, await listProjects());
+  return printVariant(variant, await loadCvContent());
 }
 
 /** Remembers the result of a page check, so the desk overview can show it. */

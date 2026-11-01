@@ -1,24 +1,23 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import { createError, navigateTo, refreshNuxtData, useFetch, useRoute, useSeoMeta } from "nuxt/app";
-import { education, experience, skills } from "~/data/cv";
-import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
 import type { CvVariant } from "~/data/cv-variants";
 import DeskCvPdf from "~/components/DeskCvPdf.vue";
 import { useDeskRequest } from "~/utils/desk-request";
+import { useUnsavedGuard } from "~/utils/desk-unsaved";
 import { variantContent } from "~/utils/desk-variant";
 
 definePageMeta({ layout: "desk" });
 
 type Section = "experience" | "education";
 type Tab = "basics" | Section | "projects" | "skills";
-type Entry = (typeof experience)[number];
 
 const route = useRoute();
 const id = String(route.params.variant);
 
 const { data } = await useFetch("/api/desk/cv-variants", { key: "desk-cv-variants" });
 const { data: projects } = await useFetch("/api/desk/projects", { key: "desk-projects" });
+const { data: content } = await useFetch("/api/desk/cv-content", { key: "desk-cv-content" });
 
 const stored = computed(() => data.value?.variants.find((variant) => variant.id === id));
 
@@ -38,12 +37,21 @@ const isWebsite = computed(() => data.value?.websiteId === id);
 const draft = ref<CvVariant>(variantContent(stored.value));
 const saved = computed(() => (stored.value ? variantContent(stored.value) : draft.value));
 const dirty = computed(() => JSON.stringify(draft.value) !== JSON.stringify(saved.value));
+// Asks before leaving with unsaved changes.
+const guard = useUnsavedGuard(() => dirty.value);
 
 const request = useDeskRequest();
 // Bumped after every save, so the PDF check runs again.
 const revision = ref(0);
 
-const entries: Record<Section, Entry[]> = { experience, education };
+// Entries of a section, newest first, from the database.
+function entriesOf(section: Section) {
+  return (content.value?.entries ?? []).filter((entry) => entry.section === section);
+}
+
+function findEntry(section: Section, entryId: string) {
+  return entriesOf(section).find((entry) => entry.id === entryId);
+}
 
 const tab = ref<Tab>("basics");
 const tabs = computed(() => [
@@ -59,11 +67,11 @@ function pickOf(section: Section, entryId: string) {
 }
 
 function bulletIds(section: Section, entryId: string): string[] {
-  return Object.keys(entries[section].find((entry) => entry.id === entryId)?.bullets ?? {});
+  return (findEntry(section, entryId)?.bullets ?? []).map((bullet) => bullet.id);
 }
 
 function entryItems(section: Section) {
-  return entries[section].map((entry) => {
+  return entriesOf(section).map((entry) => {
     const pick = pickOf(section, entry.id);
     const total = bulletIds(section, entry.id).length;
 
@@ -77,11 +85,9 @@ function entryItems(section: Section) {
 }
 
 function bulletItems(section: Section, entryId: string) {
-  const entry = entries[section].find((candidate) => candidate.id === entryId);
-
-  return Object.entries(entry?.bullets ?? {}).map(([bulletId, text]) => ({
-    id: bulletId,
-    title: text,
+  return (findEntry(section, entryId)?.bullets ?? []).map((bullet) => ({
+    id: bullet.id,
+    title: bullet.text,
   }));
 }
 
@@ -116,11 +122,13 @@ const projectItems = computed(() =>
   })),
 );
 
-const skillItems = skills.map((group) => ({
-  id: group.label,
-  title: group.title,
-  sub: group.items.slice(0, 4).join(", "),
-}));
+const skillItems = computed(() =>
+  (content.value?.skills ?? []).map((group) => ({
+    id: group.label,
+    title: group.title,
+    sub: group.items.slice(0, 4).join(", "),
+  })),
+);
 
 // Writes are typed <unknown>: matching these URLs against every typed route
 // exceeds the type checker's stack depth.
@@ -151,9 +159,6 @@ async function mark(role: "primary" | "website") {
   }
 }
 
-// Set when the editor leaves on purpose, e.g. after deleting the variant.
-let leaving = false;
-
 async function remove() {
   // oxlint-disable-next-line no-alert -- a desk-only safety net before deleting
   if (!confirm(`Delete the variant "${saved.value.label}"?`)) {
@@ -161,7 +166,7 @@ async function remove() {
   }
 
   if (await request.run(() => $fetch<unknown>(url, { method: "DELETE" }))) {
-    leaving = true;
+    guard.leave();
     await navigateTo("/desk/cv");
     await refreshVariants();
   }
@@ -183,28 +188,6 @@ const actions = computed(() => [
     ? []
     : [{ label: "Delete", icon: "tabler:trash", run: remove, danger: true }]),
 ]);
-
-function confirmLeave() {
-  // oxlint-disable-next-line no-alert -- a desk-only safety net for unsaved work
-  if (dirty.value && !leaving && !confirm("Leave without saving your changes?")) {
-    return false;
-  }
-
-  return true;
-}
-
-// Update covers going to another one: the same route with a new id.
-onBeforeRouteLeave(confirmLeave);
-onBeforeRouteUpdate(confirmLeave);
-
-function warnOnUnload(event: BeforeUnloadEvent) {
-  if (dirty.value) {
-    event.preventDefault();
-  }
-}
-
-onMounted(() => window.addEventListener("beforeunload", warnOnUnload));
-onBeforeUnmount(() => window.removeEventListener("beforeunload", warnOnUnload));
 </script>
 
 <template>
@@ -268,6 +251,10 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", warnOnUnload));
         </div>
 
         <template v-for="section in ['experience', 'education'] as const" :key="section">
+          <p v-if="tab === section" class="editor__note">
+            Pick entries and bullets; the text is shared by all variants.
+            <NuxtLink :to="`/desk/cv/${section}`" class="text-link">Edit {{ section }}</NuxtLink>
+          </p>
           <DeskPickList
             v-if="tab === section"
             v-model="picked[section].value"
@@ -295,12 +282,13 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", warnOnUnload));
           <DeskPickList v-model="draft.projects" :items="projectItems" label="Projects" />
         </template>
 
-        <DeskPickList
-          v-if="tab === 'skills'"
-          v-model="draft.skills"
-          :items="skillItems"
-          label="Skill groups"
-        />
+        <template v-if="tab === 'skills'">
+          <p class="editor__note">
+            Picked groups print as the PDF's skills section.
+            <NuxtLink to="/desk/cv/skills" class="text-link">Edit skills</NuxtLink>
+          </p>
+          <DeskPickList v-model="draft.skills" :items="skillItems" label="Skill groups" />
+        </template>
       </div>
 
       <DeskSaveBar

@@ -1,15 +1,26 @@
 import {
+  cvEntries,
   cvVariantEntries,
   cvVariantEntriesRelations,
   cvVariants,
   cvVariantsRelations,
+  projects,
+  skillGroups,
 } from "../db/schema";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { env } from "std-env";
 import postgres from "postgres";
 import { useRuntimeConfig } from "nitropack/runtime";
 
-const schema = { cvVariantEntries, cvVariantEntriesRelations, cvVariants, cvVariantsRelations };
+const schema = {
+  cvEntries,
+  cvVariantEntries,
+  cvVariantEntriesRelations,
+  cvVariants,
+  cvVariantsRelations,
+  projects,
+  skillGroups,
+};
 
 function connect(url: string) {
   // Neon's URLs carry channel_binding=require, which postgres-js doesn't know

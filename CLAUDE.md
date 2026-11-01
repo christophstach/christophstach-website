@@ -5,10 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 Personal CV website for Christoph Stach (christophstach.de), built with **Nuxt** on the
-nightly channel (`nuxt-nightly@latest`, `compatibilityVersion: 5`). Hybrid rendering: the
-public pages are prerendered, while the private `/desk` area is server-rendered behind GitHub
-auth (deployed on Vercel). CV content is hardcoded TypeScript; the CV variants, which pick from
-it for `/curriculum` and the printed CV, live in Postgres (Neon), accessed with Drizzle ORM. Styling is a hand-rolled pure-CSS design
+nightly channel (`nuxt-nightly@latest`, `compatibilityVersion: 5`), deployed on Vercel. The
+public pages are server-rendered and cached with ISR, the private `/desk` area is
+server-rendered behind GitHub auth. CV content (entries, bullets, skills, projects) and the CV
+variants, which pick from it for `/curriculum` and the printed CV, live in Postgres (Neon),
+accessed with Drizzle ORM and edited in the desk. Styling is a hand-rolled pure-CSS design
 system.
 
 ## Commands
@@ -31,17 +32,21 @@ for the enabled rule categories.
 
 ## Architecture
 
-**Content is data, not markup.** All CV content lives in `app/data/cv.ts` as typed arrays
-(`experience`, `education`, `skills`, etc.) keyed by interfaces like `TimelineEntry`. Pages
-(`app/pages/index.vue`, `curriculum.vue`) and `CvTimeline.vue` render from this data. To
-change CV content, edit `cv.ts` — do not hardcode entries into templates. Timeline entries
-and their bullets carry stable ids, and **variants** pick entries and bullets by id, in order. Variants are rows in the database
-(`cv_variants`, `cv_variant_entries`), typed by `CvVariant` in `app/data/cv-variants.ts` and
-edited in the desk (`app/pages/desk/cv/`, `server/api/desk/cv-variants/`); all database
-access goes through `server/utils/cv-variants.ts`. Projects are not in `cv.ts`: they are rows in
-the `projects` table, edited at `/desk/cv/projects` (so `projects` can't be a variant id) (`server/utils/projects.ts`), and a variant
-picks project ids; only `/curriculum` shows them, never the PDF. Saving checks every id against `cv.ts`, so
-renaming or removing an entry or bullet id there breaks stored variants that use it. Two
+**Content is data, not markup.** CV content lives in the database, typed by the interfaces in
+`app/data/cv.ts` (`TimelineEntry`, `EntryRecord`, `SkillGroup`, `CvContent`); only `profile`
+stays in code there. Timeline entries (`cv_entries`, bullets as an ordered jsonb list),
+skill groups (`skill_groups`) and projects (`projects`) are edited in the desk under
+`/desk/cv/experience`, `education`, `skills` and `projects` (so those can't be variant ids);
+`server/utils/cv-content.ts` loads them (`loadCvContent`) and writes them, and
+`projects.ts` does the projects. Entries, bullets and skill groups carry stable ids that
+can't change once created, and **variants** pick them by id, in order. Variants are rows in
+the database (`cv_variants`, `cv_variant_entries`), typed by `CvVariant` in
+`app/data/cv-variants.ts` and edited at `/desk/cv/<id>` (`server/api/desk/cv-variants/`);
+`server/utils/cv-variants.ts` holds their database access. Saving a variant checks every id
+against the content (`printVariant` in `app/utils/cv-variant.ts`); deleting an entry, bullet,
+skill group or project takes it out of every variant. Only `/curriculum` shows projects,
+never the PDF. Pages and `CvTimeline.vue` render from fetched data; do not hardcode entries
+into templates. Two
 variants hold a public role and can't be deleted: the one marked primary is the printed CV
 (`/cv-print`, `/christoph-stach-cv.pdf`), the one marked website is the experience and
 education and the projects on `/curriculum` (`/api/cv-website`). The others are private, at `/desk/cv-print/<id>` and `/api/desk/cv/<id>`. All variants render
@@ -68,7 +73,9 @@ theme icons (`tabler:sun/moon/device-desktop`) are bundled client-side via the `
 config in `nuxt.config.ts` rather than fetched. `app.vue` emits per-scheme `theme-color` meta
 tags so browser chrome is correct before hydration.
 
-**Routing/prerender** is declared in `nuxt.config.ts` `routeRules`: `/` is prerendered;
+**Routing/prerender** is declared in `nuxt.config.ts` `routeRules`: `/` is server-rendered
+(it counts jobs and shows skills via `/api/cv-home`) and cached with ISR, renewed whenever the
+desk changes CV content (`allPublicPaths`);
 `/curriculum` is server-rendered from the database and cached with ISR, renewed on demand when
 the desk changes the website variant (`revalidatePaths`, `server/utils/cv-public-paths.ts`); `/about-me` 301-redirects to `/`. Add new prerendered routes there — and also add
 the URL to `public/sitemap.xml`, a hand-maintained static file (no sitemap module), or it goes

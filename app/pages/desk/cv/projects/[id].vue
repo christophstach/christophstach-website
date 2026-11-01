@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import { createError, navigateTo, refreshNuxtData, useFetch, useRoute, useSeoMeta } from "nuxt/app";
-import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
 import { useDeskRequest } from "~/utils/desk-request";
+import { useUnsavedGuard } from "~/utils/desk-unsaved";
 
 definePageMeta({ layout: "desk" });
 
@@ -36,6 +36,8 @@ function toForm(project: NonNullable<typeof stored.value>) {
 const draft = ref(toForm(stored.value));
 const saved = computed(() => (stored.value ? toForm(stored.value) : draft.value));
 const dirty = computed(() => JSON.stringify(draft.value) !== JSON.stringify(saved.value));
+// Asks before leaving with unsaved changes.
+const guard = useUnsavedGuard(() => dirty.value);
 
 const usedBy = computed(() =>
   (variants.value?.variants ?? []).filter((variant) => variant.projects.includes(id)),
@@ -58,9 +60,6 @@ function discard() {
   request.error.value = "";
 }
 
-// Set when the editor leaves on purpose, after deleting the project.
-let leaving = false;
-
 async function remove() {
   // oxlint-disable-next-line no-alert -- a desk-only safety net before deleting
   if (!confirm(`Delete the project "${saved.value.title}"? Variants that show it drop it.`)) {
@@ -68,35 +67,13 @@ async function remove() {
   }
 
   if (await request.run(() => $fetch<unknown>(url, { method: "DELETE" }))) {
-    leaving = true;
+    guard.leave();
     await navigateTo("/desk/cv/projects");
     await refreshNuxtData(["desk-projects", "desk-cv-variants"]);
   }
 }
 
 const actions = [{ label: "Delete", icon: "tabler:trash", run: remove, danger: true }];
-
-function confirmLeave() {
-  // oxlint-disable-next-line no-alert -- a desk-only safety net for unsaved work
-  if (dirty.value && !leaving && !confirm("Leave without saving your changes?")) {
-    return false;
-  }
-
-  return true;
-}
-
-// Update covers going to another one: the same route with a new id.
-onBeforeRouteLeave(confirmLeave);
-onBeforeRouteUpdate(confirmLeave);
-
-function warnOnUnload(event: BeforeUnloadEvent) {
-  if (dirty.value) {
-    event.preventDefault();
-  }
-}
-
-onMounted(() => window.addEventListener("beforeunload", warnOnUnload));
-onBeforeUnmount(() => window.removeEventListener("beforeunload", warnOnUnload));
 </script>
 
 <template>
