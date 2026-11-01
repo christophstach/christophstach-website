@@ -86,22 +86,27 @@ export function renderPdf(event: H3Event, path: string, withSession = false) {
 }
 
 /**
- * Renews the cached public PDF after the primary variant changed. On Vercel the
- * PDF is cached until the next deployment (ISR); a request with the bypass
- * token renders it again now. Without a token (local, or not set up) the cache
- * stays until the next deployment.
+ * Renews cached public pages after a variant with a public role changed, e.g.
+ * the CV PDF or /curriculum. On Vercel they are cached until the next
+ * deployment (ISR); a request with the bypass token renders them again now.
+ * Without a token (local, or not set up) the cache stays until the next
+ * deployment.
  */
-export async function revalidatePublicPdf(event: H3Event) {
+export async function revalidatePaths(event: H3Event, paths: string[]) {
   const token = useRuntimeConfig(event).isrBypassToken;
 
   if (!token) {
-    return false;
+    return;
   }
 
-  const response = await fetch(new URL("/christoph-stach-cv.pdf", getRequestURL(event).origin), {
-    method: "HEAD",
-    headers: { "x-prerender-revalidate": token },
-  });
+  const { origin } = getRequestURL(event);
 
-  return response.ok;
+  await Promise.all(
+    paths.map((path) =>
+      fetch(new URL(path, origin), {
+        method: "HEAD",
+        headers: { "x-prerender-revalidate": token },
+      }),
+    ),
+  );
 }

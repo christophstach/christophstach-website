@@ -6,10 +6,13 @@ import { education, experience, skills } from "~/data/cv";
 type Section = "experience" | "education";
 type Entry = (typeof experience)[number];
 
-const { variant, primary } = defineProps<{
+const { variant, primary, website } = defineProps<{
   /** The stored variant; the editor works on a copy until it is saved. */
   variant: CvVariant;
+  /** Whether it is the public variant behind the CV PDF. */
   primary: boolean;
+  /** Whether it is the variant /curriculum shows. */
+  website: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -118,8 +121,9 @@ function save() {
   return write(() => $fetch(url.value, { method: "PUT", body: draft.value }), variant.id);
 }
 
-function makePrimary() {
-  return write(() => $fetch(`${url.value}/primary`, { method: "POST" }), variant.id);
+/** Gives this variant a public role: "primary" (the PDF) or "website" (/curriculum). */
+function mark(role: "primary" | "website") {
+  return write(() => $fetch(`${url.value}/${role}`, { method: "POST" }), variant.id);
 }
 
 function remove() {
@@ -286,12 +290,21 @@ function reset() {
         type="button"
         class="button button--outline"
         :disabled="busy || dirty"
-        @click="makePrimary"
+        @click="mark('primary')"
       >
         Make primary
       </button>
       <button
-        v-if="!primary"
+        v-if="!website"
+        type="button"
+        class="button button--outline"
+        :disabled="busy || dirty"
+        @click="mark('website')"
+      >
+        Use on website
+      </button>
+      <button
+        v-if="!primary && !website"
         type="button"
         class="button button--outline"
         :disabled="busy"

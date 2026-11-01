@@ -18,6 +18,7 @@ const { data: stored, refresh } = await useFetch("/api/desk/cv-variants");
 
 const variants = computed(() => stored.value?.variants ?? []);
 const primaryId = computed(() => stored.value?.primaryId ?? "");
+const websiteId = computed(() => stored.value?.websiteId ?? "");
 
 // The variant the editor and the PDF check show; empty means the primary one.
 const selectedId = ref("");
@@ -69,7 +70,7 @@ function bulletCount(entry: Entry): string {
       <h1 class="cv__title">CV</h1>
 
       <p class="cv__outputs">
-        <a href="/curriculum" class="text-link" target="_blank">Public page</a>
+        <a href="/curriculum" class="text-link" target="_blank">Website</a>
         <a href="/christoph-stach-cv.pdf" class="text-link" target="_blank">PDF</a>
       </p>
     </header>
@@ -98,7 +99,8 @@ function bulletCount(entry: Entry): string {
             @click="selectedId = variant.id"
           >
             {{ variant.label }}
-            <span v-if="variant.id === primaryId" class="variants__primary">primary</span>
+            <span v-if="variant.id === primaryId" class="variants__role">primary</span>
+            <span v-if="variant.id === websiteId" class="variants__role">website</span>
           </button>
         </div>
 
@@ -107,6 +109,7 @@ function bulletCount(entry: Entry): string {
             :key="`${selected.id}-${revision}`"
             :variant="selected"
             :primary="selected.id === primaryId"
+            :website="selected.id === websiteId"
             @changed="onChanged"
           />
 
@@ -245,7 +248,7 @@ function bulletCount(entry: Entry): string {
   font-size: var(--text-sm);
 }
 
-/* Variant switcher: one tab per CV variant, the primary one marked. */
+/* Variant switcher: one tab per CV variant, its public roles marked. */
 .variants {
   display: flex;
   flex-wrap: wrap;
@@ -278,7 +281,7 @@ function bulletCount(entry: Entry): string {
   color: var(--color-text-muted);
 }
 
-.variants__primary {
+.variants__role {
   font-size: var(--text-xs);
   color: var(--color-accent);
 }

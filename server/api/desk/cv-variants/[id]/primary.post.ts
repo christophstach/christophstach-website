@@ -1,6 +1,7 @@
 import { defineEventHandler, getRouterParam } from "h3";
-import { revalidatePublicPdf } from "../../../../utils/cv-pdf";
-import { setPrimaryVariant } from "../../../../utils/cv-variants";
+import { markVariant } from "../../../../utils/cv-variants";
+import { publicPaths } from "../../../../utils/cv-public-paths";
+import { revalidatePaths } from "../../../../utils/cv-pdf";
 
 // Makes a variant the public CV and renews the cached public PDF.
 export default defineEventHandler(async (event) => {
@@ -8,8 +9,8 @@ export default defineEventHandler(async (event) => {
 
   const id = getRouterParam(event, "id") ?? "";
 
-  await setPrimaryVariant(id);
-  await revalidatePublicPdf(event);
+  await markVariant(id, "isPrimary");
+  await revalidatePaths(event, publicPaths({ primary: true, website: false }));
 
   return { primaryId: id };
 });

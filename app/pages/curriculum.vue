@@ -1,11 +1,20 @@
 <script setup lang="ts">
-import { education, experience, projects } from "~/data/cv";
+import { createError, useFetch } from "nuxt/app";
 import { cvDownloadVisible } from "~/data/cv-variants";
+import { projects } from "~/data/cv";
 
 useSeoMeta({
   title: "Curriculum",
   ogTitle: "Curriculum · Christoph Stach",
 });
+
+// Experience and education come from the website variant in the database,
+// edited in the desk; projects stay in cv.ts.
+const { data: cv, error } = await useFetch("/api/cv-website");
+
+if (error.value) {
+  throw createError({ ...error.value, fatal: true });
+}
 </script>
 
 <template>
@@ -32,7 +41,7 @@ useSeoMeta({
       <section>
         <h2 class="section-label page__section-label">experience</h2>
 
-        <CvTimeline :entries="experience">
+        <CvTimeline :entries="cv?.experience ?? []">
           <template #icon>
             <Icon name="tabler:briefcase" size="16" />
           </template>
@@ -42,7 +51,7 @@ useSeoMeta({
       <section>
         <h2 class="section-label page__section-label">education</h2>
 
-        <CvTimeline :entries="education">
+        <CvTimeline :entries="cv?.education ?? []">
           <template #icon>
             <Icon name="tabler:school" size="16" />
           </template>

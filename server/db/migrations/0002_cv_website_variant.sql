@@ -1,0 +1,1 @@
+ALTER TABLE "cv_variants" ADD COLUMN "is_website" boolean DEFAULT false NOT NULL;

@@ -15,6 +15,20 @@
       "when": 1793525328784,
       "tag": "0001_seed_cv_variants",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793529765954,
+      "tag": "0002_cv_website_variant",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793529767460,
+      "tag": "0003_seed_cv_website_variant",
+      "breakpoints": true
     }
   ]
 }
