@@ -71,7 +71,11 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
-    "/": { prerender: true },
+    // Server-rendered: it counts the jobs and shows the skill groups from the
+    // database. Cached (ISR) until the next deployment or until the desk
+    // changes CV content (on-demand revalidation).
+    "/": { prerender: false, isr: true },
+    "/api/cv-home": { isr: true },
     // Server-rendered from the website CV variant in the database and cached
     // (ISR) until the next deployment or until the desk changes that variant
     // (on-demand revalidation). Not prerendered: the home page links here.

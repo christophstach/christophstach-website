@@ -1,15 +1,21 @@
 <script setup lang="ts">
-import { experience, skills } from "~/data/cv";
 import { cvDownloadVisible } from "~/data/cv-variants";
 import heroImage from "~/assets/images/hero.webp";
+import { useFetch } from "nuxt/app";
 
 useSeoMeta({
   title: "Senior Full-Stack Engineer in Berlin",
   ogTitle: "Christoph Stach, Senior Full-Stack Engineer in Berlin",
 });
 
+// Jobs and skill groups live in the database, edited in the desk; the page is
+// cached with ISR and renewed when they change.
+const { data: cv } = await useFetch("/api/cv-home");
+const experience = cv.value?.experience ?? [];
+const skills = cv.value?.skills ?? [];
+
 const totalSkills = skills.reduce((sum, group) => sum + group.items.length, 0);
-const maxGroup = Math.max(...skills.map((group) => group.items.length));
+const maxGroup = Math.max(1, ...skills.map((group) => group.items.length));
 
 function useCountUp(target: number, duration = 1100) {
   const value = ref(target);

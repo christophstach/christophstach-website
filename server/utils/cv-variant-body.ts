@@ -3,8 +3,8 @@ import { createError } from "h3";
 
 // URL slug: lowercase words joined by single hyphens, e.g. "ai-platform".
 const VARIANT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
-// Ids taken by desk pages: /desk/cv/projects lists the projects.
-const RESERVED_IDS = new Set(["projects"]);
+// Ids taken by desk pages under /desk/cv, e.g. /desk/cv/projects.
+const RESERVED_IDS = new Set(["education", "experience", "projects", "skills"]);
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");

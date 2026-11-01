@@ -47,7 +47,14 @@ function roleTag(id: string): string | undefined {
   return tags.length > 0 ? tags.join(" · ") : undefined;
 }
 
-// Under "cv": the variants, then a link to the projects they pick from.
+// Under "cv": the variants, then the content they pick from.
+const contentLinks = [
+  { to: "/desk/cv/experience", label: "experience", icon: "tabler:briefcase" },
+  { to: "/desk/cv/education", label: "education", icon: "tabler:school" },
+  { to: "/desk/cv/skills", label: "skills", icon: "tabler:tools" },
+  { to: "/desk/cv/projects", label: "projects", icon: "tabler:folders" },
+];
+
 const variantLinks = computed(() =>
   (variants.value?.variants ?? []).map((variant) => ({
     to: `/desk/cv/${variant.id}`,
@@ -116,14 +123,18 @@ async function signOut() {
               :items="variantLinks"
               :add="{ to: '/desk/cv?new', label: 'new variant' }"
             >
-              <NuxtLink
-                to="/desk/cv/projects"
-                class="desk__projects"
-                active-class="desk__projects--active"
-              >
-                <Icon name="tabler:folders" size="14" />
-                projects
-              </NuxtLink>
+              <ul class="desk__content" aria-label="CV content">
+                <li v-for="link in contentLinks" :key="link.to">
+                  <NuxtLink
+                    :to="link.to"
+                    class="desk__content-link"
+                    active-class="desk__content-link--active"
+                  >
+                    <Icon :name="link.icon" size="14" />
+                    {{ link.label }}
+                  </NuxtLink>
+                </li>
+              </ul>
             </DeskSubnav>
           </li>
         </ul>
@@ -262,12 +273,20 @@ async function signOut() {
   color: var(--color-accent-subtle-text);
 }
 
-/* The projects link at the end of the cv list, set apart from the variants. */
-.desk__projects {
+/* The content links at the end of the cv list, set apart from the variants. */
+.desk__content {
+  display: grid;
+  gap: 1px;
+  padding: var(--space-2) 0 0;
+  margin: var(--space-1) 0 0;
+  border-top: 1px solid var(--color-border);
+  list-style: none;
+}
+
+.desk__content-link {
   display: flex;
   align-items: center;
   gap: var(--space-1-5);
-  margin-top: var(--space-2);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-md);
   color: var(--color-text-soft);
@@ -277,13 +296,13 @@ async function signOut() {
     color var(--transition-fast);
 }
 
-.desk__projects:hover {
+.desk__content-link:hover {
   background-color: var(--color-hover);
   color: var(--color-hover-text);
 }
 
-.desk__projects--active,
-.desk__projects--active:hover {
+.desk__content-link--active,
+.desk__content-link--active:hover {
   background-color: var(--color-accent-subtle-bg);
   color: var(--color-accent-subtle-text);
 }

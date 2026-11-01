@@ -9,4 +9,9 @@ function publicPaths({ primary, website }: { primary: boolean; website: boolean 
   return [...(primary ? PRIMARY_PATHS : []), ...(website ? WEBSITE_PATHS : [])];
 }
 
-export { publicPaths };
+/** Every cached public page and data: CV content changes can reach all of them. */
+function allPublicPaths() {
+  return ["/", "/api/cv-home", ...PRIMARY_PATHS, ...WEBSITE_PATHS];
+}
+
+export { allPublicPaths, publicPaths };

@@ -1,11 +1,8 @@
+import type { CvContent, SkillGroup, TimelineEntry } from "../data/cv";
 import type { CvVariant, EntryPick } from "../data/cv-variants";
-import { education, experience, skills } from "../data/cv";
 import type { Project } from "../data/projects";
 
 // Relative imports: the server prints variants with this too (server/utils).
-
-type SkillGroup = (typeof skills)[number];
-type TimelineEntry = (typeof experience)[number];
 
 /** A timeline entry as a variant prints it: its picked bullets, in order. */
 type PrintedEntry = Omit<TimelineEntry, "bullets"> & { bullets: string[] };
@@ -44,7 +41,7 @@ function pickEntries(variantId: string, entries: TimelineEntry[], picks: EntryPi
   });
 }
 
-function pickSkills(variant: CvVariant): SkillGroup[] {
+function pickSkills(variant: CvVariant, skills: SkillGroup[]): SkillGroup[] {
   return variant.skills.map((label) => {
     const group = skills.find((candidate) => candidate.label === label);
 
@@ -70,16 +67,16 @@ function pickProjects(variant: CvVariant, projects: Project[]): Project[] {
 
 /**
  * Resolves a variant's ids into the content it prints; throws on an unknown id.
- * Projects live in the database, so the caller passes them in.
+ * The content lives in the database, so the caller passes it in.
  */
-function printVariant(variant: CvVariant, projects: Project[]): PrintedCv {
+function printVariant(variant: CvVariant, content: CvContent): PrintedCv {
   return {
     role: variant.role,
     summary: variant.summary,
-    experience: pickEntries(variant.id, experience, variant.experience),
-    education: pickEntries(variant.id, education, variant.education),
-    projects: pickProjects(variant, projects),
-    skills: pickSkills(variant),
+    experience: pickEntries(variant.id, content.experience, variant.experience),
+    education: pickEntries(variant.id, content.education, variant.education),
+    projects: pickProjects(variant, content.projects),
+    skills: pickSkills(variant, content.skills),
   };
 }
 

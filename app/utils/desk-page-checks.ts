@@ -42,7 +42,12 @@ function usePageChecks() {
     await refreshNuxtData("desk-cv-variants");
   }
 
-  return { running, checkMissing };
+  /** CV content changed: every variant may need a check again. */
+  function forget() {
+    tried.value = [];
+  }
+
+  return { running, checkMissing, forget };
 }
 
 export { usePageChecks };

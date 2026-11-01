@@ -1,4 +1,13 @@
-import { boolean, integer, pgTable, primaryKey, real, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  integer,
+  jsonb,
+  pgTable,
+  primaryKey,
+  real,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
 // Column names are snake_case in the database: drizzle.config.ts and useDb()
@@ -17,7 +26,7 @@ const cvVariants = pgTable("cv_variants", {
     .array()
     .notNull()
     .default(sql`'{}'::text[]`),
-  /** SkillGroup labels from cv.ts, in print order; empty prints no skills. */
+  /** skill_groups ids, in print order; empty prints no skills. */
   skills: text()
     .array()
     .notNull()
@@ -52,13 +61,59 @@ const cvVariantEntries = pgTable(
       .references(() => cvVariants.id, { onDelete: "cascade", onUpdate: "cascade" }),
     section: text({ enum: ["experience", "education"] }).notNull(),
     position: integer().notNull(),
-    /** A TimelineEntry id from cv.ts. */
+    /** A cv_entries id. */
     entryId: text().notNull(),
     /** Bullet ids of that entry, in print order. */
     bullets: text().array().notNull(),
   },
   (table) => [primaryKey({ columns: [table.variantId, table.section, table.position] })],
 );
+
+/**
+ * A timeline entry, a job or a degree, that variants pick from. Its id and
+ * section are fixed once created: variants refer to the id.
+ */
+const cvEntries = pgTable("cv_entries", {
+  /** Stable id, e.g. "mbition"; also the URL slug in the desk. */
+  id: text().primaryKey(),
+  section: text({ enum: ["experience", "education"] }).notNull(),
+  title: text().notNull(),
+  organization: text().notNull(),
+  /** Empty shows none. */
+  location: text().notNull().default(""),
+  /** ISO month, e.g. "2023-10". */
+  from: text().notNull(),
+  /** ISO month; empty means ongoing. */
+  to: text().notNull().default(""),
+  tech: text()
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  /** In display order; variants pick them by id. */
+  bullets: jsonb()
+    .$type<{ id: string; text: string }[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  links: jsonb()
+    .$type<{ text: string; href: string }[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
+/** A group of skills; the home page shows all, variants pick which they print. */
+const skillGroups = pgTable("skill_groups", {
+  /** Terminal-style label used on the site, e.g. "frontend"; variants refer to it. */
+  id: text().primaryKey(),
+  /** Prose heading used in the PDF. */
+  title: text().notNull(),
+  items: text()
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  position: integer().notNull().default(0),
+});
 
 /** A project shown on /curriculum when the website variant picks it. */
 const projects = pgTable("projects", {
@@ -84,4 +139,12 @@ const cvVariantEntriesRelations = relations(cvVariantEntries, ({ one }) => ({
   variant: one(cvVariants, { fields: [cvVariantEntries.variantId], references: [cvVariants.id] }),
 }));
 
-export { cvVariantEntries, cvVariantEntriesRelations, cvVariants, cvVariantsRelations, projects };
+export {
+  cvEntries,
+  cvVariantEntries,
+  cvVariantEntriesRelations,
+  cvVariants,
+  cvVariantsRelations,
+  projects,
+  skillGroups,
+};
