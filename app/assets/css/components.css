@@ -275,8 +275,11 @@ textarea.input {
 }
 
 /* Page header of a desk page: path, title, a line below, actions on the right. */
+/* Divided from the page's content by a rule. */
 .desk-head {
   display: flex;
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-rule);
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
