@@ -6,6 +6,8 @@ import { printVariant } from "../../app/utils/cv-variant";
 import { useDb } from "./db";
 
 type Section = "experience" | "education";
+/** The two public roles a variant can hold, each held by exactly one variant. */
+type Mark = "isPrimary" | "isWebsite";
 type VariantRow = typeof cvVariants.$inferSelect & {
   entries: (typeof cvVariantEntries.$inferSelect)[];
 };
@@ -35,7 +37,7 @@ function notFound(id: string) {
   return createError({ statusCode: 404, message: `No CV variant "${id}".` });
 }
 
-/** All variants, oldest first, and the id of the primary one. */
+/** All variants, oldest first, and the ids of the primary and the website one. */
 async function listVariants() {
   const rows = await useDb().query.cvVariants.findMany({
     with: { entries: true },
@@ -45,6 +47,7 @@ async function listVariants() {
   return {
     variants: rows.map((row) => toVariant(row)),
     primaryId: rows.find((row) => row.isPrimary)?.id ?? "",
+    websiteId: rows.find((row) => row.isWebsite)?.id ?? "",
   };
 }
 
@@ -62,15 +65,18 @@ async function requireVariant(id: string): Promise<CvVariant> {
   return toVariant(row);
 }
 
-/** The public variant, which /cv-print and the downloadable PDF show. */
-async function requirePrimaryVariant(): Promise<CvVariant> {
+/**
+ * The variant holding a public role: isPrimary for /cv-print and the
+ * downloadable PDF, isWebsite for /curriculum.
+ */
+async function requireMarkedVariant(mark: Mark): Promise<CvVariant> {
   const row = await useDb().query.cvVariants.findFirst({
-    where: eq(cvVariants.isPrimary, true),
+    where: eq(cvVariants[mark], true),
     with: { entries: true },
   });
 
   if (!row) {
-    throw createError({ statusCode: 500, message: "No CV variant is marked primary." });
+    throw createError({ statusCode: 500, message: `No CV variant is marked ${mark}.` });
   }
 
   return toVariant(row);
@@ -138,19 +144,21 @@ async function saveVariant(variant: CvVariant, { create }: { create: boolean }) 
   });
 }
 
-/** Makes this variant the public one; every other variant stops being primary. */
-async function setPrimaryVariant(id: string) {
+/** Gives this variant a public role; the variant that held it loses it. */
+async function markVariant(id: string, mark: Mark) {
   await requireVariant(id);
   await useDb()
     .update(cvVariants)
-    .set({ isPrimary: sql`${cvVariants.id} = ${id}` });
+    .set({ [mark]: sql`${cvVariants.id} = ${id}` });
 }
 
-/** Deletes a variant, but never the primary one: the public CV needs it. */
+/** Deletes a variant, but never one with a public role: the site needs it. */
 async function deleteVariant(id: string) {
   const deleted = await useDb()
     .delete(cvVariants)
-    .where(sql`${cvVariants.id} = ${id} and not ${cvVariants.isPrimary}`)
+    .where(
+      sql`${cvVariants.id} = ${id} and not ${cvVariants.isPrimary} and not ${cvVariants.isWebsite}`,
+    )
     .returning({ id: cvVariants.id });
 
   if (deleted.length === 0) {
@@ -158,7 +166,8 @@ async function deleteVariant(id: string) {
 
     throw createError({
       statusCode: 409,
-      message: "The primary variant can't be deleted. Make another one primary first.",
+      message:
+        "The primary and the website variant can't be deleted. Give the role to another variant first.",
     });
   }
 }
@@ -166,8 +175,8 @@ async function deleteVariant(id: string) {
 export {
   deleteVariant,
   listVariants,
-  requirePrimaryVariant,
+  markVariant,
+  requireMarkedVariant,
   requireVariant,
   saveVariant,
-  setPrimaryVariant,
 };

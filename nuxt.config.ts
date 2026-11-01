@@ -72,7 +72,11 @@ export default defineNuxtConfig({
 
   routeRules: {
     "/": { prerender: true },
-    "/curriculum": { prerender: true },
+    // Server-rendered from the website CV variant in the database and cached
+    // (ISR) until the next deployment or until the desk changes that variant
+    // (on-demand revalidation). Not prerendered: the home page links here.
+    "/curriculum": { prerender: false, isr: true },
+    "/api/cv-website": { isr: true },
     // Server-rendered: it prints the primary CV variant, which lives in the
     // database and changes without a deployment.
     "/cv-print": { headers: { "X-Robots-Tag": "noindex, nofollow" } },

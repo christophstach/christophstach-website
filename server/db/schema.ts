@@ -19,6 +19,8 @@ const cvVariants = pgTable("cv_variants", {
     .default(sql`'{}'::text[]`),
   /** The public variant behind /cv-print and /christoph-stach-cv.pdf; one at a time. */
   isPrimary: boolean().notNull().default(false),
+  /** The variant /curriculum shows, usually with every bullet; one at a time. */
+  isWebsite: boolean().notNull().default(false),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
