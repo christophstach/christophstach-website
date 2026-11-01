@@ -162,8 +162,8 @@ const actions = computed(() => [
 
 @media (min-width: 72rem) {
   .editor__body {
-    grid-template-columns: minmax(0, 1fr) 15rem;
-    column-gap: var(--space-12);
+    grid-template-columns: minmax(0, 1fr) 17rem;
+    column-gap: var(--space-6);
     align-items: start;
   }
 
@@ -176,6 +176,10 @@ const actions = computed(() => [
 .editor__rail {
   display: grid;
   align-content: start;
-  gap: var(--space-8);
+  gap: var(--space-6);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
 }
 </style>
