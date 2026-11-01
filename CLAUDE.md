@@ -33,10 +33,11 @@ for the enabled rule categories.
 ## Architecture
 
 **Content is data, not markup.** CV content lives in the database, typed by the interfaces in
-`app/data/cv.ts` (`TimelineEntry`, `EntryRecord`, `SkillGroup`, `CvContent`); only `profile`
-stays in code there. Timeline entries (`cv_entries`, bullets as an ordered jsonb list),
+`app/data/cv.ts` (`TimelineEntry`, `EntryRecord`, `SkillGroup`, `Profile`, `CvContent`). The
+profile (the PDF header, one row of `cv_profile`, at `/desk/cv/profile`), timeline entries (`cv_entries`, bullets as an ordered jsonb list),
 skill groups (`skill_groups`) and projects (`projects`) are edited in the desk under
-`/desk/cv/experience`, `education`, `skills` and `projects` (so those can't be variant ids);
+`/desk/cv/experience`, `education`, `skills` and `projects` (so those and `profile` can't be
+variant ids);
 `server/utils/cv-content.ts` loads them (`loadCvContent`) and writes them, and
 `projects.ts` does the projects. Entries, bullets and skill groups carry stable ids that
 can't change once created, and **variants** pick them by id, in order. Variants are rows in

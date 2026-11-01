@@ -1,4 +1,4 @@
-import type { CvContent, SkillGroup, TimelineEntry } from "../data/cv";
+import type { CvContent, Profile, SkillGroup, TimelineEntry } from "../data/cv";
 import type { CvVariant, EntryPick } from "../data/cv-variants";
 import type { Project } from "../data/projects";
 
@@ -9,6 +9,7 @@ type PrintedEntry = Omit<TimelineEntry, "bullets"> & { bullets: string[] };
 
 /** Everything CvDocument renders for one variant. */
 interface PrintedCv {
+  profile: Profile;
   role: string;
   summary?: string;
   experience: PrintedEntry[];
@@ -71,6 +72,7 @@ function pickProjects(variant: CvVariant, projects: Project[]): Project[] {
  */
 function printVariant(variant: CvVariant, content: CvContent): PrintedCv {
   return {
+    profile: content.profile,
     role: variant.role,
     summary: variant.summary,
     experience: pickEntries(variant.id, content.experience, variant.experience),

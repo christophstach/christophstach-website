@@ -1,6 +1,6 @@
-import type { CvContent, EntryRecord, SkillGroup, TimelineEntry } from "../../app/data/cv";
+import type { CvContent, EntryRecord, Profile, SkillGroup, TimelineEntry } from "../../app/data/cv";
 import { asc, desc, eq, notInArray, sql } from "drizzle-orm";
-import { cvEntries, cvVariantEntries, cvVariants, skillGroups } from "../db/schema";
+import { cvEntries, cvProfile, cvVariantEntries, cvVariants, skillGroups } from "../db/schema";
 import { createError } from "h3";
 import { listProjects } from "./projects";
 import { useDb } from "./db";
@@ -58,15 +58,36 @@ async function listSkillGroups(): Promise<SkillGroup[]> {
   return rows.map((row) => ({ label: row.id, title: row.title, items: row.items }));
 }
 
+/** The CV's header, the one row of cv_profile. */
+async function loadProfile(): Promise<Profile> {
+  const [row] = await useDb().select().from(cvProfile).where(eq(cvProfile.id, 1));
+
+  if (!row) {
+    throw createError({ statusCode: 500, message: "No CV profile in the database." });
+  }
+
+  return {
+    name: row.name,
+    role: row.role,
+    location: row.location,
+    email: row.email,
+    phone: row.phone,
+    coreTechnologies: row.coreTechnologies,
+    links: row.links,
+  };
+}
+
 /** Everything variants pick from, in the shapes the site renders. */
 async function loadCvContent(): Promise<CvContent> {
-  const [entries, skills, projects] = await Promise.all([
+  const [profile, entries, skills, projects] = await Promise.all([
+    loadProfile(),
     listEntries(),
     listSkillGroups(),
     listProjects(),
   ]);
 
   return {
+    profile,
     experience: entries
       .filter((entry) => entry.section === "experience")
       .map((entry) => toTimelineEntry(entry)),
@@ -199,12 +220,27 @@ async function saveSkillGroups(groups: SkillGroup[]) {
   });
 }
 
+/** Writes the profile; every variant prints it, so their page checks are out of date. */
+async function saveProfile(profile: Profile) {
+  await useDb().transaction(async (tx) => {
+    const columns = { ...profile, updatedAt: new Date() };
+
+    await tx
+      .insert(cvProfile)
+      .values({ id: 1, ...columns })
+      .onConflictDoUpdate({ target: cvProfile.id, set: columns });
+    await forgetPageChecks(tx);
+  });
+}
+
 export {
   deleteEntry,
   listEntries,
   listSkillGroups,
   loadCvContent,
+  loadProfile,
   requireEntry,
   saveEntry,
+  saveProfile,
   saveSkillGroups,
 };

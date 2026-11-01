@@ -1,4 +1,10 @@
-import type { EntryRecord, SkillGroup, TimelineLink } from "../../app/data/cv";
+import type {
+  EntryRecord,
+  Profile,
+  ProfileLink,
+  SkillGroup,
+  TimelineLink,
+} from "../../app/data/cv";
 import { createError } from "h3";
 
 // URL slug: lowercase words joined by single hyphens, e.g. "mbition".
@@ -142,4 +148,44 @@ function parseSkillGroupsBody(body: unknown): SkillGroup[] {
   return groups;
 }
 
-export { parseEntryBody, parseSkillGroupsBody };
+function parseProfileLinks(value: unknown): ProfileLink[] {
+  if (!Array.isArray(value)) {
+    throw invalid("Links must be a list.");
+  }
+
+  return value.map((item: Partial<{ label: unknown; href: unknown }> | null) => {
+    if (!isText(item?.label) || !isText(item?.href)) {
+      throw invalid("Every link needs a label and an address.");
+    }
+
+    return { label: item.label.trim(), href: item.href.trim() };
+  });
+}
+
+/** Checks the profile sent by the desk. */
+function parseProfileBody(body: unknown): Profile {
+  const value = (body ?? {}) as Partial<Profile>;
+  const texts = [value.role, value.location, value.email, value.phone];
+
+  if (!isText(value.name)) {
+    throw invalid("The profile needs a name.");
+  }
+
+  if (!texts.every((text) => typeof text === "string") || !isStringArray(value.coreTechnologies)) {
+    throw invalid("Not a profile.");
+  }
+
+  const profile = value as Profile;
+
+  return {
+    name: profile.name.trim(),
+    role: profile.role.trim(),
+    location: profile.location.trim(),
+    email: profile.email.trim(),
+    phone: profile.phone.trim(),
+    coreTechnologies: cleanList(profile.coreTechnologies),
+    links: parseProfileLinks(profile.links),
+  };
+}
+
+export { parseEntryBody, parseProfileBody, parseSkillGroupsBody };

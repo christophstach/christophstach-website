@@ -1,0 +1,3 @@
+-- The profile that lived in app/data/cv.ts before it moved to the database.
+INSERT INTO "cv_profile" ("id", "name", "role", "location", "email", "phone", "core_technologies", "links") VALUES
+	(1, 'Christoph Stach', 'Senior Full-Stack Engineer', 'Berlin, Germany', 'christoph.stach@gmail.com', '+49 176 480 97681', '{"TypeScript","Vue","Nuxt","React","Next.js","Tailwind","NestJS","Python","LLMs","Kubernetes"}', '[{"label":"Website","href":"https://christophstach.de"},{"label":"GitHub","href":"https://github.com/christophstach"},{"label":"LinkedIn","href":"https://linkedin.com/in/christoph-stach-7586b958"}]'::jsonb);

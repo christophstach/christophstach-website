@@ -115,6 +115,27 @@ const skillGroups = pgTable("skill_groups", {
   position: integer().notNull().default(0),
 });
 
+/** The CV's header: who it is about and how to reach them. A single row, id 1. */
+const cvProfile = pgTable("cv_profile", {
+  id: integer().primaryKey().default(1),
+  name: text().notNull(),
+  /** Not printed: each variant has its own role line. */
+  role: text().notNull().default(""),
+  location: text().notNull().default(""),
+  email: text().notNull().default(""),
+  phone: text().notNull().default(""),
+  /** Not printed yet. */
+  coreTechnologies: text()
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  links: jsonb()
+    .$type<{ label: string; href: string }[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
 /** A project shown on /curriculum when the website variant picks it. */
 const projects = pgTable("projects", {
   /** URL slug, e.g. /desk/projects/tiger. */
@@ -141,6 +162,7 @@ const cvVariantEntriesRelations = relations(cvVariantEntries, ({ one }) => ({
 
 export {
   cvEntries,
+  cvProfile,
   cvVariantEntries,
   cvVariantEntriesRelations,
   cvVariants,
