@@ -344,3 +344,47 @@ textarea.input {
     grid-row: auto;
   }
 }
+
+/* A panel on the page: a head row with the title and a short note, then the
+   body. Desk forms and the variant editor are built from these. */
+.panel {
+  display: grid;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+}
+
+.panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.panel__title {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-heading);
+}
+
+.panel__note {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* Pushed to the end of the head row, e.g. an "Edit …" link or a menu. */
+.panel__end {
+  margin-inline-start: auto;
+}
+
+.panel__body {
+  padding: var(--space-5);
+}
+
+/* A stack of panels. */
+.panels {
+  display: grid;
+  gap: var(--space-6);
+}
