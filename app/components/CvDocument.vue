@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { PrintedCv } from "~/utils/cv-variant";
-import { profile } from "~/data/cv";
 
 // The printed CV for every variant. Variants only change the content passed
 // in; this template and its print styles are the one layout they all share.
@@ -18,16 +17,16 @@ function period(from: string, to?: string): string {
 <template>
   <article class="cv">
     <header class="cv__header">
-      <h1 class="cv__name">{{ profile.name }}</h1>
+      <h1 class="cv__name">{{ cv.profile.name }}</h1>
       <p class="cv__role">{{ cv.role }}</p>
       <p v-if="cv.summary" class="cv__summary">{{ cv.summary }}</p>
       <ul class="cv__contact">
-        <li>{{ profile.location }}</li>
-        <li>{{ profile.email }}</li>
-        <li>{{ profile.phone }}</li>
+        <li>{{ cv.profile.location }}</li>
+        <li>{{ cv.profile.email }}</li>
+        <li>{{ cv.profile.phone }}</li>
       </ul>
       <ul class="cv__contact cv__contact--links">
-        <li v-for="link in profile.links" :key="link.href">{{ stripScheme(link.href) }}</li>
+        <li v-for="link in cv.profile.links" :key="link.href">{{ stripScheme(link.href) }}</li>
       </ul>
     </header>
 

@@ -49,6 +49,7 @@ function roleTag(id: string): string | undefined {
 
 // Under "cv": the variants, then the content they pick from.
 const contentLinks = [
+  { to: "/desk/cv/profile", label: "profile", icon: "tabler:id" },
   { to: "/desk/cv/experience", label: "experience", icon: "tabler:briefcase" },
   { to: "/desk/cv/education", label: "education", icon: "tabler:school" },
   { to: "/desk/cv/skills", label: "skills", icon: "tabler:tools" },

@@ -54,9 +54,10 @@ export interface SkillGroup {
 
 /**
  * The CV's building blocks, stored in the database and edited in the desk.
- * Variants pick from them by id; the profile below stays in code.
+ * Variants pick from them by id; every variant prints the same profile.
  */
 export interface CvContent {
+  profile: Profile;
   experience: TimelineEntry[];
   education: TimelineEntry[];
   skills: SkillGroup[];
@@ -68,27 +69,15 @@ export interface ProfileLink {
   href: string;
 }
 
-export const profile = {
-  name: "Christoph Stach",
-  role: "Senior Full-Stack Engineer",
-  location: "Berlin, Germany",
-  email: "christoph.stach@gmail.com",
-  phone: "+49 176 480 97681",
-  coreTechnologies: [
-    "TypeScript",
-    "Vue",
-    "Nuxt",
-    "React",
-    "Next.js",
-    "Tailwind",
-    "NestJS",
-    "Python",
-    "LLMs",
-    "Kubernetes",
-  ],
-  links: [
-    { label: "Website", href: "https://christophstach.de" },
-    { label: "GitHub", href: "https://github.com/christophstach" },
-    { label: "LinkedIn", href: "https://linkedin.com/in/christoph-stach-7586b958" },
-  ] satisfies ProfileLink[],
-};
+/** The CV's header; one, stored in the database and edited in the desk. */
+export interface Profile {
+  name: string;
+  /** Not printed: each variant has its own role line. */
+  role: string;
+  location: string;
+  email: string;
+  phone: string;
+  /** Not printed yet. */
+  coreTechnologies: string[];
+  links: ProfileLink[];
+}
