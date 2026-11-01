@@ -65,12 +65,20 @@ function unpick(id: string) {
 
 <template>
   <div class="picks" :class="{ 'picks--dense': dense }">
+    <p v-if="!dense" class="picks__head">
+      <span>picked · {{ pickedItems.length }}</span>
+      <span class="picks__hint">in print order, drag to reorder</span>
+    </p>
+
     <ol v-if="pickedItems.length" class="picks__list" :aria-label="`${label}, picked`">
       <li
         v-for="item in pickedItems"
         :key="item.id"
         class="picks__item"
-        :class="{ 'picks__item--dragged': drag.dragged.value === item.id }"
+        :class="{
+          'picks__item--dragged': drag.dragged.value === item.id,
+          'picks__item--open': expandable && open.has(item.id),
+        }"
         draggable="true"
         @dragstart.stop="drag.start(item.id, $event)"
         @dragover.prevent.stop="drag.over(item.id)"
@@ -96,21 +104,21 @@ function unpick(id: string) {
             </span>
           </label>
 
-          <span v-if="item.meta" class="picks__meta">{{ item.meta }}</span>
-
           <button
             v-if="expandable"
             type="button"
-            class="icon-button picks__toggle"
+            class="picks__toggle"
             :aria-expanded="open.has(item.id)"
             :aria-label="`${open.has(item.id) ? 'Close' : 'Open'} ${item.title}`"
             @click="toggleOpen(item.id)"
           >
+            <span v-if="item.meta">{{ item.meta }}</span>
             <Icon
               :name="open.has(item.id) ? 'tabler:chevron-up' : 'tabler:chevron-down'"
               size="16"
             />
           </button>
+          <span v-else-if="item.meta" class="picks__meta">{{ item.meta }}</span>
         </div>
 
         <div v-if="expandable && open.has(item.id)" class="picks__detail">
@@ -119,63 +127,94 @@ function unpick(id: string) {
       </li>
     </ol>
 
-    <ul v-if="otherItems.length" class="picks__list" :aria-label="`${label}, not picked`">
-      <li v-for="item in otherItems" :key="item.id" class="picks__item picks__item--off">
-        <div class="picks__row">
-          <span class="picks__handle picks__handle--off" aria-hidden="true" />
+    <p v-else-if="!dense && items.length" class="picks__none">Nothing picked yet.</p>
 
-          <label class="picks__check">
-            <input type="checkbox" @change="pick(item.id)" />
-            <span class="picks__text">
-              <span class="picks__title">{{ item.title }}</span>
-              <span v-if="item.sub" class="picks__sub">{{ item.sub }}</span>
-            </span>
-          </label>
-        </div>
-      </li>
-    </ul>
+    <template v-if="otherItems.length">
+      <p v-if="!dense" class="picks__head picks__head--off">
+        <span>not picked · {{ otherItems.length }}</span>
+      </p>
 
-    <p v-if="!items.length" class="picks__empty">Nothing to pick yet.</p>
+      <ul class="picks__list picks__list--off" :aria-label="`${label}, not picked`">
+        <li v-for="item in otherItems" :key="item.id" class="picks__item">
+          <div class="picks__row">
+            <span class="picks__handle picks__handle--off" aria-hidden="true" />
+
+            <label class="picks__check">
+              <input type="checkbox" @change="pick(item.id)" />
+              <span class="picks__text">
+                <span class="picks__title">{{ item.title }}</span>
+                <span v-if="item.sub" class="picks__sub">{{ item.sub }}</span>
+              </span>
+            </label>
+          </div>
+        </li>
+      </ul>
+    </template>
+
+    <p v-if="!items.length" class="picks__none">Nothing to pick yet.</p>
   </div>
 </template>
 
 <style scoped>
+/* One card; picked and not-picked items are rows in it, divided by rules. */
 .picks {
   display: grid;
-  gap: var(--space-2);
-}
-
-.picks__list {
-  display: grid;
-  gap: var(--space-2);
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.picks__item {
+  overflow: hidden;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   background-color: var(--color-surface);
 }
 
+.picks__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-4);
+  padding: var(--space-2-5) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--color-heading);
+}
+
+.picks__head--off {
+  border-top: 1px solid var(--color-border-strong);
+  color: var(--color-text-muted);
+}
+
+.picks__hint {
+  font-weight: var(--font-regular);
+  color: var(--color-text-muted);
+}
+
+.picks__list {
+  display: grid;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.picks__item + .picks__item {
+  border-top: 1px solid var(--color-border);
+}
+
 .picks__item--dragged {
-  border-color: var(--color-accent);
+  background-color: var(--color-hover);
   opacity: 0.6;
 }
 
-.picks__item--off {
-  border-style: dashed;
-  border-color: var(--color-border);
-  background: none;
+.picks__list--off {
+  background-color: var(--color-bg);
   color: var(--color-text-muted);
 }
 
 .picks__row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2-5) var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-2);
 }
 
 .picks__handle {
@@ -205,9 +244,9 @@ function unpick(id: string) {
 /* The checkbox keeps its own column, so long text wraps beside it. */
 .picks__check {
   display: flex;
-  flex: 1;
+  flex: 1 1 12rem;
   align-items: baseline;
-  gap: var(--space-2-5);
+  gap: var(--space-3);
   min-inline-size: 0;
   cursor: pointer;
 }
@@ -218,10 +257,8 @@ function unpick(id: string) {
 }
 
 .picks__text {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 var(--space-2);
+  display: grid;
+  gap: 0.125rem;
   min-inline-size: 0;
 }
 
@@ -230,7 +267,7 @@ function unpick(id: string) {
   color: var(--color-heading);
 }
 
-.picks__item--off .picks__title {
+.picks__list--off .picks__title {
   font-weight: var(--font-regular);
   color: inherit;
 }
@@ -240,7 +277,8 @@ function unpick(id: string) {
   color: var(--color-text-muted);
 }
 
-.picks__meta {
+.picks__meta,
+.picks__toggle {
   flex: none;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
@@ -249,33 +287,58 @@ function unpick(id: string) {
 }
 
 .picks__toggle {
-  flex: none;
+  display: inline-flex;
+  margin-inline-start: auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1-5) var(--space-2-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: none;
+  cursor: pointer;
+}
+
+.picks__toggle:hover,
+.picks__toggle[aria-expanded="true"] {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .picks__detail {
-  padding: var(--space-1) var(--space-3) var(--space-3) var(--space-10);
+  padding: 0 var(--space-3) var(--space-3);
 }
 
-.picks--dense .picks__list {
-  gap: var(--space-1);
+@media (min-width: 40rem) {
+  .picks__detail {
+    padding: 0 var(--space-4) var(--space-4) var(--space-10);
+  }
 }
 
-.picks--dense .picks__item {
+.picks__none {
+  padding: var(--space-4) var(--space-5);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* Inside another list's detail: a plain inset list, no card head. */
+.picks--dense {
+  border-color: var(--color-border);
   border-radius: var(--radius-md);
+  background-color: var(--color-bg);
+}
+
+.picks--dense .picks__list--off {
+  border-top: 1px dashed var(--color-border-strong);
 }
 
 .picks--dense .picks__row {
-  padding: var(--space-1-5) var(--space-2);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-1);
   font-size: var(--text-sm);
 }
 
 .picks--dense .picks__title {
   font-weight: var(--font-regular);
-}
-
-.picks__empty {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
+  line-height: var(--leading-relaxed);
 }
 </style>

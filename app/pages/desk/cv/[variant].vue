@@ -191,145 +191,135 @@ const actions = computed(() => [
 </script>
 
 <template>
-  <div class="editor">
-    <form class="editor__main" @submit.prevent="save">
-      <header class="editor__header">
-        <div class="editor__heading">
-          <p class="editor__path">
-            <NuxtLink to="/desk/cv" class="editor__crumb">~/desk/cv</NuxtLink> / {{ id }}
-          </p>
-          <h1 class="editor__title">{{ draft.label || id }}</h1>
-          <p class="editor__role">
-            {{ draft.role }}
-            <span v-if="isPrimary" class="role-tag">PDF</span>
-            <span v-if="isWebsite" class="role-tag">/curriculum</span>
-            <span v-if="!isPrimary && !isWebsite" class="editor__private">private</span>
-          </p>
-        </div>
-
-        <DeskMenu :actions="actions" label="Variant actions" />
-      </header>
-
-      <p v-if="request.error.value && !dirty" class="editor__error" role="alert">
-        {{ request.error.value }}
-      </p>
-
-      <div class="tabs" role="tablist" aria-label="Variant sections">
-        <button
-          v-for="item in tabs"
-          :id="`tab-${item.id}`"
-          :key="item.id"
-          type="button"
-          role="tab"
-          class="tabs__tab"
-          :aria-selected="tab === item.id"
-          aria-controls="tab-panel"
-          @click="tab = item.id"
-        >
-          {{ item.id }}
-          <span v-if="item.count !== undefined" class="tabs__count">{{ item.count }}</span>
-        </button>
+  <div class="desk-page editor">
+    <header class="desk-head">
+      <div class="desk-head__text">
+        <p class="desk-head__path"><NuxtLink to="/desk/cv">~/desk/cv</NuxtLink> / {{ id }}</p>
+        <h1 class="desk-head__title">{{ draft.label || id }}</h1>
+        <p class="desk-head__sub editor__role">
+          {{ draft.role }}
+          <span v-if="isPrimary" class="role-tag">PDF</span>
+          <span v-if="isWebsite" class="role-tag">/curriculum</span>
+          <span v-if="!isPrimary && !isWebsite" class="editor__private">private</span>
+        </p>
       </div>
 
-      <div id="tab-panel" role="tabpanel" :aria-labelledby="`tab-${tab}`" class="editor__panel">
-        <div v-if="tab === 'basics'" class="basics">
-          <label class="field">
-            <span class="field__label">label</span>
-            <input v-model="draft.label" class="input" required />
-            <span class="field__hint">The name in the desk.</span>
-          </label>
-          <label class="field">
-            <span class="field__label">role</span>
-            <input v-model="draft.role" class="input" required />
-            <span class="field__hint">The role line under the name.</span>
-          </label>
-          <label class="field field--wide">
-            <span class="field__label">summary</span>
-            <textarea v-model="draft.summary" class="input" rows="4" />
-            <span class="field__hint">One line under the role. Empty prints none.</span>
-          </label>
-        </div>
+      <DeskMenu :actions="actions" label="Variant actions" />
+    </header>
 
-        <template v-for="section in ['experience', 'education'] as const" :key="section">
-          <p v-if="tab === section" class="editor__note">
-            Pick entries and bullets; the text is shared by all variants.
-            <NuxtLink :to="`/desk/cv/${section}`" class="text-link">Edit {{ section }}</NuxtLink>
-          </p>
-          <DeskPickList
-            v-if="tab === section"
-            v-model="picked[section].value"
-            :items="entryItems(section)"
-            :label="section"
-            expandable
+    <p v-if="request.error.value && !dirty" class="desk-error" role="alert">
+      {{ request.error.value }}
+    </p>
+
+    <div class="editor__body">
+      <form class="editor__main" @submit.prevent="save">
+        <div class="tabs" role="tablist" aria-label="Variant sections">
+          <button
+            v-for="item in tabs"
+            :id="`tab-${item.id}`"
+            :key="item.id"
+            type="button"
+            role="tab"
+            class="tabs__tab"
+            :aria-selected="tab === item.id"
+            aria-controls="tab-panel"
+            @click="tab = item.id"
           >
-            <template #detail="{ item }">
-              <DeskPickList
-                :model-value="pickOf(section, item.id)?.bullets ?? []"
-                :items="bulletItems(section, item.id)"
-                :label="`Bullets of ${item.title}`"
-                dense
-                @update:model-value="setBullets(section, item.id, $event)"
-              />
-            </template>
-          </DeskPickList>
-        </template>
+            {{ item.id }}
+            <span v-if="item.count !== undefined" class="tabs__count">{{ item.count }}</span>
+          </button>
+        </div>
 
-        <template v-if="tab === 'projects'">
-          <p class="editor__note">
-            Only /curriculum shows projects, the PDF doesn't.
-            <NuxtLink to="/desk/cv/projects" class="text-link">Edit projects</NuxtLink>
-          </p>
-          <DeskPickList v-model="draft.projects" :items="projectItems" label="Projects" />
-        </template>
+        <div id="tab-panel" role="tabpanel" :aria-labelledby="`tab-${tab}`" class="editor__panel">
+          <div v-if="tab === 'basics'" class="basics">
+            <label class="field">
+              <span class="field__label">label</span>
+              <input v-model="draft.label" class="input" required />
+              <span class="field__hint">The name in the desk.</span>
+            </label>
+            <label class="field">
+              <span class="field__label">role</span>
+              <input v-model="draft.role" class="input" required />
+              <span class="field__hint">The role line under the name.</span>
+            </label>
+            <label class="field field--wide">
+              <span class="field__label">summary</span>
+              <textarea v-model="draft.summary" class="input" rows="4" />
+              <span class="field__hint">One line under the role. Empty prints none.</span>
+            </label>
+          </div>
 
-        <template v-if="tab === 'skills'">
-          <p class="editor__note">
-            Picked groups print as the PDF's skills section.
-            <NuxtLink to="/desk/cv/skills" class="text-link">Edit skills</NuxtLink>
-          </p>
-          <DeskPickList v-model="draft.skills" :items="skillItems" label="Skill groups" />
-        </template>
-      </div>
+          <template v-for="section in ['experience', 'education'] as const" :key="section">
+            <p v-if="tab === section" class="editor__note">
+              Pick entries and bullets; the text is shared by all variants.
+              <NuxtLink :to="`/desk/cv/${section}`" class="text-link">Edit {{ section }}</NuxtLink>
+            </p>
+            <DeskPickList
+              v-if="tab === section"
+              v-model="picked[section].value"
+              :items="entryItems(section)"
+              :label="section"
+              expandable
+            >
+              <template #detail="{ item }">
+                <DeskPickList
+                  :model-value="pickOf(section, item.id)?.bullets ?? []"
+                  :items="bulletItems(section, item.id)"
+                  :label="`Bullets of ${item.title}`"
+                  dense
+                  @update:model-value="setBullets(section, item.id, $event)"
+                />
+              </template>
+            </DeskPickList>
+          </template>
 
-      <DeskSaveBar
-        v-if="dirty"
-        :busy="request.busy.value"
-        :error="request.error.value"
-        @discard="discard"
-      />
-    </form>
+          <template v-if="tab === 'projects'">
+            <p class="editor__note">
+              Only /curriculum shows projects, the PDF doesn't.
+              <NuxtLink to="/desk/cv/projects" class="text-link">Edit projects</NuxtLink>
+            </p>
+            <DeskPickList v-model="draft.projects" :items="projectItems" label="Projects" />
+          </template>
 
-    <aside class="editor__preview" aria-label="PDF pages">
-      <p class="section-label">pages</p>
-      <DeskCvPdf :variant="id" :primary="isPrimary" :revision="revision" />
-    </aside>
+          <template v-if="tab === 'skills'">
+            <p class="editor__note">
+              Picked groups print as the PDF's skills section.
+              <NuxtLink to="/desk/cv/skills" class="text-link">Edit skills</NuxtLink>
+            </p>
+            <DeskPickList v-model="draft.skills" :items="skillItems" label="Skill groups" />
+          </template>
+        </div>
+
+        <DeskSaveBar
+          v-if="dirty"
+          :busy="request.busy.value"
+          :error="request.error.value"
+          @discard="discard"
+        />
+      </form>
+
+      <aside class="editor__preview" aria-label="PDF pages">
+        <DeskCvPdf :variant="id" :primary="isPrimary" :revision="revision" />
+      </aside>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.editor {
+.editor__body {
   display: grid;
-  gap: var(--space-10);
-  padding: var(--space-10) var(--space-6);
-}
-
-@media (min-width: 48rem) {
-  .editor {
-    padding: var(--space-12) var(--space-10);
-  }
+  gap: var(--space-8);
 }
 
 @media (min-width: 80rem) {
-  .editor {
-    grid-template-columns: minmax(0, 1fr) minmax(22rem, 28rem);
+  .editor__body {
+    grid-template-columns: minmax(0, 1fr) 20rem;
     align-items: start;
   }
 
   .editor__preview {
     position: sticky;
     top: var(--space-6);
-    max-block-size: calc(100dvh - var(--space-12));
-    overflow-y: auto;
   }
 }
 
@@ -337,39 +327,7 @@ const actions = computed(() => [
   display: grid;
   align-content: start;
   gap: var(--space-6);
-  max-inline-size: 52rem;
-}
-
-.editor__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.editor__heading {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.editor__path {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.editor__crumb {
-  color: inherit;
-}
-
-.editor__crumb:hover {
-  color: var(--color-accent);
-}
-
-.editor__title {
-  font-size: var(--text-3xl);
-  font-weight: var(--font-bold);
-  letter-spacing: var(--tracking-tight);
+  min-inline-size: 0;
 }
 
 .editor__role {
@@ -377,7 +335,6 @@ const actions = computed(() => [
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  color: var(--color-text-soft);
 }
 
 .editor__private {
@@ -386,13 +343,8 @@ const actions = computed(() => [
   color: var(--color-text-muted);
 }
 
-.editor__error {
-  font-size: var(--text-sm);
-  color: var(--color-signal);
-}
-
 .editor__note {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
