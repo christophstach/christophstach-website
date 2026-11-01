@@ -26,6 +26,7 @@ function isVariant(value: Partial<CvVariant>): boolean {
     typeof value.summary === "string" &&
     isPicks(value.experience) &&
     isPicks(value.education) &&
+    isStringArray(value.projects) &&
     isStringArray(value.skills)
   );
 }
@@ -57,6 +58,7 @@ function parseVariantBody(id: string, body: unknown): CvVariant {
     summary: variant.summary.trim(),
     experience: variant.experience,
     education: variant.education,
+    projects: variant.projects,
     skills: variant.skills,
   };
 }

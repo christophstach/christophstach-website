@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { navigateTo, useCookie } from "nuxt/app";
+import { navigateTo, useCookie, useFetch } from "nuxt/app";
+import { computed } from "vue";
 import { deskSections } from "~/data/desk";
 import { useUserSession } from "#imports";
 
@@ -12,6 +13,47 @@ const collapsed = useCookie<boolean>("desk-sidebar-collapsed", {
   maxAge: 60 * 60 * 24 * 365,
   sameSite: "lax",
 });
+
+// The variants and projects listed under their sections. The pages fetch the
+// same keys, so a write that refreshes them updates the sidebar too.
+const { data: variants } = useFetch("/api/desk/cv-variants", {
+  key: "desk-cv-variants",
+  lazy: true,
+});
+const { data: projects } = useFetch("/api/desk/projects", { key: "desk-projects", lazy: true });
+
+function roleTag(id: string): string | undefined {
+  const tags = [
+    id === variants.value?.primaryId && "pdf",
+    id === variants.value?.websiteId && "web",
+  ].filter(Boolean);
+
+  return tags.length > 0 ? tags.join(" · ") : undefined;
+}
+
+const subnavs = computed(() => ({
+  "/desk/cv": {
+    label: "CV variants",
+    add: { to: "/desk/cv?new", label: "new variant" },
+    items: (variants.value?.variants ?? []).map((variant) => ({
+      to: `/desk/cv/${variant.id}`,
+      label: variant.label,
+      tag: roleTag(variant.id),
+    })),
+  },
+  "/desk/projects": {
+    label: "Projects",
+    add: { to: "/desk/projects?new", label: "new project" },
+    items: (projects.value ?? []).map((project) => ({
+      to: `/desk/projects/${project.id}`,
+      label: project.title,
+    })),
+  },
+}));
+
+function subnav(to: string) {
+  return subnavs.value[to as keyof typeof subnavs.value];
+}
 
 async function signOut() {
   await clear();
@@ -54,15 +96,25 @@ async function signOut() {
       <nav id="desk-sidebar-body" class="desk__nav" aria-label="Desk sections">
         <ul>
           <li v-for="section in deskSections" :key="section.to">
+            <!-- The overview is active on /desk only, a section on its subpages too. -->
             <NuxtLink
               :to="section.to"
               :title="collapsed ? section.label : undefined"
               class="desk__item desk__link"
+              :active-class="section.to === '/desk' ? undefined : 'desk__link--active'"
               exact-active-class="desk__link--active"
             >
               <Icon :name="section.icon" size="18" class="desk__icon" />
               <span class="desk__label">{{ section.label }}</span>
             </NuxtLink>
+
+            <DeskSubnav
+              v-if="subnav(section.to) && !collapsed"
+              class="desk__subnav"
+              :label="subnav(section.to)!.label"
+              :items="subnav(section.to)!.items"
+              :add="subnav(section.to)!.add"
+            />
           </li>
         </ul>
       </nav>
@@ -157,7 +209,7 @@ async function signOut() {
   overflow-x: auto;
 }
 
-.desk__nav ul {
+.desk__nav > ul {
   display: flex;
   gap: var(--space-1);
   padding: 0;
@@ -198,6 +250,11 @@ async function signOut() {
 .desk__link--active:hover {
   background-color: var(--color-accent-subtle-bg);
   color: var(--color-accent-subtle-text);
+}
+
+/* The top bar has no room for the variants and projects. */
+.desk__subnav {
+  display: none;
 }
 
 .desk__session {
@@ -283,8 +340,16 @@ async function signOut() {
     overflow: visible;
   }
 
-  .desk__nav ul {
+  .desk__nav > ul {
     flex-direction: column;
+  }
+
+  .desk__nav {
+    overflow-y: auto;
+  }
+
+  .desk__subnav {
+    display: grid;
   }
 
   .desk__session {

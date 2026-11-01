@@ -1,6 +1,6 @@
 import { createError, defineEventHandler, getQuery, getRequestURL } from "h3";
+import { listVariants, storePageFills } from "../../utils/cv-variants";
 import { getDocumentProxy } from "unpdf";
-import { listVariants } from "../../utils/cv-variants";
 import { renderPdf } from "../../utils/cv-pdf";
 
 // The @page margin in CvDocument.vue (18mm), in PDF points.
@@ -29,7 +29,9 @@ async function pageFill(pdf: Awaited<ReturnType<typeof getDocumentProxy>>, pageN
 
 async function pageFills(data: Uint8Array) {
   try {
-    const pdf = await getDocumentProxy(data);
+    // A copy: pdf.js takes over (detaches) the buffer it reads, and renderPdf
+    // shares one render, the same bytes, with the desk's PDF preview request.
+    const pdf = await getDocumentProxy(new Uint8Array(data));
     const pageNumbers = Array.from({ length: pdf.numPages }, (_unused, index) => index + 1);
 
     return await Promise.all(
@@ -78,5 +80,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: `No CV variant "${id}".` });
   }
 
-  return { pages: await pageFills(await variantPdf(event, id, primaryId)) };
+  const pages = await pageFills(await variantPdf(event, id, primaryId));
+
+  await storePageFills(
+    id,
+    pages.map((page) => page.fill),
+  );
+
+  return { pages };
 });

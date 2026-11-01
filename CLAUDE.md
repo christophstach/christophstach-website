@@ -32,17 +32,19 @@ for the enabled rule categories.
 ## Architecture
 
 **Content is data, not markup.** All CV content lives in `app/data/cv.ts` as typed arrays
-(`experience`, `education`, `projects`, etc.) keyed by interfaces like `TimelineEntry`. Pages
+(`experience`, `education`, `skills`, etc.) keyed by interfaces like `TimelineEntry`. Pages
 (`app/pages/index.vue`, `curriculum.vue`) and `CvTimeline.vue` render from this data. To
 change CV content, edit `cv.ts` — do not hardcode entries into templates. Timeline entries
 and their bullets carry stable ids, and **variants** pick entries and bullets by id, in order. Variants are rows in the database
 (`cv_variants`, `cv_variant_entries`), typed by `CvVariant` in `app/data/cv-variants.ts` and
-edited in the desk (`DeskCvVariantEditor.vue`, `server/api/desk/cv-variants/`); all database
-access goes through `server/utils/cv-variants.ts`. Saving checks every id against `cv.ts`, so
+edited in the desk (`app/pages/desk/cv/`, `server/api/desk/cv-variants/`); all database
+access goes through `server/utils/cv-variants.ts`. Projects are not in `cv.ts`: they are rows in
+the `projects` table, edited at `/desk/projects` (`server/utils/projects.ts`), and a variant
+picks project ids; only `/curriculum` shows them, never the PDF. Saving checks every id against `cv.ts`, so
 renaming or removing an entry or bullet id there breaks stored variants that use it. Two
 variants hold a public role and can't be deleted: the one marked primary is the printed CV
 (`/cv-print`, `/christoph-stach-cv.pdf`), the one marked website is the experience and
-education on `/curriculum` (`/api/cv-website`; projects stay in `cv.ts`). The others are private, at `/desk/cv-print/<id>` and `/api/desk/cv/<id>`. All variants render
+education and the projects on `/curriculum` (`/api/cv-website`). The others are private, at `/desk/cv-print/<id>` and `/api/desk/cv/<id>`. All variants render
 through the one `CvDocument.vue`, so a variant changes content, never layout. Dates are ISO
 month strings (`"2023-10"`) formatted for display via `app/utils/format.ts` (`formatMonth`).
 
@@ -82,7 +84,10 @@ OAuth handler (`server/routes/auth/github.get.ts`) only creates a session for th
 user ID in `runtimeConfig.deskGithubId` (`NUXT_DESK_GITHUB_ID`). `app/middleware/desk.global.ts`
 redirects anonymous `/desk/**` requests to `/login`, including during SSR. Sidebar sections
 are data in `app/data/desk.ts`: a new section is one entry there plus a page under
-`app/pages/desk/`. Any server API for the desk goes under `server/api/desk/` and must call
+`app/pages/desk/`. The layout lists the CV variants and projects under their sections, from
+the same `useFetch` keys the pages use (`desk-cv-variants`, `desk-projects`); after a write,
+`refreshNuxtData` with that key updates page and sidebar. Desk editors share `DeskPickList`
+(pick and drag-reorder ids), `DeskSaveBar` and `DeskMenu`. Any server API for the desk goes under `server/api/desk/` and must call
 `requireUserSession(event)`; the page middleware does not protect API routes. Required env
 vars are listed in `.env.example`.
 
@@ -111,8 +116,9 @@ block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via
   `routeRules` caches it with ISR until the next deployment. When the desk saves the primary
   variant or makes another one primary, `revalidatePaths` renews that cache on demand with
   `NUXT_ISR_BYPASS_TOKEN` (also needed at build time, for the Vercel ISR config). Page breaks are CSS rules in `CvDocument.vue`; don't tune
-  spacing to move a break; the desk CV page previews each variant's PDF and shows how
-  full each page is (`server/api/desk/cv-pdf.get.ts`, `DeskCvPdf.vue`), flagging more than two
+  spacing to move a break; the desk variant editor previews each variant's PDF and shows how
+  full each page is (`server/api/desk/cv-pdf.get.ts`, `DeskCvPdf.vue`, rules in
+  `app/utils/cv-layout.ts`; the result is stored as `page_fills` for the overview), flagging more than two
   pages, a gap before the last page and a nearly empty last page. The serverless Chromium has no system fonts, so the PDF
   must only use the site's own web fonts (IBM Plex Sans, JetBrains Mono via `@nuxt/fonts`).
 - `public/images/hero.png` is a crawler-facing copy of `app/assets/images/hero.webp` for the
