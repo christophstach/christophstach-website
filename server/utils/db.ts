@@ -12,10 +12,16 @@ import { useRuntimeConfig } from "nitropack/runtime";
 const schema = { cvVariantEntries, cvVariantEntriesRelations, cvVariants, cvVariantsRelations };
 
 function connect(url: string) {
+  // Neon's URLs carry channel_binding=require, which postgres-js doesn't know
+  // and would send to the server as a setting, failing the connection.
+  const connection = new URL(url);
+
+  connection.searchParams.delete("channel_binding");
+
   // prepare: false because Neon's pooled URL runs PgBouncer in transaction
   // mode, which can't keep prepared statements; one connection per function
   // instance is plenty for the desk.
-  const client = postgres(url, { max: 1, prepare: false });
+  const client = postgres(connection.href, { max: 1, prepare: false });
 
   return drizzle(client, { schema, casing: "snake_case" });
 }
