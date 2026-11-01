@@ -189,7 +189,10 @@ function printedBullets(section: Section, entryId: string): number {
 <template>
   <div class="picks">
     <section class="picks__section" aria-labelledby="picks-basics">
-      <h2 id="picks-basics" class="picks__title">Heading</h2>
+      <header class="picks__head">
+        <h2 id="picks-basics" class="picks__title">Heading</h2>
+        <p class="picks__count">Printed under your name</p>
+      </header>
       <div class="picks__fields">
         <label class="field">
           <span class="field__label">role</span>
@@ -406,12 +409,15 @@ function printedBullets(section: Section, entryId: string): number {
 <style scoped>
 .picks {
   display: grid;
-  gap: var(--space-12);
+  gap: var(--space-6);
 }
 
+/* Each section is one panel: its title on top, then the rows. */
 .picks__section {
   display: grid;
-  gap: var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
 }
 
 .picks__head {
@@ -419,12 +425,12 @@ function printedBullets(section: Section, entryId: string): number {
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-1) var(--space-3);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-rule);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border-strong);
 }
 
 .picks__title {
-  font-size: var(--text-lg);
+  font-size: var(--text-base);
   font-weight: var(--font-semibold);
   color: var(--color-heading);
 }
@@ -442,7 +448,7 @@ function printedBullets(section: Section, entryId: string): number {
 .picks__fields {
   display: grid;
   gap: var(--space-5);
-  padding-top: var(--space-2);
+  padding: var(--space-5);
 }
 
 @media (min-width: 40rem) {
@@ -462,13 +468,20 @@ function printedBullets(section: Section, entryId: string): number {
 
 /* A row: grip, checkbox and text, an optional count on the right, and for
    entries their bullets below. Rows are divided by hairlines. */
+.rows {
+  padding-inline: var(--space-3) var(--space-5);
+}
+
 .row {
   display: grid;
   grid-template-columns: 1.5rem minmax(0, 1fr) auto;
   align-items: start;
   column-gap: var(--space-2);
   padding-block: var(--space-3);
-  border-bottom: 1px solid var(--color-border);
+}
+
+.row + .row {
+  border-top: 1px solid var(--color-border);
 }
 
 .row--off {
@@ -541,6 +554,10 @@ span.grip {
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
+}
+
+.rows .subrows {
+  padding-inline: 0;
 }
 
 .subrows {
