@@ -2,22 +2,17 @@
 import { computed, ref } from "vue";
 import { createError, navigateTo, refreshNuxtData, useFetch, useRoute, useSeoMeta } from "nuxt/app";
 import type { CvVariant } from "~/data/cv-variants";
-import DeskCvPdf from "~/components/DeskCvPdf.vue";
 import { useDeskRequest } from "~/utils/desk-request";
 import { useUnsavedGuard } from "~/utils/desk-unsaved";
 import { variantContent } from "~/utils/desk-variant";
 
 definePageMeta({ layout: "desk" });
 
-type Section = "experience" | "education";
-type Tab = "basics" | Section | "projects" | "skills";
-
 const route = useRoute();
 const id = String(route.params.variant);
 
 const { data } = await useFetch("/api/desk/cv-variants", { key: "desk-cv-variants" });
 const { data: projects } = await useFetch("/api/desk/projects", { key: "desk-projects" });
-const { data: content } = await useFetch("/api/desk/cv-content", { key: "desk-cv-content" });
 
 const stored = computed(() => data.value?.variants.find((variant) => variant.id === id));
 
@@ -32,6 +27,13 @@ useSeoMeta({
 
 const isPrimary = computed(() => data.value?.primaryId === id);
 const isWebsite = computed(() => data.value?.websiteId === id);
+const purpose = computed(() => {
+  if (isPrimary.value) {
+    return "The CV visitors download.";
+  }
+
+  return isWebsite.value ? "Feeds the curriculum page." : "Private, only in the desk.";
+});
 
 // The editor works on a copy until it is saved.
 const draft = ref<CvVariant>(variantContent(stored.value));
@@ -44,89 +46,11 @@ const request = useDeskRequest();
 // Bumped after every save, so the PDF check runs again.
 const revision = ref(0);
 
-// Entries of a section, newest first, from the database.
-function entriesOf(section: Section) {
-  return (content.value?.entries ?? []).filter((entry) => entry.section === section);
-}
-
-function findEntry(section: Section, entryId: string) {
-  return entriesOf(section).find((entry) => entry.id === entryId);
-}
-
-const tab = ref<Tab>("basics");
-const tabs = computed(() => [
-  { id: "basics" as const, count: undefined },
-  { id: "experience" as const, count: draft.value.experience.length },
-  { id: "education" as const, count: draft.value.education.length },
-  { id: "projects" as const, count: draft.value.projects.length },
-  { id: "skills" as const, count: draft.value.skills.length },
-]);
-
-function pickOf(section: Section, entryId: string) {
-  return draft.value[section].find((pick) => pick.id === entryId);
-}
-
-function bulletIds(section: Section, entryId: string): string[] {
-  return (findEntry(section, entryId)?.bullets ?? []).map((bullet) => bullet.id);
-}
-
-function entryItems(section: Section) {
-  return entriesOf(section).map((entry) => {
-    const pick = pickOf(section, entry.id);
-    const total = bulletIds(section, entry.id).length;
-
-    return {
-      id: entry.id,
-      title: entry.title,
-      sub: entry.organization,
-      meta: pick && total ? `${pick.bullets.length}/${total} bullets` : undefined,
-    };
-  });
-}
-
-function bulletItems(section: Section, entryId: string) {
-  return (findEntry(section, entryId)?.bullets ?? []).map((bullet) => ({
-    id: bullet.id,
-    title: bullet.text,
-  }));
-}
-
-/** Picked entry ids; a newly picked entry starts with all its bullets. */
-function pickedEntries(section: Section) {
-  return computed({
-    get: () => draft.value[section].map((pick) => pick.id),
-    set: (ids: string[]) => {
-      draft.value[section] = ids.map(
-        (entryId) =>
-          pickOf(section, entryId) ?? { id: entryId, bullets: bulletIds(section, entryId) },
-      );
-    },
-  });
-}
-
-const picked = { experience: pickedEntries("experience"), education: pickedEntries("education") };
-
-function setBullets(section: Section, entryId: string, bullets: string[]) {
-  const pick = pickOf(section, entryId);
-
-  if (pick) {
-    pick.bullets = bullets;
-  }
-}
-
 const projectItems = computed(() =>
   (projects.value ?? []).map((project) => ({
     id: project.id,
     title: project.title,
     sub: project.tech.slice(0, 4).join(", "),
-  })),
-);
-
-const skillItems = computed(() =>
-  (content.value?.skills ?? []).map((group) => ({
-    id: group.label,
-    title: group.title,
-    sub: group.items.slice(0, 4).join(", "),
   })),
 );
 
@@ -197,10 +121,9 @@ const actions = computed(() => [
         <p class="desk-head__path"><NuxtLink to="/desk/cv">~/desk/cv</NuxtLink> / {{ id }}</p>
         <h1 class="desk-head__title">{{ draft.label || id }}</h1>
         <p class="desk-head__sub editor__role">
-          {{ draft.role }}
           <span v-if="isPrimary" class="role-tag">PDF</span>
           <span v-if="isWebsite" class="role-tag">/curriculum</span>
-          <span v-if="!isPrimary && !isWebsite" class="editor__private">private</span>
+          <span>{{ purpose }}</span>
         </p>
       </div>
 
@@ -211,125 +134,43 @@ const actions = computed(() => [
       {{ request.error.value }}
     </p>
 
-    <div class="editor__body">
-      <form class="editor__main" @submit.prevent="save">
-        <div class="tabs" role="tablist" aria-label="Variant sections">
-          <button
-            v-for="item in tabs"
-            :id="`tab-${item.id}`"
-            :key="item.id"
-            type="button"
-            role="tab"
-            class="tabs__tab"
-            :aria-selected="tab === item.id"
-            aria-controls="tab-panel"
-            @click="tab = item.id"
-          >
-            {{ item.id }}
-            <span v-if="item.count !== undefined" class="tabs__count">{{ item.count }}</span>
-          </button>
-        </div>
+    <form class="editor__body" @submit.prevent="save">
+      <div class="editor__sheet">
+        <p class="editor__hint">
+          Click a bullet to print or leave it out, drag by the margin to reorder.
+        </p>
+        <DeskCvSheet v-model="draft" />
+      </div>
 
-        <div id="tab-panel" role="tabpanel" :aria-labelledby="`tab-${tab}`" class="editor__panel">
-          <div v-if="tab === 'basics'" class="basics">
-            <label class="field">
-              <span class="field__label">label</span>
-              <input v-model="draft.label" class="input" required />
-              <span class="field__hint">The name in the desk.</span>
-            </label>
-            <label class="field">
-              <span class="field__label">role</span>
-              <input v-model="draft.role" class="input" required />
-              <span class="field__hint">The role line under the name.</span>
-            </label>
-            <label class="field field--wide">
-              <span class="field__label">summary</span>
-              <textarea v-model="draft.summary" class="input" rows="4" />
-              <span class="field__hint">One line under the role. Empty prints none.</span>
-            </label>
-          </div>
-
-          <template v-for="section in ['experience', 'education'] as const" :key="section">
-            <p v-if="tab === section" class="editor__note">
-              Pick entries and bullets; the text is shared by all variants.
-              <NuxtLink :to="`/desk/cv/${section}`" class="text-link">Edit {{ section }}</NuxtLink>
-            </p>
-            <DeskPickList
-              v-if="tab === section"
-              v-model="picked[section].value"
-              :items="entryItems(section)"
-              :label="section"
-              expandable
-            >
-              <template #detail="{ item }">
-                <DeskPickList
-                  :model-value="pickOf(section, item.id)?.bullets ?? []"
-                  :items="bulletItems(section, item.id)"
-                  :label="`Bullets of ${item.title}`"
-                  dense
-                  @update:model-value="setBullets(section, item.id, $event)"
-                />
-              </template>
-            </DeskPickList>
-          </template>
-
-          <template v-if="tab === 'projects'">
-            <p class="editor__note">
-              Only /curriculum shows projects, the PDF doesn't.
-              <NuxtLink to="/desk/cv/projects" class="text-link">Edit projects</NuxtLink>
-            </p>
-            <DeskPickList v-model="draft.projects" :items="projectItems" label="Projects" />
-          </template>
-
-          <template v-if="tab === 'skills'">
-            <p class="editor__note">
-              Picked groups print as the PDF's skills section.
-              <NuxtLink to="/desk/cv/skills" class="text-link">Edit skills</NuxtLink>
-            </p>
-            <DeskPickList v-model="draft.skills" :items="skillItems" label="Skill groups" />
-          </template>
-        </div>
-
-        <DeskSaveBar
-          v-if="dirty"
-          :busy="request.busy.value"
-          :error="request.error.value"
-          @discard="discard"
-        />
-      </form>
-
-      <aside class="editor__preview" aria-label="PDF pages">
+      <aside class="editor__rail">
         <DeskCvPdf :variant="id" :primary="isPrimary" :revision="revision" />
+
+        <label class="field">
+          <span class="field__label">name in the desk</span>
+          <input v-model="draft.label" class="input" required />
+        </label>
+
+        <section class="editor__projects" aria-labelledby="rail-projects">
+          <h2 id="rail-projects" class="editor__rail-title">Projects</h2>
+          <p class="editor__rail-text">
+            Only /curriculum shows them, never the PDF.
+            <NuxtLink to="/desk/cv/projects" class="text-link">Edit projects</NuxtLink>
+          </p>
+          <DeskPickList v-model="draft.projects" :items="projectItems" label="Projects" dense />
+        </section>
       </aside>
-    </div>
+
+      <DeskSaveBar
+        v-if="dirty"
+        :busy="request.busy.value"
+        :error="request.error.value"
+        @discard="discard"
+      />
+    </form>
   </div>
 </template>
 
 <style scoped>
-.editor__body {
-  display: grid;
-  gap: var(--space-8);
-}
-
-@media (min-width: 80rem) {
-  .editor__body {
-    grid-template-columns: minmax(0, 1fr) 20rem;
-    align-items: start;
-  }
-
-  .editor__preview {
-    position: sticky;
-    top: var(--space-6);
-  }
-}
-
-.editor__main {
-  display: grid;
-  align-content: start;
-  gap: var(--space-6);
-  min-inline-size: 0;
-}
-
 .editor__role {
   display: flex;
   flex-wrap: wrap;
@@ -337,72 +178,50 @@ const actions = computed(() => [
   gap: var(--space-2);
 }
 
-.editor__private {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-
-.editor__note {
-  margin-bottom: var(--space-3);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.tabs {
-  display: flex;
-  gap: var(--space-1);
-  overflow-x: auto;
-  /* The rule as a shadow: a border plus tabs pulled over it with a negative
-     margin would overflow vertically and show a scrollbar. */
-  box-shadow: inset 0 -1px 0 var(--color-rule);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-}
-
-.tabs__tab {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1-5);
-  padding: var(--space-2) var(--space-3);
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: none;
-  color: var(--color-text-muted);
-  font: inherit;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.tabs__tab:hover {
-  color: var(--color-heading);
-}
-
-.tabs__tab[aria-selected="true"] {
-  border-bottom-color: var(--color-accent);
-  color: var(--color-heading);
-}
-
-.tabs__count {
-  padding: 0 var(--space-1-5);
-  border-radius: var(--radius-full);
-  background-color: var(--color-hover);
-  font-size: var(--text-xs);
-}
-
-.basics {
+.editor__body {
   display: grid;
-  gap: var(--space-5);
-  padding: var(--space-5) var(--space-6);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-lg);
-  background-color: var(--color-surface);
+  gap: var(--space-10);
 }
 
-@media (min-width: 40rem) {
-  .basics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (min-width: 72rem) {
+  .editor__body {
+    grid-template-columns: minmax(0, 48rem) 15rem;
+    justify-content: space-between;
     align-items: start;
   }
+
+  .editor__rail {
+    position: sticky;
+    top: var(--space-6);
+  }
+}
+
+.editor__sheet {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.editor__hint,
+.editor__rail-text {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.editor__rail {
+  display: grid;
+  align-content: start;
+  gap: var(--space-8);
+}
+
+.editor__projects {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.editor__rail-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-heading);
 }
 </style>

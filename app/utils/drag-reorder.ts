@@ -74,4 +74,4 @@ function useDragReorder(read: () => string[], write: (ids: string[]) => void) {
   };
 }
 
-export { moveId, useDragReorder };
+export { moveId, moveIdTo, useDragReorder };

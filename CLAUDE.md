@@ -95,7 +95,9 @@ are data in `app/data/desk.ts`: a new section is one entry there plus a page und
 `app/pages/desk/`. The layout lists the CV variants under the cv section, then a projects link, from
 the same `useFetch` key the pages use (`desk-cv-variants`; projects use `desk-projects`); after a write,
 `refreshNuxtData` with that key updates page and sidebar. Desk editors share `DeskPickList`
-(pick and drag-reorder ids), `DeskSaveBar` and `DeskMenu`. Any server API for the desk goes under `server/api/desk/` and must call
+(pick and drag-reorder ids), `DeskFormSection` (titled form sections), `DeskSaveBar` and `DeskMenu`.
+The variant editor shows the variant as a sheet in the PDF's look (`DeskCvSheet.vue`, colors from
+the `--color-paper*` tokens): bullets, entries and skill groups are picked and reordered on it. Any server API for the desk goes under `server/api/desk/` and must call
 `requireUserSession(event)`; the page middleware does not protect API routes. Required env
 vars are listed in `.env.example`.
 
