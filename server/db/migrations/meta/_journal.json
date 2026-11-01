@@ -50,6 +50,13 @@
       "when": 1793533056510,
       "tag": "0006_seed_projects",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793534914605,
+      "tag": "0007_cv_variant_page_fills_build",
+      "breakpoints": true
     }
   ]
 }

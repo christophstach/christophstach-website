@@ -116,9 +116,10 @@ block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via
   `routeRules` caches it with ISR until the next deployment. When the desk saves the primary
   variant or makes another one primary, `revalidatePaths` renews that cache on demand with
   `NUXT_ISR_BYPASS_TOKEN` (also needed at build time, for the Vercel ISR config). Page breaks are CSS rules in `CvDocument.vue`; don't tune
-  spacing to move a break; the desk variant editor previews each variant's PDF and shows how
+  spacing to move a break; the desk variant editor shows how
   full each page is (`server/api/desk/cv-pdf.get.ts`, `DeskCvPdf.vue`, rules in
-  `app/utils/cv-layout.ts`; the result is stored as `page_fills` for the overview), flagging more than two
+  `app/utils/cv-layout.ts`; the result is stored as `page_fills` with the build that made it; after a deploy the desk
+  layout re-checks every variant in the background, `app/utils/desk-page-checks.ts`), flagging more than two
   pages, a gap before the last page and a nearly empty last page. The serverless Chromium has no system fonts, so the PDF
   must only use the site's own web fonts (IBM Plex Sans, JetBrains Mono via `@nuxt/fonts`).
 - `public/images/hero.png` is a crawler-facing copy of `app/assets/images/hero.webp` for the

@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { computed, onMounted, watch } from "vue";
 import { navigateTo, useCookie, useFetch } from "nuxt/app";
-import { computed } from "vue";
 import { deskSections } from "~/data/desk";
+import { usePageChecks } from "~/utils/desk-page-checks";
 import { useUserSession } from "#imports";
 
 const { user, clear } = useUserSession();
@@ -23,6 +24,22 @@ const { data: variants } = useFetch("/api/desk/cv-variants", {
 const { data: projects } = useFetch("/api/desk/projects", {
   key: "desk-projects",
   lazy: true,
+});
+
+// After a deploy no variant has a page check on the new build; run them in
+// the background so the overview shows every variant's page status.
+const pageChecks = usePageChecks();
+
+onMounted(() => {
+  watch(
+    () => variants.value?.variants,
+    (list) => {
+      if (list) {
+        void pageChecks.checkMissing(list);
+      }
+    },
+    { immediate: true },
+  );
 });
 
 function roleTag(id: string): string | undefined {

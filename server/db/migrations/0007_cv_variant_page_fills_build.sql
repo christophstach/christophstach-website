@@ -1,0 +1,1 @@
+ALTER TABLE "cv_variants" ADD COLUMN "page_fills_build" text DEFAULT '' NOT NULL;

@@ -5,6 +5,7 @@ import { createError } from "h3";
 import { listProjects } from "./projects";
 import { printVariant } from "../../app/utils/cv-variant";
 import { useDb } from "./db";
+import { useRuntimeConfig } from "nitropack/runtime";
 
 type Section = "experience" | "education";
 /** The two public roles a variant can hold, each held by exactly one variant. */
@@ -39,11 +40,18 @@ function notFound(id: string) {
   return createError({ statusCode: 404, message: `No CV variant "${id}".` });
 }
 
+/** This deployment's build; page checks from other builds are out of date. */
+function currentBuild(): string {
+  return useRuntimeConfig().app.buildId;
+}
+
 /**
  * All variants, oldest first, each with when it was last saved and its last
- * page check; and the ids of the primary and the website one.
+ * page check (empty if there was none on this build); and the ids of the
+ * primary and the website one.
  */
 async function listVariants() {
+  const build = currentBuild();
   const rows = await useDb().query.cvVariants.findMany({
     with: { entries: true },
     orderBy: [asc(cvVariants.createdAt), asc(cvVariants.id)],
@@ -53,7 +61,7 @@ async function listVariants() {
     variants: rows.map((row) => ({
       ...toVariant(row),
       updatedAt: row.updatedAt.toISOString(),
-      pageFills: row.pageFills,
+      pageFills: row.pageFillsBuild === build ? row.pageFills : [],
     })),
     primaryId: rows.find((row) => row.isPrimary)?.id ?? "",
     websiteId: rows.find((row) => row.isWebsite)?.id ?? "",
@@ -165,7 +173,10 @@ async function printStoredVariant(variant: CvVariant) {
 
 /** Remembers the result of a page check, so the desk overview can show it. */
 async function storePageFills(id: string, fills: number[]) {
-  await useDb().update(cvVariants).set({ pageFills: fills }).where(eq(cvVariants.id, id));
+  await useDb()
+    .update(cvVariants)
+    .set({ pageFills: fills, pageFillsBuild: currentBuild() })
+    .where(eq(cvVariants.id, id));
 }
 
 /** Gives this variant a public role; the variant that held it loses it. */
