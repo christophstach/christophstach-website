@@ -475,7 +475,7 @@ function printedBullets(section: Section, entryId: string): number {
 .row {
   display: grid;
   grid-template-columns: 1.5rem minmax(0, 1fr) auto;
-  align-items: start;
+  align-items: center;
   column-gap: var(--space-2);
   padding-block: var(--space-3);
 }
@@ -515,9 +515,10 @@ span.grip {
   color: var(--color-accent);
 }
 
+/* Grip, checkbox and count sit centered on the row's text. */
 .row__main {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-3);
   min-inline-size: 0;
   cursor: pointer;
@@ -550,7 +551,6 @@ span.grip {
 }
 
 .row__aside {
-  padding-top: 0.125rem;
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
@@ -568,7 +568,7 @@ span.grip {
 .subrow {
   display: grid;
   grid-template-columns: 1.5rem minmax(0, 1fr);
-  align-items: start;
+  align-items: center;
   column-gap: var(--space-2);
   margin-inline-start: -1.5rem;
   padding-block: var(--space-1-5);
