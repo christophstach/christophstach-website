@@ -148,6 +148,15 @@
   --color-ring: rgb(8 122 94 / 0.3);
 
   --color-signal: var(--amber-500);
+
+  /* The CV sheet in the desk: paper in the PDF's own colors, in both themes. */
+  --color-paper: var(--slate-0);
+  --color-paper-text: #1b2321;
+  --color-paper-soft: #45504d;
+  --color-paper-muted: #6b7672;
+  --color-paper-rule: #d6dcda;
+  --color-paper-accent: var(--phosphor-700);
+  --color-paper-shadow: 0 1px 2px rgb(11 21 20 / 0.06), 0 12px 32px -12px rgb(11 21 20 / 0.18);
 }
 
 .dark {
@@ -180,4 +189,7 @@
   --color-ring: rgb(52 230 163 / 0.3);
 
   --color-signal: var(--amber-400);
+
+  --color-paper: #e8ecea;
+  --color-paper-shadow: 0 0 0 1px rgb(255 255 255 / 0.04), 0 16px 40px -12px rgb(0 0 0 / 0.6);
 }

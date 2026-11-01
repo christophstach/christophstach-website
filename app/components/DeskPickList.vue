@@ -328,8 +328,12 @@ function unpick(id: string) {
   background-color: var(--color-bg);
 }
 
-.picks--dense .picks__list--off {
+.picks--dense .picks__list + .picks__list--off {
   border-top: 1px dashed var(--color-border-strong);
+}
+
+.picks--dense .picks__check {
+  flex-basis: 0;
 }
 
 .picks--dense .picks__row {
