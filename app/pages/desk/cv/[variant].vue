@@ -12,7 +12,6 @@ const route = useRoute();
 const id = String(route.params.variant);
 
 const { data } = await useFetch("/api/desk/cv-variants", { key: "desk-cv-variants" });
-const { data: projects } = await useFetch("/api/desk/projects", { key: "desk-projects" });
 
 const stored = computed(() => data.value?.variants.find((variant) => variant.id === id));
 
@@ -45,14 +44,6 @@ const guard = useUnsavedGuard(() => dirty.value);
 const request = useDeskRequest();
 // Bumped after every save, so the PDF check runs again.
 const revision = ref(0);
-
-const projectItems = computed(() =>
-  (projects.value ?? []).map((project) => ({
-    id: project.id,
-    title: project.title,
-    sub: project.tech.slice(0, 4).join(", "),
-  })),
-);
 
 // Writes are typed <unknown>: matching these URLs against every typed route
 // exceeds the type checker's stack depth.
@@ -135,12 +126,7 @@ const actions = computed(() => [
     </p>
 
     <form class="editor__body" @submit.prevent="save">
-      <div class="editor__sheet">
-        <p class="editor__hint">
-          Click a bullet to print or leave it out, drag by the margin to reorder.
-        </p>
-        <DeskCvSheet v-model="draft" />
-      </div>
+      <DeskVariantPicks v-model="draft" />
 
       <aside class="editor__rail">
         <DeskCvPdf :variant="id" :primary="isPrimary" :revision="revision" />
@@ -149,15 +135,6 @@ const actions = computed(() => [
           <span class="field__label">name in the desk</span>
           <input v-model="draft.label" class="input" required />
         </label>
-
-        <section class="editor__projects" aria-labelledby="rail-projects">
-          <h2 id="rail-projects" class="editor__rail-title">Projects</h2>
-          <p class="editor__rail-text">
-            Only /curriculum shows them, never the PDF.
-            <NuxtLink to="/desk/cv/projects" class="text-link">Edit projects</NuxtLink>
-          </p>
-          <DeskPickList v-model="draft.projects" :items="projectItems" label="Projects" dense />
-        </section>
       </aside>
 
       <DeskSaveBar
@@ -185,8 +162,8 @@ const actions = computed(() => [
 
 @media (min-width: 72rem) {
   .editor__body {
-    grid-template-columns: minmax(0, 48rem) 15rem;
-    justify-content: space-between;
+    grid-template-columns: minmax(0, 1fr) 15rem;
+    column-gap: var(--space-12);
     align-items: start;
   }
 
@@ -196,32 +173,9 @@ const actions = computed(() => [
   }
 }
 
-.editor__sheet {
-  display: grid;
-  gap: var(--space-3);
-  min-inline-size: 0;
-}
-
-.editor__hint,
-.editor__rail-text {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
 .editor__rail {
   display: grid;
   align-content: start;
   gap: var(--space-8);
-}
-
-.editor__projects {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.editor__rail-title {
-  font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
-  color: var(--color-heading);
 }
 </style>

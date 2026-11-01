@@ -36,6 +36,12 @@ const {
   border-top: 1px solid var(--color-rule);
 }
 
+/* The page header's rule already divides the first section. */
+.form-section:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
 @media (min-width: 64rem) {
   .form-section {
     grid-template-columns: 15rem minmax(0, 1fr);
