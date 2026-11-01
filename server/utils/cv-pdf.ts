@@ -84,3 +84,24 @@ export function renderPdf(event: H3Event, path: string, withSession = false) {
 
   return rendering;
 }
+
+/**
+ * Renews the cached public PDF after the primary variant changed. On Vercel the
+ * PDF is cached until the next deployment (ISR); a request with the bypass
+ * token renders it again now. Without a token (local, or not set up) the cache
+ * stays until the next deployment.
+ */
+export async function revalidatePublicPdf(event: H3Event) {
+  const token = useRuntimeConfig(event).isrBypassToken;
+
+  if (!token) {
+    return false;
+  }
+
+  const response = await fetch(new URL("/christoph-stach-cv.pdf", getRequestURL(event).origin), {
+    method: "HEAD",
+    headers: { "x-prerender-revalidate": token },
+  });
+
+  return response.ok;
+}

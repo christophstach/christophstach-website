@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { createError, useHead, useRoute } from "nuxt/app";
-import { findVariant, printVariant } from "~/utils/cv-variant";
+import { createError, useFetch, useHead, useRoute } from "nuxt/app";
 import CvDocument from "~/components/CvDocument.vue";
 
 // A private CV variant, printed by /api/desk/cv/<variant>. It lives under /desk
@@ -9,11 +8,6 @@ import CvDocument from "~/components/CvDocument.vue";
 definePageMeta({ layout: false });
 
 const route = useRoute();
-const variant = findVariant(String(route.params.variant));
-
-if (!variant) {
-  throw createError({ statusCode: 404, statusMessage: "No such CV variant" });
-}
 
 useHead({
   title: "CV - Christoph Stach",
@@ -21,9 +15,16 @@ useHead({
   meta: [{ name: "robots", content: "noindex, nofollow" }],
 });
 
-const cv = printVariant(variant);
+// During SSR, useFetch passes the request's session cookie on to the API.
+const { data: cv, error } = await useFetch(
+  `/api/desk/cv-variants/${String(route.params.variant)}/print`,
+);
+
+if (error.value) {
+  throw createError({ ...error.value, fatal: true });
+}
 </script>
 
 <template>
-  <CvDocument :cv="cv" />
+  <CvDocument v-if="cv" :cv="cv" />
 </template>

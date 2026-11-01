@@ -1,8 +1,8 @@
-import { cvVariants, primaryVariantId } from "~/data/cv-variants";
-import { education, experience, skills } from "~/data/cv";
+import type { CvVariant, EntryPick } from "../data/cv-variants";
+import { education, experience, skills } from "../data/cv";
 
-type CvVariant = (typeof cvVariants)[number];
-type EntryPick = CvVariant["experience"][number];
+// Relative imports: the server prints variants with this too (server/utils).
+
 type SkillGroup = (typeof skills)[number];
 type TimelineEntry = (typeof experience)[number];
 
@@ -43,7 +43,7 @@ function pickEntries(variantId: string, entries: TimelineEntry[], picks: EntryPi
 }
 
 function pickSkills(variant: CvVariant): SkillGroup[] {
-  return (variant.skills ?? []).map((label) => {
+  return variant.skills.map((label) => {
     const group = skills.find((candidate) => candidate.label === label);
 
     if (!group) {
@@ -53,12 +53,6 @@ function pickSkills(variant: CvVariant): SkillGroup[] {
     return group;
   });
 }
-
-function findVariant(id: string): CvVariant | undefined {
-  return cvVariants.find((variant) => variant.id === id);
-}
-
-const primaryVariant = findVariant(primaryVariantId)!;
 
 /** Resolves a variant's ids into the content it prints; throws on an unknown id. */
 function printVariant(variant: CvVariant): PrintedCv {
@@ -72,4 +66,4 @@ function printVariant(variant: CvVariant): PrintedCv {
 }
 
 export type { PrintedCv, PrintedEntry };
-export { findVariant, primaryVariant, printVariant };
+export { printVariant };

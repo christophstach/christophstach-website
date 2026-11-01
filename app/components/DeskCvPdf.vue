@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { primaryVariantId } from "~/data/cv-variants";
 import { useFetch } from "nuxt/app";
 
-const { variant } = defineProps<{
+const { variant, primary, revision } = defineProps<{
   /** Id of the CV variant to check and preview. */
   variant: string;
+  /** Whether it is the public variant, the PDF that visitors download. */
+  primary: boolean;
+  /** Bumped after the variant is saved, to check and preview it again. */
+  revision: number;
 }>();
 
-const isPrimary = computed(() => variant === primaryVariantId);
+const isPrimary = computed(() => primary);
 
 // The primary variant is the public PDF; the others are private desk routes.
 const src = computed(() =>
@@ -17,7 +20,7 @@ const src = computed(() =>
 
 // Loaded in the browser because rendering a PDF means a few seconds of Chrome.
 const { data, error: fetchError } = useFetch("/api/desk/cv-pdf", {
-  query: computed(() => ({ variant })),
+  query: computed(() => ({ variant, revision })),
   server: false,
   lazy: true,
 });
@@ -104,7 +107,12 @@ const warnings = computed(() => (pages.value ? layoutWarnings(pages.value) : [])
       <span v-else class="cv-pdf__note">Private: only reachable from the desk.</span>
     </p>
 
-    <iframe :key="src" :src="`${src}#view=FitH`" title="CV PDF preview" class="cv-pdf__preview" />
+    <iframe
+      :key="`${src}-${revision}`"
+      :src="`${src}#view=FitH`"
+      title="CV PDF preview"
+      class="cv-pdf__preview"
+    />
   </div>
 </template>
 

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { cvVariants, primaryVariantId } from "~/data/cv-variants";
+import { computed, ref } from "vue";
 import { education, experience, profile, projects, skills } from "~/data/cv";
+import { useFetch, useSeoMeta } from "nuxt/app";
 import DeskCvPdf from "~/components/DeskCvPdf.vue";
 import DeskCvSection from "~/components/DeskCvSection.vue";
-import { ref } from "vue";
-import { useSeoMeta } from "nuxt/app";
+import DeskCvVariantEditor from "~/components/DeskCvVariantEditor.vue";
 
 definePageMeta({ layout: "desk" });
 
@@ -13,11 +13,31 @@ useSeoMeta({
   robots: "noindex, nofollow",
 });
 
-// The variant whose PDF the pdf section checks and previews.
-const selectedVariant = ref(primaryVariantId);
+// CV variants live in the database; the desk edits them through this API.
+const { data: stored, refresh } = await useFetch("/api/desk/cv-variants");
+
+const variants = computed(() => stored.value?.variants ?? []);
+const primaryId = computed(() => stored.value?.primaryId ?? "");
+
+// The variant the editor and the PDF check show; empty means the primary one.
+const selectedId = ref("");
+const selected = computed(
+  () =>
+    variants.value.find((variant) => variant.id === selectedId.value) ??
+    variants.value.find((variant) => variant.id === primaryId.value),
+);
+
+// Bumped after every write, so the PDF check and preview run again.
+const revision = ref(0);
+
+async function onChanged(id: string) {
+  await refresh();
+  selectedId.value = id;
+  revision.value += 1;
+}
 
 const sections = [
-  { id: "pdf", label: "pdf" },
+  { id: "variants", label: "variants" },
   { id: "profile", label: "profile" },
   { id: "experience", label: "experience" },
   { id: "education", label: "education" },
@@ -66,23 +86,37 @@ function bulletCount(entry: Entry): string {
     </nav>
 
     <div class="cv__sections">
-      <DeskCvSection id="pdf" label="pdf" :count="cvVariants.length">
+      <DeskCvSection id="variants" label="variants" :count="variants.length">
         <div class="variants" role="tablist" aria-label="CV variants">
           <button
-            v-for="variant in cvVariants"
+            v-for="variant in variants"
             :key="variant.id"
             type="button"
             role="tab"
-            :aria-selected="variant.id === selectedVariant"
+            :aria-selected="variant.id === selected?.id"
             class="variants__tab"
-            @click="selectedVariant = variant.id"
+            @click="selectedId = variant.id"
           >
             {{ variant.label }}
-            <span v-if="variant.id === primaryVariantId" class="variants__primary">primary</span>
+            <span v-if="variant.id === primaryId" class="variants__primary">primary</span>
           </button>
         </div>
 
-        <DeskCvPdf :variant="selectedVariant" />
+        <template v-if="selected">
+          <DeskCvVariantEditor
+            :key="`${selected.id}-${revision}`"
+            :variant="selected"
+            :primary="selected.id === primaryId"
+            @changed="onChanged"
+          />
+
+          <DeskCvPdf
+            :variant="selected.id"
+            :primary="selected.id === primaryId"
+            :revision="revision"
+          />
+        </template>
+        <p v-else class="variants__empty">No CV variants in the database.</p>
       </DeskCvSection>
 
       <DeskCvSection id="profile" label="profile">
@@ -236,6 +270,12 @@ function bulletCount(entry: Entry): string {
 .variants__tab[aria-selected="true"] {
   border-color: var(--color-accent);
   color: var(--color-heading);
+}
+
+.variants__empty {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
 }
 
 .variants__primary {

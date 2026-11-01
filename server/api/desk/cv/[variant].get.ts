@@ -1,6 +1,6 @@
-import { createError, defineEventHandler, getRouterParam, setResponseHeaders } from "h3";
-import { cvVariants } from "../../../../app/data/cv-variants";
+import { defineEventHandler, getRouterParam, setResponseHeaders } from "h3";
 import { renderPdf } from "../../../utils/cv-pdf";
+import { requireVariant } from "../../../utils/cv-variants";
 
 // requireUserSession is a Nitro auto-import (see server/routes/auth/github.get.ts).
 // Variant PDFs are private: rendered per request for the signed-in desk user,
@@ -8,11 +8,7 @@ import { renderPdf } from "../../../utils/cv-pdf";
 export default defineEventHandler(async (event) => {
   await requireUserSession(event);
 
-  const id = getRouterParam(event, "variant") ?? "";
-
-  if (!cvVariants.some((variant) => variant.id === id)) {
-    throw createError({ statusCode: 404, message: `No CV variant "${id}".` });
-  }
+  const { id } = await requireVariant(getRouterParam(event, "variant") ?? "");
 
   const pdf = await renderPdf(event, `/desk/cv-print/${id}`, true);
 

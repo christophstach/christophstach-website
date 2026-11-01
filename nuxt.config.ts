@@ -43,6 +43,13 @@ export default defineNuxtConfig({
     // Unset, the route uses the serverless Chromium, which only runs on Linux.
     // Set via NUXT_CV_PDF_CHROME.
     cvPdfChrome: "",
+    // Postgres holding the CV variants. Unset, server/utils/db.ts falls back to
+    // DATABASE_URL, which Vercel's Neon integration sets. Set via NUXT_DATABASE_URL.
+    databaseUrl: "",
+    // Lets the desk renew the cached public CV PDF after the primary variant
+    // changes. The same value goes into the Vercel build below. Set via
+    // NUXT_ISR_BYPASS_TOKEN (at least 32 characters).
+    isrBypassToken: "",
   },
 
   nitro: {
@@ -52,6 +59,9 @@ export default defineNuxtConfig({
     // dropped `#imports` from its server handler, nuxt/icon#467.)
     imports: {},
     vercel: {
+      // Read at build time: Vercel only revalidates ISR routes on demand for
+      // requests carrying this token (see revalidatePublicPdf).
+      config: { bypassToken: process.env.NUXT_ISR_BYPASS_TOKEN },
       functions: {
         // The CV PDF route unpacks and starts Chromium on a cold start, which
         // can outlast the plan's default function timeout.
@@ -63,10 +73,13 @@ export default defineNuxtConfig({
   routeRules: {
     "/": { prerender: true },
     "/curriculum": { prerender: true },
-    "/cv-print": { prerender: true },
+    // Server-rendered: it prints the primary CV variant, which lives in the
+    // database and changes without a deployment.
+    "/cv-print": { headers: { "X-Robots-Tag": "noindex, nofollow" } },
     // Rendered from /cv-print by headless Chrome (server/routes) and cached until
-    // the next deployment. Excluded from prerendering, which would otherwise crawl
-    // the download links and need Chrome in the Vercel build.
+    // the next deployment or until the desk changes the primary variant (on-demand
+    // revalidation). Excluded from prerendering, which would otherwise crawl the
+    // download links and need Chrome in the Vercel build.
     "/christoph-stach-cv.pdf": { prerender: false, isr: true },
     "/about-me": { redirect: { to: "/", statusCode: 301 } },
     // Private, server-rendered behind a GitHub session (see app/middleware).
