@@ -4,11 +4,11 @@ import { layoutWarnings, percent } from "~/utils/cv-layout";
 import { refreshNuxtData, useFetch } from "nuxt/app";
 
 const { variant, primary, revision } = defineProps<{
-  /** Id of the CV variant to check and preview. */
+  /** Id of the CV variant to check. */
   variant: string;
   /** Whether it is the public variant, the PDF that visitors download. */
   primary: boolean;
-  /** Bumped after the variant is saved, to check and preview it again. */
+  /** Bumped after the variant is saved, to check it again. */
   revision: number;
 }>();
 
@@ -77,13 +77,6 @@ watch(pages, async () => {
       <span v-if="isPrimary" class="cv-pdf__note">Public: the download on the site.</span>
       <span v-else class="cv-pdf__note">Private: only reachable from the desk.</span>
     </p>
-
-    <iframe
-      :key="`${src}-${revision}`"
-      :src="`${src}#view=FitH`"
-      title="CV PDF preview"
-      class="cv-pdf__preview"
-    />
   </div>
 </template>
 
@@ -150,15 +143,5 @@ watch(pages, async () => {
   align-items: baseline;
   gap: var(--space-4);
   margin-top: var(--space-6);
-}
-
-.cv-pdf__preview {
-  display: block;
-  inline-size: 100%;
-  block-size: 80vh;
-  margin-top: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
 }
 </style>

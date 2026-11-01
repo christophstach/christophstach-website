@@ -5,6 +5,7 @@ import { variantContent, variantCounts } from "~/utils/desk-variant";
 import { formatRelative } from "~/utils/format";
 import { pageStatus } from "~/utils/cv-layout";
 import { useDeskRequest } from "~/utils/desk-request";
+import { usePageChecks } from "~/utils/desk-page-checks";
 
 definePageMeta({ layout: "desk" });
 
@@ -14,6 +15,14 @@ useSeoMeta({
 });
 
 const route = useRoute();
+const { running } = usePageChecks();
+
+/** The card's page status: running checks first, then the stored result. */
+function status(variant: { id: string; pageFills: number[] }) {
+  return running.value.includes(variant.id)
+    ? { tone: "none" as const, text: "checking pages…" }
+    : pageStatus(variant.pageFills);
+}
 const { data } = await useFetch("/api/desk/cv-variants", { key: "desk-cv-variants" });
 
 const variants = computed(() => data.value?.variants ?? []);
@@ -156,12 +165,9 @@ async function create() {
             <span class="card__role">{{ variant.role }}</span>
 
             <span class="card__meta">
-              <span
-                class="card__status"
-                :class="`card__status--${pageStatus(variant.pageFills).tone}`"
-              >
+              <span class="card__status" :class="`card__status--${status(variant).tone}`">
                 <span class="card__dot" aria-hidden="true" />
-                {{ pageStatus(variant.pageFills).text }}
+                {{ status(variant).text }}
               </span>
               <span>{{ variantCounts(variant) }}</span>
               <span>{{ formatRelative(variant.updatedAt) }}</span>

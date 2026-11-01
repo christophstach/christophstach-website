@@ -40,7 +40,7 @@ const saved = computed(() => (stored.value ? variantContent(stored.value) : draf
 const dirty = computed(() => JSON.stringify(draft.value) !== JSON.stringify(saved.value));
 
 const request = useDeskRequest();
-// Bumped after every save, so the PDF check and preview run again.
+// Bumped after every save, so the PDF check runs again.
 const revision = ref(0);
 
 const entries: Record<Section, Entry[]> = { experience, education };
@@ -311,8 +311,8 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", warnOnUnload));
       />
     </form>
 
-    <aside class="editor__preview" aria-label="PDF preview">
-      <p class="section-label">preview</p>
+    <aside class="editor__preview" aria-label="PDF pages">
+      <p class="section-label">pages</p>
       <DeskCvPdf :variant="id" :primary="isPrimary" :revision="revision" />
     </aside>
   </div>

@@ -34,6 +34,11 @@ const cvVariants = pgTable("cv_variants", {
     .array()
     .notNull()
     .default(sql`'{}'::real[]`),
+  /**
+   * The build (Nuxt buildId) that made pageFills. A deploy can change the
+   * layout, so a check from another build counts as not checked.
+   */
+  pageFillsBuild: text().notNull().default(""),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
