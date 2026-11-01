@@ -77,57 +77,68 @@ const actions = [{ label: "Delete", icon: "tabler:trash", run: remove, danger: t
 </script>
 
 <template>
-  <form class="project" @submit.prevent="save">
-    <header class="project__header">
-      <div class="project__heading">
-        <p class="project__path">
-          <NuxtLink to="/desk/cv" class="project__crumb">~/desk/cv</NuxtLink> /
-          <NuxtLink to="/desk/cv/projects" class="project__crumb">projects</NuxtLink> /
-          {{ id }}
+  <form class="desk-page" @submit.prevent="save">
+    <header class="desk-head">
+      <div class="desk-head__text">
+        <p class="desk-head__path">
+          <NuxtLink to="/desk/cv">~/desk/cv</NuxtLink> /
+          <NuxtLink to="/desk/cv/projects">projects</NuxtLink> / {{ id }}
         </p>
-        <h1 class="project__title">{{ draft.title || id }}</h1>
+        <h1 class="desk-head__title">{{ draft.title || id }}</h1>
+        <p class="desk-head__sub">Only /curriculum shows projects, never the PDF.</p>
       </div>
 
       <DeskMenu :actions="actions" label="Project actions" />
     </header>
 
-    <p v-if="request.error.value && !dirty" class="project__error" role="alert">
+    <p v-if="request.error.value && !dirty" class="desk-error" role="alert">
       {{ request.error.value }}
     </p>
 
-    <div class="project__fields">
-      <label class="field">
-        <span class="field__label">title</span>
-        <input v-model="draft.title" class="input" required />
-      </label>
-      <label class="field">
-        <span class="field__label">description</span>
-        <textarea v-model="draft.description" class="input" rows="4" />
-      </label>
-      <label class="field">
-        <span class="field__label">tech</span>
-        <input v-model="draft.tech" class="input" placeholder="Vue, Nuxt, TypeScript" />
-        <span class="field__hint">Comma-separated, in display order.</span>
-      </label>
-      <label class="field">
-        <span class="field__label">url</span>
-        <input v-model="draft.url" class="input" type="url" placeholder="https://…" />
-        <span class="field__hint">Optional: the title links here.</span>
-      </label>
-    </div>
+    <div>
+      <DeskFormSection title="basics" description="The title links to the url when there is one.">
+        <label class="field">
+          <span class="field__label">title</span>
+          <input v-model="draft.title" class="input" required />
+        </label>
+        <label class="field">
+          <span class="field__label">url</span>
+          <input v-model="draft.url" class="input" type="url" placeholder="https://…" />
+          <span class="field__hint">Optional.</span>
+        </label>
+      </DeskFormSection>
 
-    <section class="project__used" aria-labelledby="used-by">
-      <h2 id="used-by" class="section-label">shown by</h2>
-      <p v-if="!usedBy.length" class="project__none">
-        No variant shows this project. Pick it in a variant's projects tab.
-      </p>
-      <ul v-else class="project__variants">
-        <li v-for="variant in usedBy" :key="variant.id">
-          <NuxtLink :to="`/desk/cv/${variant.id}`" class="text-link">{{ variant.label }}</NuxtLink>
-          <span v-if="variant.id === variants?.websiteId" class="role-tag">/curriculum</span>
-        </li>
-      </ul>
-    </section>
+      <DeskFormSection title="description" description="A few sentences on what it is." single>
+        <label class="field">
+          <span class="field__label">text</span>
+          <textarea v-model="draft.description" class="input" rows="5" />
+        </label>
+      </DeskFormSection>
+
+      <DeskFormSection title="tech" description="Shown as chips under the project." single>
+        <label class="field">
+          <span class="field__label">technologies</span>
+          <input v-model="draft.tech" class="input" placeholder="Vue, Nuxt, TypeScript" />
+          <span class="field__hint">Comma-separated, in display order.</span>
+        </label>
+      </DeskFormSection>
+
+      <DeskFormSection
+        title="shown by"
+        description="Pick projects in a variant's projects tab."
+        single
+      >
+        <p v-if="!usedBy.length" class="project__none">No variant shows this project.</p>
+        <ul v-else class="form-rows">
+          <li v-for="variant in usedBy" :key="variant.id" class="project__variant">
+            <NuxtLink :to="`/desk/cv/${variant.id}`" class="text-link">{{
+              variant.label
+            }}</NuxtLink>
+            <span v-if="variant.id === variants?.websiteId" class="role-tag">/curriculum</span>
+          </li>
+        </ul>
+      </DeskFormSection>
+    </div>
 
     <DeskSaveBar
       v-if="dirty"
@@ -139,83 +150,13 @@ const actions = [{ label: "Delete", icon: "tabler:trash", run: remove, danger: t
 </template>
 
 <style scoped>
-.project {
-  display: grid;
-  align-content: start;
-  gap: var(--space-8);
-  max-inline-size: 48rem;
-  padding: var(--space-10) var(--space-6);
-}
-
-@media (min-width: 48rem) {
-  .project {
-    padding: var(--space-12) var(--space-12);
-  }
-}
-
-.project__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.project__heading {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.project__path {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.project__crumb {
-  color: inherit;
-}
-
-.project__crumb:hover {
-  color: var(--color-accent);
-}
-
-.project__title {
-  font-size: var(--text-3xl);
-  font-weight: var(--font-bold);
-  letter-spacing: var(--tracking-tight);
-}
-
-.project__error {
-  font-size: var(--text-sm);
-  color: var(--color-signal);
-}
-
-.project__fields {
-  display: grid;
-  gap: var(--space-5);
-}
-
-.project__used {
-  display: grid;
-  gap: var(--space-3);
-}
-
 .project__none {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
-.project__variants {
+.project__variant {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-5);
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.project__variants li {
-  display: inline-flex;
   align-items: center;
   gap: var(--space-2);
 }
