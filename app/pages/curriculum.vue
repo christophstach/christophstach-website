@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { createError, useFetch } from "nuxt/app";
 import { cvDownloadVisible } from "~/data/cv-variants";
-import { projects } from "~/data/cv";
 
 useSeoMeta({
   title: "Curriculum",
   ogTitle: "Curriculum · Christoph Stach",
 });
 
-// Experience and education come from the website variant in the database,
-// edited in the desk; projects stay in cv.ts.
+// Experience, education and projects come from the website variant in the
+// database, edited in the desk.
 const { data: cv, error } = await useFetch("/api/cv-website");
 
 if (error.value) {
@@ -59,13 +58,22 @@ if (error.value) {
       </section>
     </div>
 
-    <section class="projects reveal--scroll">
+    <section v-if="cv?.projects.length" class="projects reveal--scroll">
       <h2 class="section-label page__section-label">projects --recent</h2>
 
       <ul class="projects__grid">
-        <li v-for="project in projects" :key="project.title" class="projects__card">
+        <li v-for="project in cv.projects" :key="project.id" class="projects__card">
           <h3 class="projects__title">
-            <span class="projects__prompt">›</span> {{ project.title }}
+            <span class="projects__prompt">›</span>
+            <a
+              v-if="project.url"
+              :href="project.url"
+              class="projects__link"
+              target="_blank"
+              rel="noopener"
+              >{{ project.title }}</a
+            >
+            <template v-else>{{ project.title }}</template>
           </h3>
 
           <p class="projects__description">{{ project.description }}</p>
@@ -170,6 +178,17 @@ if (error.value) {
 }
 
 .projects__prompt {
+  color: var(--color-accent);
+}
+
+.projects__link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-underline-offset: 0.2em;
+}
+
+.projects__link:hover {
   color: var(--color-accent);
 }
 

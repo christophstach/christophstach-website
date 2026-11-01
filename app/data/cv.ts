@@ -23,12 +23,6 @@ export interface TimelineEntry {
   links?: TimelineLink[];
 }
 
-export interface Project {
-  title: string;
-  description: string;
-  tech: string[];
-}
-
 export const experience: TimelineEntry[] = [
   {
     id: "mbition",
@@ -235,24 +229,3 @@ export const profile = {
     { label: "LinkedIn", href: "https://linkedin.com/in/christoph-stach-7586b958" },
   ] satisfies ProfileLink[],
 };
-
-export const projects: Project[] = [
-  {
-    title: "TIGeR (Toolkit for Integration of Generative AI Resources)",
-    description:
-      "The common runtime multiple Mercedes-Benz agent teams build their LLM agents on, with Agent-to-Agent and Model Context Protocol interoperability.",
-    tech: ["Python", "FastAPI", "LLMs", "A2A", "MCP", "Kubernetes", "GitLab CI"],
-  },
-  {
-    title: "SDP (Speech Development Platform)",
-    description:
-      "No-code platform for configuring and deploying speech applications for Mercedes-Benz.",
-    tech: ["Vue", "Nuxt", "Tailwind", "NestJS", "PostgreSQL", "MongoDB", "Websockets"],
-  },
-  {
-    title: "Crowds UI",
-    description:
-      "Workflow editor with graph-based task views and dynamic form generation to streamline internal processes.",
-    tech: ["React", "Remix", "Tailwind"],
-  },
-];

@@ -23,6 +23,8 @@ interface CvVariant {
   summary: string;
   experience: EntryPick[];
   education: EntryPick[];
+  /** Project ids, in display order; only /curriculum shows them, not the PDF. */
+  projects: string[];
   /** SkillGroup labels to print as a skills section; empty prints none. */
   skills: string[];
 }

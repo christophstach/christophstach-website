@@ -2,6 +2,7 @@ import type { CvVariant, EntryPick } from "../../app/data/cv-variants";
 import { asc, eq, sql } from "drizzle-orm";
 import { cvVariantEntries, cvVariants } from "../db/schema";
 import { createError } from "h3";
+import { listProjects } from "./projects";
 import { printVariant } from "../../app/utils/cv-variant";
 import { useDb } from "./db";
 
@@ -29,6 +30,7 @@ function toVariant(row: VariantRow): CvVariant {
     summary: row.summary,
     experience: picks(row, "experience"),
     education: picks(row, "education"),
+    projects: row.projects,
     skills: row.skills,
   };
 }
@@ -37,7 +39,10 @@ function notFound(id: string) {
   return createError({ statusCode: 404, message: `No CV variant "${id}".` });
 }
 
-/** All variants, oldest first, and the ids of the primary and the website one. */
+/**
+ * All variants, oldest first, each with when it was last saved and its last
+ * page check; and the ids of the primary and the website one.
+ */
 async function listVariants() {
   const rows = await useDb().query.cvVariants.findMany({
     with: { entries: true },
@@ -45,7 +50,11 @@ async function listVariants() {
   });
 
   return {
-    variants: rows.map((row) => toVariant(row)),
+    variants: rows.map((row) => ({
+      ...toVariant(row),
+      updatedAt: row.updatedAt.toISOString(),
+      pageFills: row.pageFills,
+    })),
     primaryId: rows.find((row) => row.isPrimary)?.id ?? "",
     websiteId: rows.find((row) => row.isWebsite)?.id ?? "",
   };
@@ -99,7 +108,10 @@ function variantColumns(variant: CvVariant) {
     label: variant.label,
     role: variant.role,
     summary: variant.summary,
+    projects: variant.projects,
     skills: variant.skills,
+    // The stored page check no longer matches the content.
+    pageFills: [],
     updatedAt: new Date(),
   };
 }
@@ -109,8 +121,10 @@ function variantColumns(variant: CvVariant) {
  * checked against cv.ts first, so a stored variant always prints.
  */
 async function saveVariant(variant: CvVariant, { create }: { create: boolean }) {
+  const projects = await listProjects();
+
   try {
-    printVariant(variant);
+    printVariant(variant, projects);
   } catch (error) {
     throw createError({ statusCode: 400, message: (error as Error).message });
   }
@@ -142,6 +156,16 @@ async function saveVariant(variant: CvVariant, { create }: { create: boolean }) 
       await tx.insert(cvVariantEntries).values(rows);
     }
   });
+}
+
+/** A variant's printed content, its projects resolved from the database. */
+async function printStoredVariant(variant: CvVariant) {
+  return printVariant(variant, await listProjects());
+}
+
+/** Remembers the result of a page check, so the desk overview can show it. */
+async function storePageFills(id: string, fills: number[]) {
+  await useDb().update(cvVariants).set({ pageFills: fills }).where(eq(cvVariants.id, id));
 }
 
 /** Gives this variant a public role; the variant that held it loses it. */
@@ -176,7 +200,9 @@ export {
   deleteVariant,
   listVariants,
   markVariant,
+  printStoredVariant,
   requireMarkedVariant,
   requireVariant,
   saveVariant,
+  storePageFills,
 };

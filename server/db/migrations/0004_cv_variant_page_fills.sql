@@ -1,0 +1,1 @@
+ALTER TABLE "cv_variants" ADD COLUMN "page_fills" real[] DEFAULT '{}'::real[] NOT NULL;

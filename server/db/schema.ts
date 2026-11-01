@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, integer, pgTable, primaryKey, real, text, timestamp } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
 // Column names are snake_case in the database: drizzle.config.ts and useDb()
@@ -12,6 +12,11 @@ const cvVariants = pgTable("cv_variants", {
   role: text().notNull(),
   /** Empty prints no summary line. */
   summary: text().notNull().default(""),
+  /** Project ids, in display order; /curriculum shows the website variant's. */
+  projects: text()
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
   /** SkillGroup labels from cv.ts, in print order; empty prints no skills. */
   skills: text()
     .array()
@@ -21,6 +26,14 @@ const cvVariants = pgTable("cv_variants", {
   isPrimary: boolean().notNull().default(false),
   /** The variant /curriculum shows, usually with every bullet; one at a time. */
   isWebsite: boolean().notNull().default(false),
+  /**
+   * How full each page of its PDF was at the last check in the desk, 0 to 1;
+   * empty until checked, and cleared when the variant is saved.
+   */
+  pageFills: real()
+    .array()
+    .notNull()
+    .default(sql`'{}'::real[]`),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
@@ -42,6 +55,22 @@ const cvVariantEntries = pgTable(
   (table) => [primaryKey({ columns: [table.variantId, table.section, table.position] })],
 );
 
+/** A project shown on /curriculum when the website variant picks it. */
+const projects = pgTable("projects", {
+  /** URL slug, e.g. /desk/projects/tiger. */
+  id: text().primaryKey(),
+  title: text().notNull(),
+  description: text().notNull(),
+  tech: text()
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  /** Optional link to the project; empty shows none. */
+  url: text().notNull().default(""),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
 const cvVariantsRelations = relations(cvVariants, ({ many }) => ({
   entries: many(cvVariantEntries),
 }));
@@ -50,4 +79,4 @@ const cvVariantEntriesRelations = relations(cvVariantEntries, ({ one }) => ({
   variant: one(cvVariants, { fields: [cvVariantEntries.variantId], references: [cvVariants.id] }),
 }));
 
-export { cvVariantEntries, cvVariantEntriesRelations, cvVariants, cvVariantsRelations };
+export { cvVariantEntries, cvVariantEntriesRelations, cvVariants, cvVariantsRelations, projects };

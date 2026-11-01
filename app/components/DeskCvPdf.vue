@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { useFetch } from "nuxt/app";
+import { computed, watch } from "vue";
+import { layoutWarnings, percent } from "~/utils/cv-layout";
+import { refreshNuxtData, useFetch } from "nuxt/app";
 
 const { variant, primary, revision } = defineProps<{
   /** Id of the CV variant to check and preview. */
@@ -39,44 +40,14 @@ const error = computed(() => {
   return body?.message ?? fetchError.value.message;
 });
 
-// The CV is meant to fill two pages. A page before the last that ends this
-// early has a visible gap at the bottom, usually because a whole block moved to
-// the next page; a last page this empty holds only a few stray lines.
-const MAX_PAGES = 2;
-const MIN_FILL = 0.8;
-const MIN_LAST_FILL = 0.15;
+const warnings = computed(() =>
+  pages.value ? layoutWarnings(pages.value.map((page) => page.fill)) : [],
+);
 
-function percent(fill: number): string {
-  return `${Math.round(fill * 100)} %`;
-}
-
-/** Pages before the last that end early, i.e. with a gap at the bottom. */
-function gapWarnings(fills: { fill: number }[]): string[] {
-  return fills
-    .slice(0, -1)
-    .flatMap((page, index) =>
-      page.fill < MIN_FILL
-        ? [`Page ${index + 1} ends at ${percent(page.fill)}: a block moved to the next page.`]
-        : [],
-    );
-}
-
-function layoutWarnings(fills: { fill: number }[]): string[] {
-  const found = gapWarnings(fills);
-  const last = fills.at(-1);
-
-  if (fills.length > MAX_PAGES) {
-    found.unshift(`Runs to ${fills.length} pages, ${MAX_PAGES} at most.`);
-  }
-
-  if (fills.length > 1 && last && last.fill < MIN_LAST_FILL) {
-    found.push(`Page ${fills.length} holds only ${percent(last.fill)} of the page.`);
-  }
-
-  return found;
-}
-
-const warnings = computed(() => (pages.value ? layoutWarnings(pages.value) : []));
+// The check is stored with the variant; the overview and sidebar show it.
+watch(pages, async () => {
+  await refreshNuxtData("desk-cv-variants");
+});
 </script>
 
 <template>
