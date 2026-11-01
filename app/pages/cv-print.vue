@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { primaryVariant, printVariant } from "~/utils/cv-variant";
+import { createError, useFetch, useHead, useSeoMeta } from "nuxt/app";
 import CvDocument from "~/components/CvDocument.vue";
 
-// The public CV: the primary variant, which /christoph-stach-cv.pdf prints.
+// The public CV: the primary variant from the database, which
+// /christoph-stach-cv.pdf prints.
 useSeoMeta({
   robots: "noindex, nofollow",
 });
@@ -14,9 +15,13 @@ useHead({
   titleTemplate: "%s",
 });
 
-const cv = printVariant(primaryVariant);
+const { data: cv, error } = await useFetch("/api/cv-print");
+
+if (error.value) {
+  throw createError({ ...error.value, fatal: true });
+}
 </script>
 
 <template>
-  <CvDocument :cv="cv" />
+  <CvDocument v-if="cv" :cv="cv" />
 </template>

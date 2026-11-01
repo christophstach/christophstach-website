@@ -7,8 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Personal CV website for Christoph Stach (christophstach.de), built with **Nuxt** on the
 nightly channel (`nuxt-nightly@latest`, `compatibilityVersion: 5`). Hybrid rendering: the
 public pages are prerendered, while the private `/desk` area is server-rendered behind GitHub
-auth (deployed on Vercel). No database — content is hardcoded TypeScript, styling is a
-hand-rolled pure-CSS design system.
+auth (deployed on Vercel). CV content is hardcoded TypeScript; only the printed CV variants
+live in Postgres (Neon), accessed with Drizzle ORM. Styling is a hand-rolled pure-CSS design
+system.
 
 ## Commands
 
@@ -17,7 +18,13 @@ for the script list.
 
 There is no test suite. `pnpm build` is the deploy build (Vercel): it prerenders the public
 routes and bundles the Nitro server for `/desk`, `/auth/github` and the CV PDF. `pnpm generate`
-still works for a static-only build, but it can't serve the desk or the PDF.
+still works for a static-only build, but it can't serve the desk or the PDF. On Vercel the
+`vercel-build` script runs instead: `drizzle-kit migrate`, then `nuxt build`.
+
+Database: the schema is `server/db/schema.ts`; after changing it run `pnpm db:generate` and
+commit the SQL migration in `server/db/migrations`. `pnpm db:migrate` applies migrations to
+`DATABASE_URL_UNPOOLED` (or `DATABASE_URL`). Data changes that must ship with the code, like
+the initial variants, are custom migrations (`drizzle-kit generate --custom`).
 
 Tooling is **oxlint + oxfmt** (the Oxc toolchain), not ESLint/Prettier — see `.oxlintrc.json`
 for the enabled rule categories.
@@ -29,10 +36,14 @@ for the enabled rule categories.
 (`app/pages/index.vue`, `curriculum.vue`) and `CvTimeline.vue` render from this data. To
 change CV content, edit `cv.ts` — do not hardcode entries into templates. Timeline entries
 and their bullets carry stable ids: the site shows every bullet, while the printed CV comes
-in **variants** (`app/data/cv-variants.ts`) that pick entries and bullets by id, in order.
-`primaryVariantId` is the public one (`/cv-print`, `/christoph-stach-cv.pdf`); the others are
-private, at `/desk/cv-print/<id>` and `/api/desk/cv/<id>`. All variants render through the one
-`CvDocument.vue`, so a variant changes content, never layout; an unknown id throws at render. Dates are ISO
+in **variants** that pick entries and bullets by id, in order. Variants are rows in the database
+(`cv_variants`, `cv_variant_entries`), typed by `CvVariant` in `app/data/cv-variants.ts` and
+edited in the desk (`DeskCvVariantEditor.vue`, `server/api/desk/cv-variants/`); all database
+access goes through `server/utils/cv-variants.ts`. Saving checks every id against `cv.ts`, so
+renaming or removing an entry or bullet id there breaks stored variants that use it. The one
+marked primary is public (`/cv-print`, `/christoph-stach-cv.pdf`) and can't be deleted; the
+others are private, at `/desk/cv-print/<id>` and `/api/desk/cv/<id>`. All variants render
+through the one `CvDocument.vue`, so a variant changes content, never layout. Dates are ISO
 month strings (`"2023-10"`) formatted for display via `app/utils/format.ts` (`formatMonth`).
 
 **CSS design system is layered, imported once via `app/assets/css/main.css`:**
@@ -58,8 +69,8 @@ tags so browser chrome is correct before hydration.
 **Routing/prerender** is declared in `nuxt.config.ts` `routeRules`: `/` and `/curriculum` are
 prerendered; `/about-me` 301-redirects to `/`. Add new prerendered routes there — and also add
 the URL to `public/sitemap.xml`, a hand-maintained static file (no sitemap module), or it goes
-stale. `/cv-print` is a prerendered, `noindex`, unlinked print-only page used solely as the
-source for the CV PDF.
+stale. `/cv-print` is a server-rendered (it reads the primary variant from the database),
+`noindex`, unlinked print-only page used solely as the source for the CV PDF.
 
 **Layouts.** `app/layouts/default.vue` holds the public chrome (skip link, `AppHeader`,
 `AppFooter`); `app/layouts/desk.vue` is the desk shell with the left sidebar. Pages opt into
@@ -94,11 +105,11 @@ block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via
   `tools/og-card.html` template, not hand-painted. Regenerate after editing the template with:
   `google-chrome --headless=new --hide-scrollbars --window-size=1200,630 --screenshot=public/images/og.png tools/og-card.html`
 - The downloadable CV (`/christoph-stach-cv.pdf`) is not a file in the repo. The server route
-  `server/routes/christoph-stach-cv.pdf.get.ts` prints the prerendered `/cv-print` page through
+  `server/routes/christoph-stach-cv.pdf.get.ts` prints the `/cv-print` page through
   `server/utils/cv-pdf.ts` (one Chrome at a time per instance) with `puppeteer-core` (`@sparticuz/chromium`, or the Chrome in `NUXT_CV_PDF_CHROME` off Linux), and
-  `routeRules` caches it with ISR until the next deployment, so it follows `app/data/cv.ts` with
-  no extra step. Once the CV data lives somewhere that changes without a deploy, the cache needs
-  an expiry or on-demand revalidation. Page breaks are CSS rules in `CvDocument.vue`; don't tune
+  `routeRules` caches it with ISR until the next deployment. When the desk saves the primary
+  variant or makes another one primary, `revalidatePublicPdf` renews that cache on demand with
+  `NUXT_ISR_BYPASS_TOKEN` (also needed at build time, for the Vercel ISR config). Page breaks are CSS rules in `CvDocument.vue`; don't tune
   spacing to move a break; the desk CV page previews each variant's PDF and shows how
   full each page is (`server/api/desk/cv-pdf.get.ts`, `DeskCvPdf.vue`), flagging more than two
   pages, a gap before the last page and a nearly empty last page. The serverless Chromium has no system fonts, so the PDF

@@ -1,6 +1,6 @@
 import { createError, defineEventHandler, getQuery, getRequestURL } from "h3";
-import { cvVariants, primaryVariantId } from "../../../app/data/cv-variants";
 import { getDocumentProxy } from "unpdf";
+import { listVariants } from "../../utils/cv-variants";
 import { renderPdf } from "../../utils/cv-pdf";
 
 // The @page margin in CvDocument.vue (18mm), in PDF points.
@@ -48,8 +48,8 @@ async function pageFills(data: Uint8Array) {
  * file that visitors download and only runs Chrome when that cache is cold.
  * Other variants are private and rendered for the request.
  */
-async function variantPdf(event: Parameters<typeof renderPdf>[0], id: string) {
-  if (id !== primaryVariantId) {
+async function variantPdf(event: Parameters<typeof renderPdf>[0], id: string, primaryId: string) {
+  if (id !== primaryId) {
     return renderPdf(event, `/desk/cv-print/${id}`, true);
   }
 
@@ -71,11 +71,12 @@ async function variantPdf(event: Parameters<typeof renderPdf>[0], id: string) {
 export default defineEventHandler(async (event) => {
   await requireUserSession(event);
 
-  const id = String(getQuery(event).variant ?? primaryVariantId);
+  const { variants, primaryId } = await listVariants();
+  const id = String(getQuery(event).variant ?? primaryId);
 
-  if (!cvVariants.some((variant) => variant.id === id)) {
+  if (!variants.some((variant) => variant.id === id)) {
     throw createError({ statusCode: 404, message: `No CV variant "${id}".` });
   }
 
-  return { pages: await pageFills(await variantPdf(event, id)) };
+  return { pages: await pageFills(await variantPdf(event, id, primaryId)) };
 });
