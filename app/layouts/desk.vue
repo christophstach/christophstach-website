@@ -15,14 +15,10 @@ const collapsed = useCookie<boolean>("desk-sidebar-collapsed", {
   sameSite: "lax",
 });
 
-// The variants and projects listed under their sections. The pages fetch the
-// same keys, so a write that refreshes them updates the sidebar too.
+// The variants listed under "cv". The pages fetch the same key, so a write
+// that refreshes it updates the sidebar too.
 const { data: variants } = useFetch("/api/desk/cv-variants", {
   key: "desk-cv-variants",
-  lazy: true,
-});
-const { data: projects } = useFetch("/api/desk/projects", {
-  key: "desk-projects",
   lazy: true,
 });
 
@@ -51,19 +47,12 @@ function roleTag(id: string): string | undefined {
   return tags.length > 0 ? tags.join(" · ") : undefined;
 }
 
-// Under "cv": the variants, then the projects that variants pick from.
+// Under "cv": the variants, then a link to the projects they pick from.
 const variantLinks = computed(() =>
   (variants.value?.variants ?? []).map((variant) => ({
     to: `/desk/cv/${variant.id}`,
     label: variant.label,
     tag: roleTag(variant.id),
-  })),
-);
-
-const projectLinks = computed(() =>
-  (projects.value ?? []).map((project) => ({
-    to: `/desk/cv/projects/${project.id}`,
-    label: project.title,
   })),
 );
 
@@ -135,11 +124,6 @@ async function signOut() {
                 <Icon name="tabler:folders" size="14" />
                 projects
               </NuxtLink>
-              <DeskSubnav
-                label="Projects"
-                :items="projectLinks"
-                :add="{ to: '/desk/cv/projects?new', label: 'new project' }"
-              />
             </DeskSubnav>
           </li>
         </ul>
@@ -278,7 +262,7 @@ async function signOut() {
   color: var(--color-accent-subtle-text);
 }
 
-/* The projects heading inside the cv list, a step above its project links. */
+/* The projects link at the end of the cv list, set apart from the variants. */
 .desk__projects {
   display: flex;
   align-items: center;
@@ -298,11 +282,13 @@ async function signOut() {
   color: var(--color-hover-text);
 }
 
-.desk__projects--active {
+.desk__projects--active,
+.desk__projects--active:hover {
+  background-color: var(--color-accent-subtle-bg);
   color: var(--color-accent-subtle-text);
 }
 
-/* The top bar has no room for the variants and projects. */
+/* The top bar has no room for the variants. */
 .desk__subnav {
   display: none;
 }

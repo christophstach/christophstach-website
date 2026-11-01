@@ -413,7 +413,9 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", warnOnUnload));
   display: flex;
   gap: var(--space-1);
   overflow-x: auto;
-  border-bottom: 1px solid var(--color-rule);
+  /* The rule as a shadow: a border plus tabs pulled over it with a negative
+     margin would overflow vertically and show a scrollbar. */
+  box-shadow: inset 0 -1px 0 var(--color-rule);
   font-family: var(--font-mono);
   font-size: var(--text-sm);
 }
@@ -423,7 +425,6 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", warnOnUnload));
   align-items: center;
   gap: var(--space-1-5);
   padding: var(--space-2) var(--space-3);
-  margin-bottom: -1px;
   border: 0;
   border-bottom: 2px solid transparent;
   background: none;
