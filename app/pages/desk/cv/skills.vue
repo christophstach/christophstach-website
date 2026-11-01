@@ -95,18 +95,23 @@ function discard() {
 </script>
 
 <template>
-  <form class="skills" @submit.prevent="save">
-    <header class="skills__heading">
-      <p class="skills__path">
-        <NuxtLink to="/desk/cv" class="skills__crumb">~/desk/cv</NuxtLink> / skills
-      </p>
-      <h1 class="skills__title">Skills</h1>
-      <p class="skills__intro">
-        The home page shows every group in this order; variants pick which ones the PDF prints.
-      </p>
+  <form class="desk-page" @submit.prevent="save">
+    <header class="desk-head">
+      <div class="desk-head__text">
+        <p class="desk-head__path"><NuxtLink to="/desk/cv">~/desk/cv</NuxtLink> / skills</p>
+        <h1 class="desk-head__title">Skills</h1>
+        <p class="desk-head__sub">
+          The home page shows every group in this order; variants pick which ones the PDF prints.
+        </p>
+      </div>
+
+      <button type="button" class="button button--outline" @click="addGroup">
+        <Icon name="tabler:plus" size="16" />
+        Add group
+      </button>
     </header>
 
-    <p v-if="request.error.value && !dirty" class="skills__error" role="alert">
+    <p v-if="request.error.value && !dirty" class="desk-error" role="alert">
       {{ request.error.value }}
     </p>
 
@@ -122,15 +127,32 @@ function discard() {
         @drop.prevent
         @dragend="drag.end()"
       >
-        <button
-          type="button"
-          class="group__handle"
-          :aria-label="`Move ${group.title || 'group'}: arrow up or down`"
-          title="Drag, or use the arrow keys"
-          @keydown="!group.isNew && drag.key(group.label, $event)"
-        >
-          <Icon name="tabler:grip-vertical" size="16" />
-        </button>
+        <div class="group__head">
+          <button
+            type="button"
+            class="group__handle"
+            :aria-label="`Move ${group.title || 'group'}: arrow up or down`"
+            title="Drag, or use the arrow keys"
+            @keydown="!group.isNew && drag.key(group.label, $event)"
+          >
+            <Icon name="tabler:grip-vertical" size="16" />
+          </button>
+          <span class="group__name">{{ group.title || "New group" }}</span>
+          <span class="group__used">
+            {{
+              usedBy(group.label).length ? `in ${usedBy(group.label).join(", ")}` : "in no variant"
+            }}
+          </span>
+          <button
+            type="button"
+            class="icon-button"
+            aria-label="Remove group"
+            title="Remove group"
+            @click="removeGroup(index)"
+          >
+            <Icon name="tabler:trash" size="16" />
+          </button>
+        </div>
 
         <div class="group__fields">
           <label class="field">
@@ -149,36 +171,14 @@ function discard() {
             <span class="field__label">title</span>
             <input v-model="group.title" class="input" required />
           </label>
-          <label class="field group__wide">
+          <label class="field field--wide">
             <span class="field__label">skills</span>
             <textarea v-model="group.items" class="input" rows="2" />
-            <span class="field__hint">
-              Comma-separated.
-              {{
-                usedBy(group.label).length
-                  ? `Printed by ${usedBy(group.label).join(", ")}.`
-                  : "No variant prints it."
-              }}
-            </span>
+            <span class="field__hint">Comma-separated, in display order.</span>
           </label>
         </div>
-
-        <button
-          type="button"
-          class="icon-button"
-          aria-label="Remove group"
-          title="Remove group"
-          @click="removeGroup(index)"
-        >
-          <Icon name="tabler:trash" size="16" />
-        </button>
       </li>
     </ol>
-
-    <button type="button" class="button button--outline skills__add" @click="addGroup">
-      <Icon name="tabler:plus" size="16" />
-      Add group
-    </button>
 
     <DeskSaveBar
       v-if="dirty"
@@ -190,71 +190,23 @@ function discard() {
 </template>
 
 <style scoped>
-.skills {
-  display: grid;
-  align-content: start;
-  gap: var(--space-6);
-  max-inline-size: 52rem;
-  padding: var(--space-10) var(--space-6);
-}
-
-@media (min-width: 48rem) {
-  .skills {
-    padding: var(--space-12) var(--space-12);
-  }
-}
-
-.skills__heading {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.skills__path {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.skills__crumb {
-  color: inherit;
-}
-
-.skills__crumb:hover {
-  color: var(--color-accent);
-}
-
-.skills__title {
-  font-size: var(--text-3xl);
-  font-weight: var(--font-bold);
-  letter-spacing: var(--tracking-tight);
-}
-
-.skills__intro {
-  color: var(--color-text-soft);
-}
-
-.skills__error {
-  font-size: var(--text-sm);
-  color: var(--color-signal);
-}
-
-.skills__add {
-  justify-self: start;
-}
-
 .groups {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
   padding: 0;
   margin: 0;
   list-style: none;
 }
 
+@media (min-width: 80rem) {
+  .groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .group {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-4) var(--space-3);
+  display: grid;
+  align-content: start;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   background-color: var(--color-surface);
@@ -265,13 +217,21 @@ function discard() {
   opacity: 0.6;
 }
 
+.group__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
 .group__handle {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
   inline-size: 1.5rem;
-  block-size: 2.25rem;
+  block-size: 2rem;
   padding: 0;
   border: 0;
   background: none;
@@ -284,21 +244,32 @@ function discard() {
   color: var(--color-accent);
 }
 
+.group__name {
+  font-weight: var(--font-semibold);
+  color: var(--color-heading);
+}
+
+.group__used {
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .group__fields {
   display: grid;
-  flex: 1;
   gap: var(--space-4);
-  min-inline-size: 0;
+  padding: var(--space-5);
 }
 
 @media (min-width: 40rem) {
   .group__fields {
     grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
     align-items: start;
-  }
-
-  .group__wide {
-    grid-column: 1 / -1;
   }
 }
 

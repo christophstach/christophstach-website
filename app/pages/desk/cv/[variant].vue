@@ -243,7 +243,7 @@ const actions = computed(() => [
             <input v-model="draft.role" class="input" required />
             <span class="field__hint">The role line under the name.</span>
           </label>
-          <label class="field">
+          <label class="field field--wide">
             <span class="field__label">summary</span>
             <textarea v-model="draft.summary" class="input" rows="4" />
             <span class="field__hint">One line under the role. Empty prints none.</span>
@@ -441,5 +441,16 @@ const actions = computed(() => [
 .basics {
   display: grid;
   gap: var(--space-5);
+  padding: var(--space-5) var(--space-6);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+}
+
+@media (min-width: 40rem) {
+  .basics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
 }
 </style>
