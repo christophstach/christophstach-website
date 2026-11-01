@@ -79,7 +79,7 @@ function discard() {
       {{ request.error.value }}
     </p>
 
-    <div>
+    <div class="panels">
       <DeskFormSection title="identity" description="The name on top of the CV.">
         <label class="field">
           <span class="field__label">name</span>

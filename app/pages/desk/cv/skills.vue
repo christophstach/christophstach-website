@@ -119,7 +119,7 @@ function discard() {
       <li
         v-for="(group, index) in draft"
         :key="group.isNew ? `new-${index}` : group.label"
-        class="group"
+        class="group panel"
         :class="{ 'group--dragged': drag.dragged.value === group.label }"
         :draggable="!group.isNew"
         @dragstart="drag.start(group.label, $event)"
@@ -192,7 +192,7 @@ function discard() {
 <style scoped>
 .groups {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-6);
   padding: 0;
   margin: 0;
   list-style: none;
@@ -205,11 +205,7 @@ function discard() {
 }
 
 .group {
-  display: grid;
   align-content: start;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-lg);
-  background-color: var(--color-surface);
 }
 
 .group--dragged {
@@ -221,8 +217,8 @@ function discard() {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-3);
+  border-bottom: 1px solid var(--color-border-strong);
 }
 
 .group__handle {
@@ -245,6 +241,7 @@ function discard() {
 }
 
 .group__name {
+  font-size: var(--text-base);
   font-weight: var(--font-semibold);
   color: var(--color-heading);
 }

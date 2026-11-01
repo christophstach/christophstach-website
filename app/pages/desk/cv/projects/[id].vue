@@ -95,7 +95,7 @@ const actions = [{ label: "Delete", icon: "tabler:trash", run: remove, danger: t
       {{ request.error.value }}
     </p>
 
-    <div>
+    <div class="panels">
       <DeskFormSection title="basics" description="The title links to the url when there is one.">
         <label class="field">
           <span class="field__label">title</span>

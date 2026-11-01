@@ -164,7 +164,7 @@ const actions = [{ label: "Delete", icon: "tabler:trash", run: remove, danger: t
       {{ request.error.value }}
     </p>
 
-    <div>
+    <div class="panels">
       <DeskFormSection title="basics" description="What you did, and where.">
         <label class="field field--wide">
           <span class="field__label">title</span>
