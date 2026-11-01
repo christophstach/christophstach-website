@@ -30,6 +30,9 @@ const { items, label, add } = defineProps<{
         {{ add.label }}
       </NuxtLink>
     </li>
+    <li v-if="$slots.default">
+      <slot />
+    </li>
   </ul>
 </template>
 
@@ -43,8 +46,14 @@ const { items, label, add } = defineProps<{
   list-style: none;
 }
 
+.subnav,
+.subnav li {
+  min-inline-size: 0;
+}
+
 .subnav__link {
   display: flex;
+  overflow: hidden;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);

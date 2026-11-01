@@ -69,7 +69,7 @@ async function remove() {
 
   if (await request.run(() => $fetch<unknown>(url, { method: "DELETE" }))) {
     leaving = true;
-    await navigateTo("/desk/projects");
+    await navigateTo("/desk/cv/projects");
     await refreshNuxtData(["desk-projects", "desk-cv-variants"]);
   }
 }
@@ -104,7 +104,8 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", warnOnUnload));
     <header class="project__header">
       <div class="project__heading">
         <p class="project__path">
-          <NuxtLink to="/desk/projects" class="project__crumb">~/desk/projects</NuxtLink> /
+          <NuxtLink to="/desk/cv" class="project__crumb">~/desk/cv</NuxtLink> /
+          <NuxtLink to="/desk/cv/projects" class="project__crumb">projects</NuxtLink> /
           {{ id }}
         </p>
         <h1 class="project__title">{{ draft.title || id }}</h1>

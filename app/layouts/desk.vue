@@ -20,7 +20,10 @@ const { data: variants } = useFetch("/api/desk/cv-variants", {
   key: "desk-cv-variants",
   lazy: true,
 });
-const { data: projects } = useFetch("/api/desk/projects", { key: "desk-projects", lazy: true });
+const { data: projects } = useFetch("/api/desk/projects", {
+  key: "desk-projects",
+  lazy: true,
+});
 
 function roleTag(id: string): string | undefined {
   const tags = [
@@ -31,29 +34,21 @@ function roleTag(id: string): string | undefined {
   return tags.length > 0 ? tags.join(" · ") : undefined;
 }
 
-const subnavs = computed(() => ({
-  "/desk/cv": {
-    label: "CV variants",
-    add: { to: "/desk/cv?new", label: "new variant" },
-    items: (variants.value?.variants ?? []).map((variant) => ({
-      to: `/desk/cv/${variant.id}`,
-      label: variant.label,
-      tag: roleTag(variant.id),
-    })),
-  },
-  "/desk/projects": {
-    label: "Projects",
-    add: { to: "/desk/projects?new", label: "new project" },
-    items: (projects.value ?? []).map((project) => ({
-      to: `/desk/projects/${project.id}`,
-      label: project.title,
-    })),
-  },
-}));
+// Under "cv": the variants, then the projects that variants pick from.
+const variantLinks = computed(() =>
+  (variants.value?.variants ?? []).map((variant) => ({
+    to: `/desk/cv/${variant.id}`,
+    label: variant.label,
+    tag: roleTag(variant.id),
+  })),
+);
 
-function subnav(to: string) {
-  return subnavs.value[to as keyof typeof subnavs.value];
-}
+const projectLinks = computed(() =>
+  (projects.value ?? []).map((project) => ({
+    to: `/desk/cv/projects/${project.id}`,
+    label: project.title,
+  })),
+);
 
 async function signOut() {
   await clear();
@@ -109,12 +104,26 @@ async function signOut() {
             </NuxtLink>
 
             <DeskSubnav
-              v-if="subnav(section.to) && !collapsed"
+              v-if="section.to === '/desk/cv' && !collapsed"
               class="desk__subnav"
-              :label="subnav(section.to)!.label"
-              :items="subnav(section.to)!.items"
-              :add="subnav(section.to)!.add"
-            />
+              label="CV variants"
+              :items="variantLinks"
+              :add="{ to: '/desk/cv?new', label: 'new variant' }"
+            >
+              <NuxtLink
+                to="/desk/cv/projects"
+                class="desk__projects"
+                active-class="desk__projects--active"
+              >
+                <Icon name="tabler:folders" size="14" />
+                projects
+              </NuxtLink>
+              <DeskSubnav
+                label="Projects"
+                :items="projectLinks"
+                :add="{ to: '/desk/cv/projects?new', label: 'new project' }"
+              />
+            </DeskSubnav>
           </li>
         </ul>
       </nav>
@@ -249,6 +258,30 @@ async function signOut() {
 .desk__link--active,
 .desk__link--active:hover {
   background-color: var(--color-accent-subtle-bg);
+  color: var(--color-accent-subtle-text);
+}
+
+/* The projects heading inside the cv list, a step above its project links. */
+.desk__projects {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  margin-top: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-soft);
+  font-size: var(--text-xs);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.desk__projects:hover {
+  background-color: var(--color-hover);
+  color: var(--color-hover-text);
+}
+
+.desk__projects--active {
   color: var(--color-accent-subtle-text);
 }
 

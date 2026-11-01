@@ -1,6 +1,6 @@
 /** A project shown on /curriculum, stored in the database and edited in the desk. */
 interface Project {
-  /** URL slug, e.g. /desk/projects/tiger. */
+  /** URL slug, e.g. /desk/cv/projects/tiger. */
   id: string;
   title: string;
   description: string;

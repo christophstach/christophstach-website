@@ -39,7 +39,7 @@ and their bullets carry stable ids, and **variants** pick entries and bullets by
 (`cv_variants`, `cv_variant_entries`), typed by `CvVariant` in `app/data/cv-variants.ts` and
 edited in the desk (`app/pages/desk/cv/`, `server/api/desk/cv-variants/`); all database
 access goes through `server/utils/cv-variants.ts`. Projects are not in `cv.ts`: they are rows in
-the `projects` table, edited at `/desk/projects` (`server/utils/projects.ts`), and a variant
+the `projects` table, edited at `/desk/cv/projects` (so `projects` can't be a variant id) (`server/utils/projects.ts`), and a variant
 picks project ids; only `/curriculum` shows them, never the PDF. Saving checks every id against `cv.ts`, so
 renaming or removing an entry or bullet id there breaks stored variants that use it. Two
 variants hold a public role and can't be deleted: the one marked primary is the printed CV
@@ -84,7 +84,7 @@ OAuth handler (`server/routes/auth/github.get.ts`) only creates a session for th
 user ID in `runtimeConfig.deskGithubId` (`NUXT_DESK_GITHUB_ID`). `app/middleware/desk.global.ts`
 redirects anonymous `/desk/**` requests to `/login`, including during SSR. Sidebar sections
 are data in `app/data/desk.ts`: a new section is one entry there plus a page under
-`app/pages/desk/`. The layout lists the CV variants and projects under their sections, from
+`app/pages/desk/`. The layout lists the CV variants and, below them, the projects under the cv section, from
 the same `useFetch` keys the pages use (`desk-cv-variants`, `desk-projects`); after a write,
 `refreshNuxtData` with that key updates page and sidebar. Desk editors share `DeskPickList`
 (pick and drag-reorder ids), `DeskSaveBar` and `DeskMenu`. Any server API for the desk goes under `server/api/desk/` and must call

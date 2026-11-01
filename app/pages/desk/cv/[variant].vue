@@ -290,7 +290,7 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", warnOnUnload));
         <template v-if="tab === 'projects'">
           <p class="editor__note">
             Only /curriculum shows projects, the PDF doesn't.
-            <NuxtLink to="/desk/projects" class="text-link">Edit projects</NuxtLink>
+            <NuxtLink to="/desk/cv/projects" class="text-link">Edit projects</NuxtLink>
           </p>
           <DeskPickList v-model="draft.projects" :items="projectItems" label="Projects" />
         </template>
