@@ -35,7 +35,7 @@ async function create() {
   ) {
     await refreshNuxtData("desk-projects");
     form.value = { id: "", title: "" };
-    await navigateTo(`/desk/projects/${id}`);
+    await navigateTo(`/desk/cv/projects/${id}`);
   }
 }
 </script>
@@ -44,14 +44,16 @@ async function create() {
   <div class="overview">
     <header class="overview__header">
       <div class="overview__heading">
-        <p class="overview__path">~/desk/projects</p>
+        <p class="overview__path">
+          <NuxtLink to="/desk/cv" class="overview__crumb">~/desk/cv</NuxtLink> / projects
+        </p>
         <h1 class="overview__title">Projects</h1>
         <p class="overview__intro">
           Projects for /curriculum. The website variant picks which ones show, and in what order.
         </p>
       </div>
 
-      <NuxtLink v-if="!creating" to="/desk/projects?new" class="button button--primary">
+      <NuxtLink v-if="!creating" to="/desk/cv/projects?new" class="button button--primary">
         <Icon name="tabler:plus" size="16" />
         New project
       </NuxtLink>
@@ -87,13 +89,13 @@ async function create() {
         <button type="submit" class="button button--primary" :disabled="request.busy.value">
           {{ request.busy.value ? "Creating…" : "Create project" }}
         </button>
-        <NuxtLink to="/desk/projects" class="button button--outline">Cancel</NuxtLink>
+        <NuxtLink to="/desk/cv/projects" class="button button--outline">Cancel</NuxtLink>
       </div>
     </form>
 
     <ul v-if="projects?.length" class="cards">
       <li v-for="project in projects" :key="project.id">
-        <NuxtLink :to="`/desk/projects/${project.id}`" class="card">
+        <NuxtLink :to="`/desk/cv/projects/${project.id}`" class="card">
           <span class="card__label">{{ project.title }}</span>
           <span class="card__description">{{ project.description || "No description yet." }}</span>
           <span v-if="project.tech.length" class="card__tech">
@@ -144,6 +146,14 @@ async function create() {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+}
+
+.overview__crumb {
+  color: inherit;
+}
+
+.overview__crumb:hover {
+  color: var(--color-accent);
 }
 
 .overview__title {
