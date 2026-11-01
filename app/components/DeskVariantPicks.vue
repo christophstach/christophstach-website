@@ -415,6 +415,7 @@ function printedBullets(section: Section, entryId: string): number {
 /* Each section is one panel: its title on top, then the rows. */
 .picks__section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   background-color: var(--color-surface);

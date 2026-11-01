@@ -211,8 +211,11 @@
   border-color: var(--color-accent);
 }
 
-/* Textareas grow with their text. */
+/* Textareas grow with their text, in height only: without the containment a
+   long line would also widen them, and every column around them, past the
+   screen on a phone. */
 textarea.input {
+  contain: inline-size;
   field-sizing: content;
   min-block-size: 2.75rem;
   resize: vertical;
@@ -314,6 +317,12 @@ textarea.input {
   letter-spacing: var(--tracking-tight);
 }
 
+@media (max-width: 40rem) {
+  .desk-head__title {
+    font-size: var(--text-2xl);
+  }
+}
+
 .desk-head__sub {
   color: var(--color-text-soft);
 }
@@ -347,8 +356,11 @@ textarea.input {
 
 /* A panel on the page: a head row with the title and a short note, then the
    body. Desk forms and the variant editor are built from these. */
+/* One column that may shrink below its content, so a long line inside (a
+   nowrap label, a wide input) can't push the panel past a phone screen. */
 .panel {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   background-color: var(--color-surface);
