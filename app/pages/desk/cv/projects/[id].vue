@@ -19,13 +19,15 @@ if (!stored.value) {
 }
 
 useSeoMeta({
-  title: () => `${stored.value?.title ?? id} · Projects · Desk`,
+  title: () => `${stored.value?.name || stored.value?.title || id} · Projects · Desk`,
   robots: "noindex, nofollow",
 });
 
 /** The form's state: tech as one comma-separated line. */
 function toForm(project: NonNullable<typeof stored.value>) {
   return {
+    name: project.name,
+    note: project.note,
     title: project.title,
     description: project.description,
     tech: project.tech.join(", "),
@@ -62,7 +64,11 @@ function discard() {
 
 async function remove() {
   // oxlint-disable-next-line no-alert -- a desk-only safety net before deleting
-  if (!confirm(`Delete the project "${saved.value.title}"? Variants that show it drop it.`)) {
+  if (
+    !confirm(
+      `Delete the project "${saved.value.name || saved.value.title}"? Variants that show it drop it.`,
+    )
+  ) {
     return;
   }
 
@@ -84,7 +90,7 @@ const actions = [{ label: "Delete", icon: "tabler:trash", run: remove, danger: t
           <NuxtLink to="/desk/cv">~/desk/cv</NuxtLink> /
           <NuxtLink to="/desk/cv/projects">projects</NuxtLink> / {{ id }}
         </p>
-        <h1 class="desk-head__title">{{ draft.title || id }}</h1>
+        <h1 class="desk-head__title">{{ draft.name || draft.title || id }}</h1>
         <p class="desk-head__sub">Only /curriculum shows projects, never the PDF.</p>
       </div>
 
@@ -96,6 +102,22 @@ const actions = [{ label: "Delete", icon: "tabler:trash", run: remove, danger: t
     </p>
 
     <div class="panels">
+      <DeskFormSection title="in the desk" description="Only you see these, never the site.">
+        <label class="field">
+          <span class="field__label">name</span>
+          <input v-model="draft.name" class="input" required />
+        </label>
+        <label class="field field--wide">
+          <span class="field__label">note</span>
+          <textarea
+            v-model="draft.note"
+            class="input"
+            rows="2"
+            placeholder="What this project is for, e.g. which jobs it fits."
+          />
+        </label>
+      </DeskFormSection>
+
       <DeskFormSection title="basics" description="The title links to the url when there is one.">
         <label class="field">
           <span class="field__label">title</span>

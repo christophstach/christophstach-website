@@ -27,6 +27,7 @@ function toVariant(row: VariantRow): CvVariant {
   return {
     id: row.id,
     label: row.label,
+    note: row.note,
     role: row.role,
     summary: row.summary,
     experience: picks(row, "experience"),
@@ -114,6 +115,7 @@ function entryRows(variant: CvVariant) {
 function variantColumns(variant: CvVariant) {
   return {
     label: variant.label,
+    note: variant.note,
     role: variant.role,
     summary: variant.summary,
     projects: variant.projects,

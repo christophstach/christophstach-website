@@ -24,13 +24,15 @@ if (!stored.value) {
 }
 
 useSeoMeta({
-  title: () => `${stored.value?.title ?? id} · CV · Desk`,
+  title: () => `${stored.value?.name || stored.value?.title || id} · CV · Desk`,
   robots: "noindex, nofollow",
 });
 
 /** The form's state: tech as one comma-separated line. */
 function toForm(entry: EntryRecord) {
   return {
+    name: entry.name,
+    note: entry.note,
     title: entry.title,
     organization: entry.organization,
     location: entry.location,
@@ -126,7 +128,7 @@ async function remove() {
   const note = users.length > 0 ? ` ${users.join(", ")} print it and will drop it.` : "";
 
   // oxlint-disable-next-line no-alert -- a desk-only safety net before deleting
-  if (!confirm(`Delete "${saved.value.title}"?${note}`)) {
+  if (!confirm(`Delete "${saved.value.name || saved.value.title}"?${note}`)) {
     return;
   }
 
@@ -148,9 +150,9 @@ const actions = [{ label: "Delete", icon: "tabler:trash", run: remove, danger: t
           <NuxtLink to="/desk/cv">~/desk/cv</NuxtLink> /
           <NuxtLink :to="`/desk/cv/${section}`">{{ section }}</NuxtLink> / {{ id }}
         </p>
-        <h1 class="desk-head__title">{{ draft.title || id }}</h1>
+        <h1 class="desk-head__title">{{ draft.name || draft.title || id }}</h1>
         <p class="desk-head__sub">
-          {{ draft.organization }}
+          {{ draft.title }} at {{ draft.organization }}
           <span class="entry__used">
             {{ usedBy().length ? `in ${usedBy().join(", ")}` : "in no variant" }}
           </span>
@@ -165,6 +167,25 @@ const actions = [{ label: "Delete", icon: "tabler:trash", run: remove, danger: t
     </p>
 
     <div class="panels">
+      <DeskFormSection
+        title="in the desk"
+        description="Only you see these, never the CV or the site."
+      >
+        <label class="field">
+          <span class="field__label">name</span>
+          <input v-model="draft.name" class="input" required />
+        </label>
+        <label class="field field--wide">
+          <span class="field__label">note</span>
+          <textarea
+            v-model="draft.note"
+            class="input"
+            rows="2"
+            placeholder="What this entry is for, e.g. which jobs it fits."
+          />
+        </label>
+      </DeskFormSection>
+
       <DeskFormSection title="basics" description="What you did, and where.">
         <label class="field field--wide">
           <span class="field__label">title</span>

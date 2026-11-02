@@ -33,7 +33,7 @@ function usedBy(id: string): number {
 
 // "?new" opens the form.
 const creating = computed(() => route.query.new !== undefined);
-const form = ref({ id: "", title: "", organization: "", from: "" });
+const form = ref({ id: "", name: "", title: "", organization: "", from: "" });
 const request = useDeskRequest();
 const pageChecks = usePageChecks();
 
@@ -42,6 +42,7 @@ async function create() {
   const body = {
     ...form.value,
     section,
+    note: "",
     location: "",
     to: "",
     tech: [],
@@ -54,7 +55,7 @@ async function create() {
   ) {
     await refreshNuxtData(["desk-cv-content", "desk-cv-variants"]);
     pageChecks.forget();
-    form.value = { id: "", title: "", organization: "", from: "" };
+    form.value = { id: "", name: "", title: "", organization: "", from: "" };
     await navigateTo(`/desk/cv/${section}/${id}`);
   }
 }
@@ -98,6 +99,11 @@ async function create() {
           >
         </label>
         <label class="field">
+          <span class="field__label">name</span>
+          <input v-model="form.name" class="input" required placeholder="Acme, platform team" />
+          <span class="field__hint">Only the desk shows it.</span>
+        </label>
+        <label class="field">
           <span class="field__label">title</span>
           <input v-model="form.title" class="input" required />
         </label>
@@ -127,13 +133,14 @@ async function create() {
       <li v-for="entry in entries" :key="entry.id">
         <NuxtLink :to="`/desk/cv/${section}/${entry.id}`" class="card">
           <span class="card__top">
-            <span class="card__label">{{ entry.title }}</span>
+            <span class="card__label">{{ entry.name || entry.title }}</span>
             <span class="card__period">{{ period(entry) }}</span>
           </span>
           <span class="card__org">
-            {{ entry.organization
+            {{ entry.title }} at {{ entry.organization
             }}<template v-if="entry.location">, {{ entry.location }}</template>
           </span>
+          <span v-if="entry.note" class="desk-note">{{ entry.note }}</span>
           <span class="card__meta">
             <span>{{ entry.bullets.length }} bullets</span>
             <span>{{

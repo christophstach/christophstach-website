@@ -85,6 +85,20 @@
       "when": 1793537957602,
       "tag": "0011_seed_cv_profile",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793634575841,
+      "tag": "0012_names_and_notes",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793634576891,
+      "tag": "0013_seed_names",
+      "breakpoints": true
     }
   ]
 }

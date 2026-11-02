@@ -1,11 +1,14 @@
-import type { Project } from "../../app/data/projects";
+import type { ProjectRecord } from "../../app/data/projects";
 import { createError } from "h3";
 
 // URL slug: lowercase words joined by single hyphens, e.g. "crowds-ui".
 const PROJECT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
-function isProject(value: Partial<Project>): boolean {
+function isProject(value: Partial<ProjectRecord>): boolean {
   return (
+    typeof value.name === "string" &&
+    value.name.trim() !== "" &&
+    typeof value.note === "string" &&
     typeof value.title === "string" &&
     value.title.trim() !== "" &&
     typeof value.description === "string" &&
@@ -16,8 +19,8 @@ function isProject(value: Partial<Project>): boolean {
 }
 
 /** Checks the shape of a project sent by the desk; the route's id wins. */
-function parseProjectBody(id: string, body: unknown): Project {
-  const value = (body ?? {}) as Partial<Project>;
+function parseProjectBody(id: string, body: unknown): ProjectRecord {
+  const value = (body ?? {}) as Partial<ProjectRecord>;
 
   if (!PROJECT_ID.test(id)) {
     throw createError({
@@ -30,10 +33,12 @@ function parseProjectBody(id: string, body: unknown): Project {
     throw createError({ statusCode: 400, message: "Not a project." });
   }
 
-  const project = value as Project;
+  const project = value as ProjectRecord;
 
   return {
     id,
+    name: project.name.trim(),
+    note: project.note.trim(),
     title: project.title.trim(),
     description: project.description.trim(),
     tech: project.tech.map((item) => item.trim()).filter(Boolean),

@@ -18,6 +18,10 @@ const { data: variants } = await useFetch("/api/desk/cv-variants", { key: "desk-
 
 interface GroupForm {
   label: string;
+  /** Desk only. */
+  name: string;
+  /** Desk only. */
+  note: string;
   title: string;
   /** Comma-separated. */
   items: string;
@@ -28,6 +32,8 @@ interface GroupForm {
 function toForm(): GroupForm[] {
   return (content.value?.skills ?? []).map((group) => ({
     label: group.label,
+    name: group.name,
+    note: group.note,
     title: group.title,
     items: group.items.join(", "),
   }));
@@ -56,7 +62,7 @@ const drag = useDragReorder(
 );
 
 function addGroup() {
-  draft.value.push({ label: "", title: "", items: "", isNew: true });
+  draft.value.push({ label: "", name: "", note: "", title: "", items: "", isNew: true });
 }
 
 function removeGroup(index: number) {
@@ -77,6 +83,8 @@ const pageChecks = usePageChecks();
 async function save() {
   const body = draft.value.map((group) => ({
     label: group.label.trim(),
+    name: group.name,
+    note: group.note,
     title: group.title,
     items: group.items.split(","),
   }));
@@ -131,13 +139,13 @@ function discard() {
           <button
             type="button"
             class="group__handle"
-            :aria-label="`Move ${group.title || 'group'}: arrow up or down`"
+            :aria-label="`Move ${group.name || group.title || 'group'}: arrow up or down`"
             title="Drag, or use the arrow keys"
             @keydown="!group.isNew && drag.key(group.label, $event)"
           >
             <Icon name="tabler:grip-vertical" size="16" />
           </button>
-          <span class="group__name">{{ group.title || "New group" }}</span>
+          <span class="group__name">{{ group.name || group.title || "New group" }}</span>
           <span class="group__used">
             {{
               usedBy(group.label).length ? `in ${usedBy(group.label).join(", ")}` : "in no variant"
@@ -156,6 +164,20 @@ function discard() {
 
         <div class="group__fields">
           <label class="field">
+            <span class="field__label">name</span>
+            <input v-model="group.name" class="input" required />
+            <span class="field__hint">Only the desk shows the name and the note.</span>
+          </label>
+          <label class="field">
+            <span class="field__label">note</span>
+            <textarea
+              v-model="group.note"
+              class="input"
+              rows="1"
+              placeholder="What this group is for."
+            />
+          </label>
+          <label class="field">
             <span class="field__label">id</span>
             <input
               v-if="group.isNew"
@@ -170,6 +192,7 @@ function discard() {
           <label class="field">
             <span class="field__label">title</span>
             <input v-model="group.title" class="input" required />
+            <span class="field__hint">The heading the CV prints.</span>
           </label>
           <label class="field field--wide">
             <span class="field__label">skills</span>

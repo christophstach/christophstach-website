@@ -17,6 +17,8 @@ interface CvVariant {
   id: string;
   /** Name shown in the desk. */
   label: string;
+  /** Desk only: what it is for. Never printed. */
+  note: string;
   /** Role line under the name. */
   role: string;
   /** One line under the role: how the career fits together for this kind of job. Empty prints none. */

@@ -32,6 +32,10 @@ export interface TimelineEntry {
 export interface EntryRecord {
   id: string;
   section: "experience" | "education";
+  /** Desk only: how the desk lists it. Never printed or shown on the site. */
+  name: string;
+  /** Desk only: what it is for. Never printed or shown on the site. */
+  note: string;
   title: string;
   organization: string;
   location: string;
@@ -50,6 +54,14 @@ export interface SkillGroup {
   /** Prose heading used in the PDF, which recruiters and ATS parsers read. */
   title: string;
   items: string[];
+}
+
+/** A skill group as the desk edits it, with its desk-only name and note. */
+export interface SkillGroupRecord extends SkillGroup {
+  /** Desk only: how the desk lists it. */
+  name: string;
+  /** Desk only: what it is for. */
+  note: string;
 }
 
 /**

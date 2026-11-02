@@ -1,14 +1,16 @@
 import { asc, eq, sql } from "drizzle-orm";
 import { cvVariants, projects } from "../db/schema";
-import type { Project } from "../../app/data/projects";
+import type { ProjectRecord } from "../../app/data/projects";
 import { createError } from "h3";
 import { useDb } from "./db";
 
 type ProjectRow = typeof projects.$inferSelect;
 
-function toProject(row: ProjectRow): Project {
+function toProject(row: ProjectRow): ProjectRecord {
   return {
     id: row.id,
+    name: row.name,
+    note: row.note,
     title: row.title,
     description: row.description,
     tech: row.tech,
@@ -21,7 +23,7 @@ function notFound(id: string) {
 }
 
 /** All projects, oldest first. */
-async function listProjects(): Promise<Project[]> {
+async function listProjects(): Promise<ProjectRecord[]> {
   const rows = await useDb()
     .select()
     .from(projects)
@@ -31,7 +33,7 @@ async function listProjects(): Promise<Project[]> {
 }
 
 /** The project with this id; a 404 error if there is none. */
-async function requireProject(id: string): Promise<Project> {
+async function requireProject(id: string): Promise<ProjectRecord> {
   const [row] = await useDb().select().from(projects).where(eq(projects.id, id));
 
   if (!row) {
@@ -41,8 +43,10 @@ async function requireProject(id: string): Promise<Project> {
   return toProject(row);
 }
 
-function projectColumns(project: Project) {
+function projectColumns(project: ProjectRecord) {
   return {
+    name: project.name,
+    note: project.note,
     title: project.title,
     description: project.description,
     tech: project.tech,
@@ -52,7 +56,7 @@ function projectColumns(project: Project) {
 }
 
 /** Creates a project (409 if the id is taken) or updates one (404 if missing). */
-async function saveProject(project: Project, { create }: { create: boolean }) {
+async function saveProject(project: ProjectRecord, { create }: { create: boolean }) {
   const written = create
     ? await useDb()
         .insert(projects)

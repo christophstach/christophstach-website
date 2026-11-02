@@ -23,18 +23,25 @@ function usedBy(id: string): string[] {
 
 // "?new" opens the form.
 const creating = computed(() => route.query.new !== undefined);
-const form = ref({ id: "", title: "" });
+const form = ref({ id: "", name: "", title: "" });
 const request = useDeskRequest();
 
 async function create() {
   const id = form.value.id.trim();
-  const body = { title: form.value.title, description: "", tech: [], url: "" };
+  const body = {
+    name: form.value.name,
+    note: "",
+    title: form.value.title,
+    description: "",
+    tech: [],
+    url: "",
+  };
 
   if (
     await request.run(() => $fetch<unknown>(`/api/desk/projects/${id}`, { method: "POST", body }))
   ) {
     await refreshNuxtData("desk-projects");
-    form.value = { id: "", title: "" };
+    form.value = { id: "", name: "", title: "" };
     await navigateTo(`/desk/cv/projects/${id}`);
   }
 }
@@ -76,8 +83,15 @@ async function create() {
         </label>
 
         <label class="field">
+          <span class="field__label">name</span>
+          <input v-model="form.name" class="input" required placeholder="My project" />
+          <span class="field__hint">Only the desk shows it.</span>
+        </label>
+
+        <label class="field">
           <span class="field__label">title</span>
           <input v-model="form.title" class="input" required placeholder="My Project" />
+          <span class="field__hint">The heading /curriculum shows.</span>
         </label>
       </div>
 
@@ -96,7 +110,8 @@ async function create() {
     <ul v-if="projects?.length" class="cards">
       <li v-for="project in projects" :key="project.id">
         <NuxtLink :to="`/desk/cv/projects/${project.id}`" class="card">
-          <span class="card__label">{{ project.title }}</span>
+          <span class="card__label">{{ project.name || project.title }}</span>
+          <span v-if="project.note" class="desk-note">{{ project.note }}</span>
           <span class="card__description">{{ project.description || "No description yet." }}</span>
           <span v-if="project.tech.length" class="card__tech">
             <span v-for="tech in project.tech" :key="tech" class="chip">{{ tech }}</span>

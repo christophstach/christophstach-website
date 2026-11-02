@@ -2,7 +2,7 @@ import type {
   EntryRecord,
   Profile,
   ProfileLink,
-  SkillGroup,
+  SkillGroupRecord,
   TimelineLink,
 } from "../../app/data/cv";
 import { createError } from "h3";
@@ -83,6 +83,10 @@ function checkEntryFields(value: Partial<EntryRecord>) {
     throw invalid("Section must be experience or education.");
   }
 
+  if (!isText(value.name) || typeof value.note !== "string") {
+    throw invalid("An entry needs a name.");
+  }
+
   if (!isText(value.title) || !isText(value.organization)) {
     throw invalid("An entry needs a title and an organization.");
   }
@@ -111,6 +115,8 @@ function parseEntryBody(id: string, body: unknown): EntryRecord {
   return {
     id,
     section: entry.section,
+    name: entry.name.trim(),
+    note: entry.note.trim(),
     title: entry.title.trim(),
     organization: entry.organization.trim(),
     location: entry.location.trim(),
@@ -123,21 +129,31 @@ function parseEntryBody(id: string, body: unknown): EntryRecord {
 }
 
 /** Checks the full, ordered list of skill groups sent by the desk. */
-function parseSkillGroupsBody(body: unknown): SkillGroup[] {
+function parseSkillGroupsBody(body: unknown): SkillGroupRecord[] {
   if (!Array.isArray(body)) {
     throw invalid("Skill groups must be a list.");
   }
 
-  const groups = body.map((item: Partial<SkillGroup> | null) => {
+  const groups = body.map((item: Partial<SkillGroupRecord> | null) => {
     if (typeof item?.label !== "string" || !KEY.test(item.label) || !isText(item.title)) {
       throw invalid("Every skill group needs an id and a title.");
+    }
+
+    if (!isText(item.name) || typeof item.note !== "string") {
+      throw invalid("Every skill group needs a name.");
     }
 
     if (!isStringArray(item.items)) {
       throw invalid("Skills must be a list.");
     }
 
-    return { label: item.label, title: item.title.trim(), items: cleanList(item.items) };
+    return {
+      label: item.label,
+      name: item.name.trim(),
+      note: item.note.trim(),
+      title: item.title.trim(),
+      items: cleanList(item.items),
+    };
   });
 
   unique(
