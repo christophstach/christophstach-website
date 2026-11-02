@@ -15,8 +15,10 @@ export default defineNuxtConfig({
 
   fonts: {
     families: [
-      { name: "IBM Plex Sans", preload: true },
-      { name: "JetBrains Mono", preload: true },
+      // Static weights from Fontsource: Chrome prints weights of a variable font
+      // as Type3 in the CV PDF, which parsers may read worse than embedded fonts.
+      { name: "IBM Plex Sans", provider: "fontsource", weights: [400, 500, 600, 700], preload: true },
+      { name: "JetBrains Mono", provider: "fontsource", weights: [400, 500, 600, 700], preload: true },
     ],
   },
 

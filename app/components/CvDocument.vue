@@ -48,11 +48,17 @@ function period(from: string, to?: string): string {
       </p>
       <ul class="cv__contact">
         <li>{{ cv.profile.location }}</li>
-        <li>{{ cv.profile.email }}</li>
-        <li>{{ cv.profile.phone }}</li>
+        <li>
+          <a :href="`mailto:${cv.profile.email}`">{{ cv.profile.email }}</a>
+        </li>
+        <li>
+          <a :href="`tel:${cv.profile.phone.replaceAll(' ', '')}`">{{ cv.profile.phone }}</a>
+        </li>
       </ul>
       <ul class="cv__contact cv__contact--links">
-        <li v-for="link in cv.profile.links" :key="link.href">{{ stripScheme(link.href) }}</li>
+        <li v-for="link in cv.profile.links" :key="link.href">
+          <a :href="link.href">{{ stripScheme(link.href) }}</a>
+        </li>
       </ul>
     </header>
 
@@ -70,13 +76,11 @@ function period(from: string, to?: string): string {
       <h2 class="cv__section-title">Professional Experience</h2>
       <div v-for="entry in cv.experience" :key="entry.id" class="cv__job cv__item">
         <div class="cv__job-head">
-          <div class="cv__item-row">
-            <h3 class="cv__item-title">{{ entry.title }}</h3>
-            <span class="cv__period">{{ period(entry.from, entry.to) }}</span>
-          </div>
+          <h3 class="cv__item-title">{{ entry.title }}</h3>
           <div class="cv__org">
             {{ entry.organization
-            }}<span v-if="entry.location" class="cv__location"> · {{ entry.location }}</span>
+            }}<span v-if="entry.location" class="cv__location"> · {{ entry.location }}</span
+            ><span class="cv__period"> · {{ period(entry.from, entry.to) }}</span>
           </div>
           <div v-if="entry.tech?.length" class="cv__tech cv__tags">
             <span v-for="tech in entry.tech" :key="tech">{{ tech }}</span>
@@ -91,11 +95,11 @@ function period(from: string, to?: string): string {
     <section class="cv__section">
       <h2 class="cv__section-title">Education</h2>
       <div v-for="entry in cv.education" :key="entry.id" class="cv__entry cv__item">
-        <div class="cv__item-row">
-          <h3 class="cv__item-title">{{ entry.title }}</h3>
-          <span class="cv__period">{{ period(entry.from, entry.to) }}</span>
+        <h3 class="cv__item-title">{{ entry.title }}</h3>
+        <div class="cv__org">
+          {{ entry.organization
+          }}<span class="cv__period"> · {{ period(entry.from, entry.to) }}</span>
         </div>
-        <div class="cv__org">{{ entry.organization }}</div>
         <div v-if="entry.bullets.length" class="cv__details">
           {{ entry.bullets.join(" · ") }}
         </div>
@@ -106,7 +110,9 @@ function period(from: string, to?: string): string {
       <div v-for="project in cv.projects" :key="project.id" class="cv__entry cv__item">
         <div class="cv__item-row">
           <h3 class="cv__item-title">{{ project.title }}</h3>
-          <span v-if="project.url" class="cv__period">{{ stripScheme(project.url) }}</span>
+          <a v-if="project.url" :href="project.url" class="cv__url">{{
+            stripScheme(project.url)
+          }}</a>
         </div>
         <div v-if="project.description" class="cv__details">{{ project.description }}</div>
         <div v-if="project.tech.length" class="cv__tech cv__tags">
@@ -225,7 +231,8 @@ function period(from: string, to?: string): string {
   margin-bottom: 0;
 }
 
-/* The site's section label: mono, accent, behind a muted "// ". */
+/* The site's section label, mono and accent, without its "// ": that would be
+   real text in the PDF, in the way of parsers looking for the heading. */
 .cv__section-title {
   padding-bottom: 5px;
   margin-bottom: calc(14px * var(--cv-space));
@@ -238,11 +245,6 @@ function period(from: string, to?: string): string {
   text-transform: uppercase;
   color: var(--cv-accent);
   break-after: avoid;
-}
-
-.cv__section-title::before {
-  content: "// ";
-  color: var(--cv-muted);
 }
 
 /* Skills read as a two-column table: category, then its items. */
@@ -291,7 +293,16 @@ function period(from: string, to?: string): string {
   color: inherit;
 }
 
+/* In one line with the organization, not right-aligned: parsers keep text of
+   one line together, so a date stays with its entry. */
 .cv__period {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--cv-scale));
+  font-weight: 400;
+  color: var(--cv-muted);
+}
+
+.cv__url {
   flex-shrink: 0;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: calc(10.5px * var(--cv-scale));
@@ -301,6 +312,11 @@ function period(from: string, to?: string): string {
 .cv__org {
   font-weight: 500;
   color: var(--cv-accent);
+}
+
+.cv a {
+  color: inherit;
+  text-decoration: none;
 }
 
 .cv__location {
@@ -328,21 +344,23 @@ function period(from: string, to?: string): string {
   list-style: none;
 }
 
+/* The marker hangs in the text flow. Positioning the li or its marker would
+   print the bullets after everything else on the page, and parsers reading the
+   PDF in that order would put them under the wrong job. */
 .cv__bullets li {
-  position: relative;
   color: var(--cv-soft);
+  text-indent: -12px;
   text-wrap: pretty;
 }
 
 .cv__bullets li::before {
   content: "";
-  position: absolute;
-  /* Centred on the first line, whatever the leading. */
-  top: calc((var(--cv-leading) * 1em - 4px) / 2);
-  left: -12px;
+  display: inline-block;
   width: 4px;
   height: 4px;
+  margin-right: 8px;
   background: var(--cv-accent);
+  vertical-align: middle;
 }
 
 .cv__bullets li + li {
