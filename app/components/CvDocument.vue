@@ -63,6 +63,18 @@ function period(from: string, to?: string): string {
       </div>
     </section>
 
+    <section v-if="cv.projects.length" class="cv__section">
+      <h2 class="cv__section-title">Projects</h2>
+      <div v-for="project in cv.projects" :key="project.id" class="cv__entry cv__item">
+        <div class="cv__item-row">
+          <h3 class="cv__item-title">{{ project.title }}</h3>
+          <span v-if="project.url" class="cv__period">{{ stripScheme(project.url) }}</span>
+        </div>
+        <div v-if="project.description" class="cv__details">{{ project.description }}</div>
+        <div v-if="project.tech.length" class="cv__tech">{{ project.tech.join(" · ") }}</div>
+      </div>
+    </section>
+
     <section class="cv__section">
       <h2 class="cv__section-title">Education</h2>
       <div v-for="entry in cv.education" :key="entry.id" class="cv__entry cv__item">

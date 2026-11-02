@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { createError, navigateTo, refreshNuxtData, useFetch, useRoute, useSeoMeta } from "nuxt/app";
 import { useDeskRequest } from "~/utils/desk-request";
+import { usePageChecks } from "~/utils/desk-page-checks";
 import { useUnsavedGuard } from "~/utils/desk-unsaved";
 
 definePageMeta({ layout: "desk" });
@@ -46,13 +47,15 @@ const usedBy = computed(() =>
 );
 
 const request = useDeskRequest();
+const pageChecks = usePageChecks();
 const url = `/api/desk/projects/${id}`;
 
 async function save() {
   const body = { ...draft.value, tech: draft.value.tech.split(",") };
 
   if (await request.run(() => $fetch<unknown>(url, { method: "PUT", body }))) {
-    await refreshNuxtData("desk-projects");
+    await refreshNuxtData(["desk-projects", "desk-cv-variants"]);
+    pageChecks.forget();
     draft.value = { ...saved.value };
   }
 }
@@ -76,6 +79,7 @@ async function remove() {
     guard.leave();
     await navigateTo("/desk/cv/projects");
     await refreshNuxtData(["desk-projects", "desk-cv-variants"]);
+    pageChecks.forget();
   }
 }
 
@@ -91,7 +95,9 @@ const actions = [{ label: "Delete", icon: "tabler:trash", run: remove, danger: t
           <NuxtLink to="/desk/cv/projects">projects</NuxtLink> / {{ id }}
         </p>
         <h1 class="desk-head__title">{{ draft.name || draft.title || id }}</h1>
-        <p class="desk-head__sub">Only /curriculum shows projects, never the PDF.</p>
+        <p class="desk-head__sub">
+          Printed by the variants that pick it; /curriculum shows the website variant's.
+        </p>
       </div>
 
       <DeskMenu :actions="actions" label="Project actions" />

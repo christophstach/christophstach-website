@@ -57,23 +57,30 @@ function projectColumns(project: ProjectRecord) {
 
 /** Creates a project (409 if the id is taken) or updates one (404 if missing). */
 async function saveProject(project: ProjectRecord, { create }: { create: boolean }) {
-  const written = create
-    ? await useDb()
-        .insert(projects)
-        .values({ id: project.id, ...projectColumns(project) })
-        .onConflictDoNothing()
-        .returning({ id: projects.id })
-    : await useDb()
-        .update(projects)
-        .set(projectColumns(project))
-        .where(eq(projects.id, project.id))
-        .returning({ id: projects.id });
+  await useDb().transaction(async (tx) => {
+    const written = create
+      ? await tx
+          .insert(projects)
+          .values({ id: project.id, ...projectColumns(project) })
+          .onConflictDoNothing()
+          .returning({ id: projects.id })
+      : await tx
+          .update(projects)
+          .set(projectColumns(project))
+          .where(eq(projects.id, project.id))
+          .returning({ id: projects.id });
 
-  if (written.length === 0) {
-    throw create
-      ? createError({ statusCode: 409, message: `Project "${project.id}" exists.` })
-      : notFound(project.id);
-  }
+    if (written.length === 0) {
+      throw create
+        ? createError({ statusCode: 409, message: `Project "${project.id}" exists.` })
+        : notFound(project.id);
+    }
+
+    // Variants print their projects, so their page checks are out of date.
+    if (!create) {
+      await tx.update(cvVariants).set({ pageFillsBuild: "" });
+    }
+  });
 }
 
 /** Deletes a project and takes it out of every variant that picks it. */
@@ -88,7 +95,10 @@ async function deleteProject(id: string) {
       throw notFound(id);
     }
 
-    await tx.update(cvVariants).set({ projects: sql`array_remove(${cvVariants.projects}, ${id})` });
+    await tx.update(cvVariants).set({
+      projects: sql`array_remove(${cvVariants.projects}, ${id})`,
+      pageFillsBuild: "",
+    });
   });
 }
 

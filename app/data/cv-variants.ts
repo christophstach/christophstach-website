@@ -27,7 +27,7 @@ interface CvVariant {
   coreTechnologies: string[];
   experience: EntryPick[];
   education: EntryPick[];
-  /** Project ids, in display order; only /curriculum shows them, not the PDF. */
+  /** Project ids, in display order; printed after the experience, and /curriculum shows the website variant's. */
   projects: string[];
   /** SkillGroup labels to print as a skills section; empty prints none. */
   skills: string[];
