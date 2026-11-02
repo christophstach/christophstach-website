@@ -132,6 +132,8 @@ const actions = computed(() => [
       <aside class="editor__rail">
         <DeskCvPdf :variant="id" :primary="isPrimary" :revision="revision" />
 
+        <DeskCvLayout v-model="draft.layout" />
+
         <label class="field">
           <span class="field__label">name in the desk</span>
           <input v-model="draft.label" class="input" required />

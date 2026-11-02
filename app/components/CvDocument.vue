@@ -1,9 +1,31 @@
 <script setup lang="ts">
+import { CV_LAYOUT_STEPS } from "~/data/cv-print-layout";
 import type { PrintedCv } from "~/utils/cv-variant";
+import { computed } from "vue";
+import { useHead } from "nuxt/app";
 
-// The printed CV for every variant. Variants only change the content passed
-// in; this template and its print styles are the one layout they all share.
+// The printed CV for every variant. Variants change the content passed in and
+// pick layout steps; this template and its print styles are the one design
+// they all share.
 const { cv } = defineProps<{ cv: PrintedCv }>();
+
+// The layout steps reach the styles as two factors: --cv-space for the
+// vertical rhythm, --cv-scale for every type size (1 at the base 13px).
+const layoutVars = computed(() => ({
+  "--cv-space": String(CV_LAYOUT_STEPS.spacing[cv.layout.spacing]),
+  "--cv-scale": String(CV_LAYOUT_STEPS.textSize[cv.layout.textSize] / 13),
+}));
+
+// Custom properties don't reach @page, so the margin is a rule of its own.
+useHead({
+  style: [
+    {
+      key: "cv-page",
+      textContent: () =>
+        `@page { size: A4; margin: ${CV_LAYOUT_STEPS.margin[cv.layout.margin]}mm; }`,
+    },
+  ],
+});
 
 function stripScheme(url: string): string {
   return url.replace(/^https?:\/\//u, "");
@@ -15,7 +37,7 @@ function period(from: string, to?: string): string {
 </script>
 
 <template>
-  <article class="cv">
+  <article class="cv" :style="layoutVars">
     <header class="cv__header">
       <h1 class="cv__name">{{ cv.profile.name }}</h1>
       <p v-if="cv.role" class="cv__role">{{ cv.role }}</p>
@@ -101,22 +123,24 @@ function period(from: string, to?: string): string {
   --cv-muted: #6b7672;
   --cv-rule: #d6dcda;
   --cv-accent: #087a5e;
+  --cv-space: 1;
+  --cv-scale: 1;
 
   font-family: "IBM Plex Sans", system-ui, sans-serif;
-  font-size: 13px;
+  font-size: calc(13px * var(--cv-scale));
   line-height: 1.5;
   color: var(--cv-text);
 }
 
 .cv__header {
-  padding-bottom: 16px;
-  margin-bottom: 28px;
+  padding-bottom: calc(16px * var(--cv-space));
+  margin-bottom: calc(28px * var(--cv-space));
   border-bottom: 2px solid var(--cv-accent);
 }
 
 .cv__name {
   font-family: inherit;
-  font-size: 30px;
+  font-size: calc(30px * var(--cv-scale));
   font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.01em;
@@ -125,7 +149,7 @@ function period(from: string, to?: string): string {
 
 .cv__role {
   margin-top: 4px;
-  font-size: 15px;
+  font-size: calc(15px * var(--cv-scale));
   font-weight: 500;
   color: var(--cv-accent);
 }
@@ -138,7 +162,7 @@ function period(from: string, to?: string): string {
 .cv__core {
   margin-top: 6px;
   font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--cv-scale));
   color: var(--cv-accent);
 }
 
@@ -150,7 +174,7 @@ function period(from: string, to?: string): string {
   margin-top: 10px;
   list-style: none;
   font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--cv-scale));
   color: var(--cv-soft);
 }
 
@@ -165,7 +189,7 @@ function period(from: string, to?: string): string {
 }
 
 .cv__section {
-  margin-bottom: 28px;
+  margin-bottom: calc(28px * var(--cv-space));
 }
 
 /* A trailing margin still occupies space when paginating, which is enough to
@@ -177,10 +201,10 @@ function period(from: string, to?: string): string {
 /* The site's section label: mono, accent, behind a muted "// ". */
 .cv__section-title {
   padding-bottom: 5px;
-  margin-bottom: 14px;
+  margin-bottom: calc(14px * var(--cv-space));
   border-bottom: 1px solid var(--cv-rule);
   font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--cv-scale));
   font-weight: 600;
   line-height: 1.4;
   letter-spacing: 0.06em;
@@ -201,12 +225,12 @@ function period(from: string, to?: string): string {
 
 .cv__skill {
   display: grid;
-  grid-template-columns: 150px 1fr;
+  grid-template-columns: calc(150px * var(--cv-scale)) 1fr;
   gap: 12px;
 }
 
 .cv__skill + .cv__skill {
-  margin-top: 4px;
+  margin-top: calc(4px * var(--cv-space));
 }
 
 .cv__skill dt {
@@ -222,7 +246,7 @@ function period(from: string, to?: string): string {
    containers poorly when printing and pushes whole entries to the next page
    early. Flex is fine inside an entry's head, which never breaks. */
 .cv__item + .cv__item {
-  margin-top: 24px;
+  margin-top: calc(24px * var(--cv-space));
 }
 
 .cv__item-row {
@@ -234,7 +258,7 @@ function period(from: string, to?: string): string {
 
 .cv__item-title {
   font-family: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--cv-scale));
   font-weight: 600;
   line-height: 1.35;
   color: inherit;
@@ -243,7 +267,7 @@ function period(from: string, to?: string): string {
 .cv__period {
   flex-shrink: 0;
   font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--cv-scale));
   color: var(--cv-muted);
 }
 
@@ -260,7 +284,7 @@ function period(from: string, to?: string): string {
 .cv__tech {
   margin-top: 5px;
   font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 10px;
+  font-size: calc(10px * var(--cv-scale));
   line-height: 1.5;
   color: var(--cv-muted);
 }
@@ -272,7 +296,7 @@ function period(from: string, to?: string): string {
 
 .cv__bullets {
   padding-left: 16px;
-  margin-top: 10px;
+  margin-top: calc(10px * var(--cv-space));
   list-style: none;
 }
 
@@ -292,7 +316,7 @@ function period(from: string, to?: string): string {
 }
 
 .cv__bullets li + li {
-  margin-top: 6px;
+  margin-top: calc(6px * var(--cv-space));
 }
 
 /* Page breaks: the data changes often, so these rules decide where the PDF
@@ -318,10 +342,5 @@ function period(from: string, to?: string): string {
 .cv__bullets li:first-child,
 .cv__bullets li:last-child {
   break-before: avoid;
-}
-
-@page {
-  size: A4;
-  margin: 18mm;
 }
 </style>

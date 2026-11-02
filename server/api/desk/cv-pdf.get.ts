@@ -1,13 +1,18 @@
 import { createError, defineEventHandler, getQuery, getRequestURL } from "h3";
 import { listVariants, storePageFills } from "../../utils/cv-variants";
+import { CV_LAYOUT_STEPS } from "../../../app/data/cv-print-layout";
 import { getDocumentProxy } from "unpdf";
 import { renderPdf } from "../../utils/cv-pdf";
 
-// The @page margin in CvDocument.vue (18mm), in PDF points.
-const PAGE_MARGIN = (18 / 25.4) * 72;
+type Pdf = Awaited<ReturnType<typeof getDocumentProxy>>;
+
+/** A margin in mm, the variant's @page margin, in PDF points. */
+function points(mm: number): number {
+  return (mm / 25.4) * 72;
+}
 
 /** How far down its printable area a page's text reaches, from 0 to 1. */
-async function pageFill(pdf: Awaited<ReturnType<typeof getDocumentProxy>>, pageNumber: number) {
+async function pageFill(pdf: Pdf, pageNumber: number, margin: number) {
   const page = await pdf.getPage(pageNumber);
   const pageHeight = page.view[3] ?? 0;
   const { items } = await page.getTextContent();
@@ -21,13 +26,13 @@ async function pageFill(pdf: Awaited<ReturnType<typeof getDocumentProxy>>, pageN
     return 0;
   }
 
-  const printable = pageHeight - 2 * PAGE_MARGIN;
-  const used = pageHeight - PAGE_MARGIN - Math.min(...baselines);
+  const printable = pageHeight - 2 * margin;
+  const used = pageHeight - margin - Math.min(...baselines);
 
   return Math.min(1, Math.max(0, used / printable));
 }
 
-async function pageFills(data: Uint8Array) {
+async function pageFills(data: Uint8Array, margin: number) {
   try {
     // A copy: pdf.js takes over (detaches) the buffer it reads, and renderPdf
     // shares one render, the same bytes, with the desk's PDF preview request.
@@ -35,7 +40,7 @@ async function pageFills(data: Uint8Array) {
     const pageNumbers = Array.from({ length: pdf.numPages }, (_unused, index) => index + 1);
 
     return await Promise.all(
-      pageNumbers.map(async (pageNumber) => ({ fill: await pageFill(pdf, pageNumber) })),
+      pageNumbers.map(async (pageNumber) => ({ fill: await pageFill(pdf, pageNumber, margin) })),
     );
   } catch (error) {
     throw createError({
@@ -76,11 +81,14 @@ export default defineEventHandler(async (event) => {
   const { variants, primaryId } = await listVariants();
   const id = String(getQuery(event).variant ?? primaryId);
 
-  if (!variants.some((variant) => variant.id === id)) {
+  const variant = variants.find((candidate) => candidate.id === id);
+
+  if (!variant) {
     throw createError({ statusCode: 404, message: `No CV variant "${id}".` });
   }
 
-  const pages = await pageFills(await variantPdf(event, id, primaryId));
+  const margin = points(CV_LAYOUT_STEPS.margin[variant.layout.margin]);
+  const pages = await pageFills(await variantPdf(event, id, primaryId), margin);
 
   await storePageFills(
     id,

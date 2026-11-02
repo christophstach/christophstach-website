@@ -1,3 +1,5 @@
+import type { CvLayout } from "./cv-print-layout";
+
 /** One entry of a variant: which timeline entry, and which of its bullets in what order. */
 interface EntryPick {
   /** A TimelineEntry id from cv.ts. */
@@ -7,10 +9,11 @@ interface EntryPick {
 }
 
 /**
- * A printed CV assembled from the building blocks in cv.ts. Variants only
- * choose and order content; the layout is the same CvDocument for all of them,
- * so a variant can't change the design. Variants are stored in the database
- * (server/db) and edited in the desk; saving one with an unknown id fails.
+ * A printed CV assembled from the building blocks in cv.ts. Variants choose
+ * and order content, and pick layout steps (CV_LAYOUT_STEPS in cv-print-layout.ts) to fill their
+ * pages; the design is the same CvDocument for all of them. Variants are
+ * stored in the database (server/db) and edited in the desk; saving one with
+ * an unknown id fails.
  */
 interface CvVariant {
   /** URL slug, e.g. /desk/cv-print/frontend. */
@@ -31,6 +34,8 @@ interface CvVariant {
   projects: string[];
   /** SkillGroup labels to print as a skills section; empty prints none. */
   skills: string[];
+  /** Spacing, text size and page margin of the printed CV. */
+  layout: CvLayout;
 }
 
 /**

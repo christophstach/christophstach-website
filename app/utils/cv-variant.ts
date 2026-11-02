@@ -17,6 +17,7 @@ interface PrintedCv {
   education: PrintedEntry[];
   projects: Project[];
   skills: SkillGroup[];
+  layout: CvVariant["layout"];
 }
 
 function pickEntries(variantId: string, entries: TimelineEntry[], picks: EntryPick[]) {
@@ -81,6 +82,7 @@ function printVariant(variant: CvVariant, content: CvContent): PrintedCv {
     education: pickEntries(variant.id, content.education, variant.education),
     projects: pickProjects(variant, content.projects),
     skills: pickSkills(variant, content.skills),
+    layout: variant.layout,
   };
 }
 

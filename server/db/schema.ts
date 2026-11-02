@@ -9,6 +9,7 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
+import type { CvLayout } from "../../app/data/cv-print-layout";
 
 // Column names are snake_case in the database: drizzle.config.ts and useDb()
 // both pass casing "snake_case", so the properties here stay camelCase.
@@ -38,6 +39,11 @@ const cvVariants = pgTable("cv_variants", {
     .array()
     .notNull()
     .default(sql`'{}'::text[]`),
+  /** Spacing, text size and page margin of its PDF; see CV_LAYOUT_STEPS. */
+  layout: jsonb()
+    .$type<CvLayout>()
+    .notNull()
+    .default(sql`'{"spacing":"normal","textSize":"normal","margin":"normal"}'::jsonb`),
   /** The public variant behind /cv-print and /christoph-stach-cv.pdf; one at a time. */
   isPrimary: boolean().notNull().default(false),
   /** The variant /curriculum shows, usually with every bullet; one at a time. */
