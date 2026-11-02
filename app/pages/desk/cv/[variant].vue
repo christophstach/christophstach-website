@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { createError, navigateTo, refreshNuxtData, useFetch, useRoute, useSeoMeta } from "nuxt/app";
 import type { CvVariant } from "~/data/cv-variants";
+import { sameLayout } from "~/data/cv-print-layout";
 import { useDeskRequest } from "~/utils/desk-request";
 import { useUnsavedGuard } from "~/utils/desk-unsaved";
 import { variantContent } from "~/utils/desk-variant";
@@ -44,6 +45,16 @@ const guard = useUnsavedGuard(() => dirty.value);
 const request = useDeskRequest();
 // Bumped after every save, so the PDF check runs again.
 const revision = ref(0);
+// Layout steps the page check prints before they are saved; undefined checks the
+// stored ones.
+const trial = ref<CvVariant["layout"]>();
+const checkedLayout = computed(() => trial.value ?? saved.value.layout);
+
+function checkLayout() {
+  trial.value = sameLayout(draft.value.layout, saved.value.layout)
+    ? undefined
+    : { ...draft.value.layout };
+}
 
 // Writes are typed <unknown>: matching these URLs against every typed route
 // exceeds the type checker's stack depth.
@@ -59,12 +70,14 @@ async function save() {
   if (done) {
     await refreshVariants();
     draft.value = variantContent(saved.value);
+    trial.value = undefined;
     revision.value += 1;
   }
 }
 
 function discard() {
   draft.value = variantContent(saved.value);
+  trial.value = undefined;
   request.error.value = "";
 }
 
@@ -130,7 +143,14 @@ const actions = computed(() => [
       <DeskVariantPicks v-model="draft" />
 
       <aside class="editor__rail">
-        <DeskCvPdf :variant="id" :primary="isPrimary" :revision="revision" />
+        <DeskCvPdf :variant="id" :primary="isPrimary" :revision="revision" :trial="trial" />
+
+        <DeskCvLayout
+          v-model="draft.layout"
+          :saved="saved.layout"
+          :checked="checkedLayout"
+          @check="checkLayout"
+        />
 
         <label class="field">
           <span class="field__label">name in the desk</span>
