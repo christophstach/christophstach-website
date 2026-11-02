@@ -45,7 +45,7 @@ the database (`cv_variants`, `cv_variant_entries`), typed by `CvVariant` in
 `app/data/cv-variants.ts` and edited at `/desk/cv/<id>` (`server/api/desk/cv-variants/`);
 `server/utils/cv-variants.ts` holds their database access. Saving a variant checks every id
 against the content (`printVariant` in `app/utils/cv-variant.ts`); deleting an entry, bullet,
-skill group or project takes it out of every variant. A variant's projects print after its experience,
+skill group or project takes it out of every variant. A variant's projects print after its education,
 and `/curriculum` shows the website variant's. Pages and `CvTimeline.vue` render from fetched data; do not hardcode entries
 into templates. Two
 variants hold a public role and can't be deleted: the one marked primary is the printed CV
