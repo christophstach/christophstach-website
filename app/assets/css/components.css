@@ -178,6 +178,35 @@
   transform: translateY(0);
 }
 
+/* The paper of the printed CV and cover letters, matching the site: IBM Plex
+   Sans for text, JetBrains Mono for labels and metadata, and the site's green
+   as the one accent. It is always printed light, so it fixes its palette here
+   instead of following the site's theme tokens. Sizes are px because the page
+   is laid out for A4. */
+.cv-paper {
+  --cv-text: #1b2321;
+  --cv-soft: #45504d;
+  --cv-muted: #6b7672;
+  --cv-rule: #d6dcda;
+  --cv-accent: #087a5e;
+  --cv-space: 1;
+  --cv-scale: 1;
+  /* The spacing step opens the lines a little too, so a looser page keeps
+     one rhythm instead of tight paragraphs between wide gaps. It never closes
+     them: lines this long need the 1.5 to stay readable. */
+  --cv-leading: calc(1.5 + max(var(--cv-space) - 1, 0) * 0.2);
+
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: calc(13px * var(--cv-scale));
+  line-height: var(--cv-leading);
+  color: var(--cv-text);
+}
+
+.cv-paper a {
+  color: inherit;
+  text-decoration: none;
+}
+
 /* Form fields (desk): a mono label over a full-width control. */
 .field {
   display: grid;

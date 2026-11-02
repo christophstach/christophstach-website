@@ -6,7 +6,14 @@ import type {
   TimelineEntry,
 } from "../../app/data/cv";
 import { asc, desc, eq, notInArray, sql } from "drizzle-orm";
-import { cvEntries, cvProfile, cvVariantEntries, cvVariants, skillGroups } from "../db/schema";
+import {
+  coverLetters,
+  cvEntries,
+  cvProfile,
+  cvVariantEntries,
+  cvVariants,
+  skillGroups,
+} from "../db/schema";
 import { createError } from "h3";
 import { listProjects } from "./projects";
 import { useDb } from "./db";
@@ -250,7 +257,7 @@ async function saveSkillGroups(groups: SkillGroupRecord[]) {
   });
 }
 
-/** Writes the profile; every variant prints it, so their page checks are out of date. */
+/** Writes the profile; variants and letters print it, so their page checks are out of date. */
 async function saveProfile(profile: Profile) {
   await useDb().transaction(async (tx) => {
     const columns = { ...profile, updatedAt: new Date() };
@@ -260,6 +267,7 @@ async function saveProfile(profile: Profile) {
       .values({ id: 1, ...columns })
       .onConflictDoUpdate({ target: cvProfile.id, set: columns });
     await forgetPageChecks(tx);
+    await tx.update(coverLetters).set({ pageFillsBuild: "" });
   });
 }
 

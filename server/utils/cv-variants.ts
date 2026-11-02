@@ -223,6 +223,7 @@ async function deleteVariant(id: string) {
 }
 
 export {
+  currentBuild,
   deleteVariant,
   listVariants,
   markVariant,

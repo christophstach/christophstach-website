@@ -173,6 +173,48 @@ const projects = pgTable("projects", {
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * A cover letter for one application, private to the desk. Name and contact
+ * details come from cv_profile.
+ */
+const coverLetters = pgTable("cover_letters", {
+  /** URL slug, e.g. /desk/cover-letters/acme-frontend. */
+  id: text().primaryKey(),
+  /** Desk only: how the desk lists it. Never printed. */
+  label: text().notNull(),
+  /** Desk only: what it is for. Never printed. */
+  note: text().notNull().default(""),
+  /** The CV variant sent with it; its role is printed under the name. */
+  variantId: text().references(() => cvVariants.id, { onDelete: "set null", onUpdate: "cascade" }),
+  company: text().notNull(),
+  /** Printed under the company: a person, an address, one item per line. */
+  recipient: text().notNull().default(""),
+  /** Desk only, like the url and the description of the job. */
+  jobTitle: text().notNull().default(""),
+  jobUrl: text().notNull().default(""),
+  jobDescription: text().notNull().default(""),
+  /** Sets the date format and the default wording. */
+  language: text({ enum: ["en", "de"] })
+    .notNull()
+    .default("en"),
+  /** ISO date, e.g. "2026-11-02"; empty prints none. */
+  letterDate: text().notNull().default(""),
+  subject: text().notNull().default(""),
+  salutation: text().notNull().default(""),
+  /** Plain text; a blank line starts a new paragraph. */
+  body: text().notNull().default(""),
+  closing: text().notNull().default(""),
+  /** How full each page of its PDF was at the last check, 0 to 1. */
+  pageFills: real()
+    .array()
+    .notNull()
+    .default(sql`'{}'::real[]`),
+  /** The build that made pageFills; a check from another build counts as none. */
+  pageFillsBuild: text().notNull().default(""),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
 const cvVariantsRelations = relations(cvVariants, ({ many }) => ({
   entries: many(cvVariantEntries),
 }));
@@ -182,6 +224,7 @@ const cvVariantEntriesRelations = relations(cvVariantEntries, ({ one }) => ({
 }));
 
 export {
+  coverLetters,
   cvEntries,
   cvProfile,
   cvVariantEntries,

@@ -127,6 +127,13 @@
       "when": 1793644505336,
       "tag": "0017_cv_variant_layout",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793656110298,
+      "tag": "0018_cover_letters",
+      "breakpoints": true
     }
   ]
 }

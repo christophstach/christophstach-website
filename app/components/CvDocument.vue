@@ -2,6 +2,7 @@
 import { CV_LAYOUT_STEPS } from "~/data/cv-print-layout";
 import type { PrintedCv } from "~/utils/cv-variant";
 import { computed } from "vue";
+import { stripScheme } from "~/utils/format";
 import { useHead } from "nuxt/app";
 
 // The printed CV for every variant. Variants change the content passed in and
@@ -28,39 +29,19 @@ useHead({
   ],
 });
 
-function stripScheme(url: string): string {
-  return url.replace(/^https?:\/\//u, "");
-}
-
 function period(from: string, to?: string): string {
   return `${formatMonth(from)} – ${to ? formatMonth(to) : "Present"}`;
 }
 </script>
 
 <template>
-  <article class="cv" :style="layoutVars">
-    <header class="cv__header">
-      <h1 class="cv__name">{{ cv.profile.name }}</h1>
-      <p v-if="cv.role" class="cv__role">{{ cv.role }}</p>
+  <article class="cv-paper" :style="layoutVars">
+    <CvHead :profile="cv.profile" :role="cv.role">
       <p v-if="cv.summary" class="cv__summary">{{ cv.summary }}</p>
       <p v-if="cv.coreTechnologies.length" class="cv__core cv__tags">
         <span v-for="tech in cv.coreTechnologies" :key="tech">{{ tech }}</span>
       </p>
-      <ul class="cv__contact">
-        <li>{{ cv.profile.location }}</li>
-        <li>
-          <a :href="`mailto:${cv.profile.email}`">{{ cv.profile.email }}</a>
-        </li>
-        <li>
-          <a :href="`tel:${cv.profile.phone.replaceAll(' ', '')}`">{{ cv.profile.phone }}</a>
-        </li>
-      </ul>
-      <ul class="cv__contact cv__contact--links">
-        <li v-for="link in cv.profile.links" :key="link.href">
-          <a :href="link.href">{{ stripScheme(link.href) }}</a>
-        </li>
-      </ul>
-    </header>
+    </CvHead>
 
     <section v-if="cv.skills.length" class="cv__section">
       <h2 class="cv__section-title">Technical Skills</h2>
@@ -124,51 +105,6 @@ function period(from: string, to?: string): string {
 </template>
 
 <style scoped>
-/* The PDF's own look, matching the site: IBM Plex Sans for text, JetBrains Mono
-   for labels and metadata, and the site's green as the one accent. It is
-   always printed light, so it fixes its palette here instead of following the
-   site's theme tokens. Sizes are px because the page is laid out for A4. */
-.cv {
-  --cv-text: #1b2321;
-  --cv-soft: #45504d;
-  --cv-muted: #6b7672;
-  --cv-rule: #d6dcda;
-  --cv-accent: #087a5e;
-  --cv-space: 1;
-  --cv-scale: 1;
-  /* The spacing step opens the lines a little too, so a looser page keeps
-     one rhythm instead of tight paragraphs between wide gaps. It never closes
-     them: lines this long need the 1.5 to stay readable. */
-  --cv-leading: calc(1.5 + max(var(--cv-space) - 1, 0) * 0.2);
-
-  font-family: "IBM Plex Sans", system-ui, sans-serif;
-  font-size: calc(13px * var(--cv-scale));
-  line-height: var(--cv-leading);
-  color: var(--cv-text);
-}
-
-.cv__header {
-  padding-bottom: calc(16px * var(--cv-space));
-  margin-bottom: calc(28px * var(--cv-space));
-  border-bottom: 2px solid var(--cv-accent);
-}
-
-.cv__name {
-  font-family: inherit;
-  font-size: calc(30px * var(--cv-scale));
-  font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-  color: inherit;
-}
-
-.cv__role {
-  margin-top: calc(4px * var(--cv-space));
-  font-size: calc(15px * var(--cv-scale));
-  font-weight: 500;
-  color: var(--cv-accent);
-}
-
 .cv__summary {
   margin-top: calc(6px * var(--cv-space));
   color: var(--cv-soft);
@@ -179,22 +115,6 @@ function period(from: string, to?: string): string {
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: calc(10.5px * var(--cv-scale));
   color: var(--cv-accent);
-}
-
-.cv__contact {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 0;
-  padding: 0;
-  margin-top: calc(10px * var(--cv-space));
-  list-style: none;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: calc(10.5px * var(--cv-scale));
-  color: var(--cv-soft);
-}
-
-.cv__contact--links {
-  margin-top: 2px;
 }
 
 /* Technology lists: each name stays whole, and a line never starts with a
@@ -211,13 +131,6 @@ function period(from: string, to?: string): string {
 .cv__tags > span:not(:last-child)::after {
   content: "·";
   margin-inline: 0.55em;
-  color: var(--cv-muted);
-}
-
-/* After the item, not before the next: a wrapped line never starts with one. */
-.cv__contact li:not(:last-child)::after {
-  content: "·";
-  margin-inline: 8px;
   color: var(--cv-muted);
 }
 
@@ -314,11 +227,6 @@ function period(from: string, to?: string): string {
   color: var(--cv-accent);
 }
 
-.cv a {
-  color: inherit;
-  text-decoration: none;
-}
-
 .cv__location {
   font-weight: 400;
   color: var(--cv-muted);
@@ -371,7 +279,6 @@ function period(from: string, to?: string): string {
    breaks instead of hand-tuned spacing. A job never breaks inside its header,
    never leaves the header or a single bullet alone on a page, and short jobs
    move to the next page whole. */
-.cv__header,
 .cv__skill,
 .cv__entry,
 .cv__job-head,

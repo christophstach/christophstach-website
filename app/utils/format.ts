@@ -9,6 +9,22 @@ function formatMonth(isoMonth: string): string {
   return monthFormatter.format(new Date(year ?? 0, (month ?? 1) - 1));
 }
 
+const DAY_LOCALES = { en: "en-GB", de: "de-DE" };
+
+/** An ISO date in a letter's language, e.g. "2 November 2026" or "2. November 2026". */
+function formatDay(isoDate: string, language: keyof typeof DAY_LOCALES): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+
+  return new Intl.DateTimeFormat(DAY_LOCALES[language], { dateStyle: "long" }).format(
+    new Date(year ?? 0, (month ?? 1) - 1, day ?? 1),
+  );
+}
+
+/** A URL without its scheme, as printed documents show it. */
+function stripScheme(url: string): string {
+  return url.replace(/^https?:\/\//u, "");
+}
+
 /** Whole months between two ISO month strings; an omitted end means "until today". */
 function monthsBetween(from: string, to?: string): number {
   const [fromYear = 0, fromMonth = 1] = from.split("-").map(Number);
@@ -39,4 +55,4 @@ function formatRelative(iso: string, now = Date.now()): string {
   return unit ? relativeFormatter.format(Math.round(seconds / unit[1]), unit[0]) : "just now";
 }
 
-export { formatMonth, formatRelative, monthsBetween };
+export { formatDay, formatMonth, formatRelative, monthsBetween, stripScheme };

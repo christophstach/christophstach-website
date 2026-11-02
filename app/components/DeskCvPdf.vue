@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, watch } from "vue";
-import { layoutWarnings, percent } from "~/utils/cv-layout";
 import { refreshNuxtData, useFetch } from "nuxt/app";
 import type { CvVariant } from "~/data/cv-variants";
 import { layoutQuery } from "~/data/cv-print-layout";
+import { layoutWarnings } from "~/utils/cv-layout";
 
 const { variant, primary, revision, trial } = defineProps<{
   /** Id of the CV variant to check. */
@@ -68,20 +68,7 @@ watch(pages, async () => {
     <p v-else-if="!pages" class="cv-pdf__note">Printing the PDF to measure each page…</p>
 
     <template v-else>
-      <!-- Each page as a small A4 sheet, filled as far down as its text runs. -->
-      <ol class="cv-pdf__pages">
-        <li
-          v-for="(page, index) in pages"
-          :key="index"
-          class="cv-pdf__page"
-          :aria-label="`Page ${index + 1}: ${percent(page.fill)} full`"
-        >
-          <span class="cv-pdf__sheet" aria-hidden="true">
-            <span class="cv-pdf__fill" :style="{ blockSize: `${page.fill * 100}%` }" />
-          </span>
-          <span class="cv-pdf__value" aria-hidden="true">{{ percent(page.fill) }}</span>
-        </li>
-      </ol>
+      <DeskPageSheets :pages="pages" />
 
       <ul v-if="warnings.length" class="cv-pdf__warnings" role="status">
         <li v-for="warning in warnings" :key="warning">{{ warning }}</li>
@@ -125,47 +112,6 @@ watch(pages, async () => {
 
 .cv-pdf__note {
   font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.cv-pdf__pages {
-  display: flex;
-  gap: var(--space-3);
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.cv-pdf__page {
-  display: grid;
-  justify-items: center;
-  gap: var(--space-1-5);
-}
-
-.cv-pdf__sheet {
-  display: block;
-  inline-size: 4.25rem;
-  aspect-ratio: 210 / 297;
-  padding: 0.4rem;
-  border-radius: 2px;
-  background-color: var(--color-paper);
-  box-shadow: var(--color-paper-shadow);
-}
-
-/* Text lines drawn as stripes, down to where the page's text ends. */
-.cv-pdf__fill {
-  display: block;
-  inline-size: 100%;
-  background: repeating-linear-gradient(
-    to bottom,
-    var(--color-paper-rule) 0 2px,
-    transparent 2px 5px
-  );
-}
-
-.cv-pdf__value {
-  font-size: var(--text-xs);
-  font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
 }
 

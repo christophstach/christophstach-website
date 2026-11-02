@@ -50,4 +50,21 @@ function pageStatus(fills: number[]): { tone: "ok" | "warn" | "none"; text: stri
 
   return { tone: "ok", text: `${fills.length} ${fills.length === 1 ? "page" : "pages"} · fits` };
 }
-export { layoutWarnings, pageStatus, percent };
+
+/** What looks off in a cover letter with these page fills: it should fit on one page. */
+function letterWarnings(fills: number[]): string[] {
+  return fills.length > 1 ? [`Runs to ${fills.length} pages, a letter should fit on one.`] : [];
+}
+
+/** A one-line page status for the list of cover letters, from the last page check. */
+function letterStatus(fills: number[]): { tone: "ok" | "warn" | "none"; text: string } {
+  if (fills.length === 0) {
+    return { tone: "none", text: "not checked" };
+  }
+
+  return fills.length > 1
+    ? { tone: "warn", text: `${fills.length} pages` }
+    : { tone: "ok", text: "1 page · fits" };
+}
+
+export { layoutWarnings, letterStatus, letterWarnings, pageStatus, percent };

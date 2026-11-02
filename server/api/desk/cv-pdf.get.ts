@@ -6,55 +6,10 @@ import {
 } from "../../../app/data/cv-print-layout";
 import { createError, defineEventHandler, getQuery, getRequestURL } from "h3";
 import { listVariants, storePageFills } from "../../utils/cv-variants";
-import { getDocumentProxy } from "unpdf";
+import { pageFills, points } from "../../utils/pdf-pages";
 import { renderPdf } from "../../utils/cv-pdf";
 
-type Pdf = Awaited<ReturnType<typeof getDocumentProxy>>;
 type Event = Parameters<typeof renderPdf>[0];
-
-/** A margin in mm, the variant's @page margin, in PDF points. */
-function points(mm: number): number {
-  return (mm / 25.4) * 72;
-}
-
-/** How far down its printable area a page's text reaches, from 0 to 1. */
-async function pageFill(pdf: Pdf, pageNumber: number, margin: number) {
-  const page = await pdf.getPage(pageNumber);
-  const pageHeight = page.view[3] ?? 0;
-  const { items } = await page.getTextContent();
-
-  // PDF y runs bottom-up, so the lowest line of text has the smallest baseline.
-  const baselines = items.flatMap((item) =>
-    "str" in item && item.str.trim() ? [item.transform[5] as number] : [],
-  );
-
-  if (baselines.length === 0) {
-    return 0;
-  }
-
-  const printable = pageHeight - 2 * margin;
-  const used = pageHeight - margin - Math.min(...baselines);
-
-  return Math.min(1, Math.max(0, used / printable));
-}
-
-async function pageFills(data: Uint8Array, margin: number) {
-  try {
-    // A copy: pdf.js takes over (detaches) the buffer it reads, and renderPdf
-    // shares one render, the same bytes, with the desk's PDF preview request.
-    const pdf = await getDocumentProxy(new Uint8Array(data));
-    const pageNumbers = Array.from({ length: pdf.numPages }, (_unused, index) => index + 1);
-
-    return await Promise.all(
-      pageNumbers.map(async (pageNumber) => ({ fill: await pageFill(pdf, pageNumber, margin) })),
-    );
-  } catch (error) {
-    throw createError({
-      statusCode: 500,
-      message: `Reading the PDF failed: ${error instanceof Error ? error.message : String(error)}`,
-    });
-  }
-}
 
 /**
  * The primary variant is read from the public PDF, so this reads the cached

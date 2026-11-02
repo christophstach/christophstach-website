@@ -106,6 +106,15 @@ rows print in the order shown, picked entries list their bullets underneath. Any
 `requireUserSession(event)`; the page middleware does not protect API routes. Required env
 vars are listed in `.env.example`.
 
+**Cover letters** are private to the desk, one per application (`cover_letters`,
+`server/utils/cover-letters.ts`, `server/api/desk/cover-letters/`, edited at
+`/desk/cover-letters/<id>`). Name and contact come from the profile, the role under the name
+from the linked CV variant or else the profile. `CoverLetterDocument.vue` is printed from
+`/desk/cover-letter-print/<id>` and shown live in the editor; it shares `CvHead.vue` and the
+`.cv-paper` palette with the CV. A letter has one fixed layout (`COVER_LETTER_MARGIN_MM`), and
+the page check, shared through `server/utils/pdf-pages.ts`, flags more than one page. Language
+(`en`/`de`) sets the date format and the default wording (`COVER_LETTER_WORDING`).
+
 **SEO/meta** (per-route canonical, OG/Twitter tags, `og:locale`, and the JSON-LD `Person`
 block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via `useSeoMeta`.
 
