@@ -37,5 +37,36 @@ function normalizeCvLayout(value: unknown): CvLayout {
   };
 }
 
+/**
+ * The steps in a query (?spacing=airy&margin=wide) over a stored layout, for
+ * trying steps before saving them; unknown values keep the stored step.
+ */
+function layoutFromQuery(stored: CvLayout, query: Record<string, unknown>): CvLayout {
+  return {
+    spacing: isLayoutStep("spacing", query.spacing) ? query.spacing : stored.spacing,
+    textSize: isLayoutStep("textSize", query.textSize) ? query.textSize : stored.textSize,
+    margin: isLayoutStep("margin", query.margin) ? query.margin : stored.margin,
+  };
+}
+
+/** The layout as query parameters, the reverse of layoutFromQuery. */
+function layoutQuery(layout: CvLayout): Record<keyof CvLayout, string> {
+  return { spacing: layout.spacing, textSize: layout.textSize, margin: layout.margin };
+}
+
+function sameLayout(one: CvLayout, other: CvLayout): boolean {
+  return (
+    one.spacing === other.spacing && one.textSize === other.textSize && one.margin === other.margin
+  );
+}
+
 export type { CvLayout };
-export { CV_LAYOUT_STEPS, DEFAULT_CV_LAYOUT, isLayoutStep, normalizeCvLayout };
+export {
+  CV_LAYOUT_STEPS,
+  DEFAULT_CV_LAYOUT,
+  isLayoutStep,
+  layoutFromQuery,
+  layoutQuery,
+  normalizeCvLayout,
+  sameLayout,
+};

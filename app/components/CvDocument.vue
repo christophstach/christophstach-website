@@ -42,8 +42,8 @@ function period(from: string, to?: string): string {
       <h1 class="cv__name">{{ cv.profile.name }}</h1>
       <p v-if="cv.role" class="cv__role">{{ cv.role }}</p>
       <p v-if="cv.summary" class="cv__summary">{{ cv.summary }}</p>
-      <p v-if="cv.coreTechnologies.length" class="cv__core">
-        {{ cv.coreTechnologies.join(" · ") }}
+      <p v-if="cv.coreTechnologies.length" class="cv__core cv__tags">
+        <span v-for="tech in cv.coreTechnologies" :key="tech">{{ tech }}</span>
       </p>
       <ul class="cv__contact">
         <li>{{ cv.profile.location }}</li>
@@ -77,7 +77,9 @@ function period(from: string, to?: string): string {
             {{ entry.organization
             }}<span v-if="entry.location" class="cv__location"> · {{ entry.location }}</span>
           </div>
-          <div v-if="entry.tech?.length" class="cv__tech">{{ entry.tech.join(" · ") }}</div>
+          <div v-if="entry.tech?.length" class="cv__tech cv__tags">
+            <span v-for="tech in entry.tech" :key="tech">{{ tech }}</span>
+          </div>
         </div>
         <ul v-if="entry.bullets.length" class="cv__bullets">
           <li v-for="bullet in entry.bullets" :key="bullet">{{ bullet }}.</li>
@@ -106,7 +108,9 @@ function period(from: string, to?: string): string {
           <span v-if="project.url" class="cv__period">{{ stripScheme(project.url) }}</span>
         </div>
         <div v-if="project.description" class="cv__details">{{ project.description }}</div>
-        <div v-if="project.tech.length" class="cv__tech">{{ project.tech.join(" · ") }}</div>
+        <div v-if="project.tech.length" class="cv__tech cv__tags">
+          <span v-for="tech in project.tech" :key="tech">{{ tech }}</span>
+        </div>
       </div>
     </section>
   </article>
@@ -125,10 +129,13 @@ function period(from: string, to?: string): string {
   --cv-accent: #087a5e;
   --cv-space: 1;
   --cv-scale: 1;
+  /* The spacing step opens the lines a little too, so a looser page keeps
+     one rhythm instead of tight paragraphs between wide gaps. */
+  --cv-leading: calc(1.5 + (var(--cv-space) - 1) * 0.2);
 
   font-family: "IBM Plex Sans", system-ui, sans-serif;
   font-size: calc(13px * var(--cv-scale));
-  line-height: 1.5;
+  line-height: var(--cv-leading);
   color: var(--cv-text);
 }
 
@@ -180,6 +187,23 @@ function period(from: string, to?: string): string {
 
 .cv__contact--links {
   margin-top: 2px;
+}
+
+/* Technology lists: each name stays whole, and a line never starts with a
+   separator, which a joined string can't promise. */
+.cv__tags {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.cv__tags > span {
+  white-space: nowrap;
+}
+
+.cv__tags > span:not(:last-child)::after {
+  content: "·";
+  margin-inline: 0.55em;
+  color: var(--cv-muted);
 }
 
 .cv__contact li + li::before {
@@ -292,6 +316,7 @@ function period(from: string, to?: string): string {
 .cv__details {
   margin-top: 4px;
   color: var(--cv-soft);
+  text-wrap: pretty;
 }
 
 .cv__bullets {
@@ -303,12 +328,14 @@ function period(from: string, to?: string): string {
 .cv__bullets li {
   position: relative;
   color: var(--cv-soft);
+  text-wrap: pretty;
 }
 
 .cv__bullets li::before {
   content: "";
   position: absolute;
-  top: 0.62em;
+  /* Centred on the first line, whatever the leading. */
+  top: calc((var(--cv-leading) * 1em - 4px) / 2);
   left: -12px;
   width: 4px;
   height: 4px;
