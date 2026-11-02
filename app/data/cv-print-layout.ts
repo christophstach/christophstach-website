@@ -7,11 +7,11 @@
  */
 const CV_LAYOUT_STEPS = {
   /** Scales the vertical space between the header, sections, entries and bullets. */
-  spacing: { compact: 0.8, normal: 1, airy: 1.25, spacious: 1.5 },
-  /** Body text size in px; every other size in the CV scales with it. */
-  textSize: { small: 12.5, normal: 13, large: 13.5, larger: 14 },
+  spacing: { compact: 0.85, normal: 1, airy: 1.2, spacious: 1.4 },
+  /** Body text size in pt; every other size in the CV scales with it. */
+  textSize: { small: 9.5, normal: 10, large: 10.5, larger: 11 },
   /** The @page margin on every side, in mm. */
-  margin: { narrow: 14, normal: 18, wide: 22 },
+  margin: { narrow: 18, normal: 24, wide: 30 },
 } as const;
 
 type CvLayoutSteps = typeof CV_LAYOUT_STEPS;

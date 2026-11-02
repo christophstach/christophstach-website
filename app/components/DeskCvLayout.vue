@@ -33,14 +33,14 @@ const controls: { key: Key; label: string; hint: string; steps: Record<string, s
   {
     key: "textSize",
     label: "text size",
-    hint: "px",
-    steps: { small: "12.5", normal: "13", large: "13.5", larger: "14" },
+    hint: "pt",
+    steps: { small: "9.5", normal: "10", large: "10.5", larger: "11" },
   },
   {
     key: "margin",
     label: "page margin",
     hint: "mm",
-    steps: { narrow: "14", normal: "18", wide: "22" },
+    steps: { narrow: "18", normal: "24", wide: "30" },
   },
 ];
 

@@ -10,10 +10,11 @@ import { useHead } from "nuxt/app";
 const { cv } = defineProps<{ cv: PrintedCv }>();
 
 // The layout steps reach the styles as two factors: --cv-space for the
-// vertical rhythm, --cv-scale for every type size (1 at the base 13px).
+// vertical rhythm, --cv-scale for every type size (1 at the 13px the styles
+// are written for; the step is in pt, and 1pt is 4/3px).
 const layoutVars = computed(() => ({
   "--cv-space": String(CV_LAYOUT_STEPS.spacing[cv.layout.spacing]),
-  "--cv-scale": String(CV_LAYOUT_STEPS.textSize[cv.layout.textSize] / 13),
+  "--cv-scale": String((CV_LAYOUT_STEPS.textSize[cv.layout.textSize] * 4) / 3 / 13),
 }));
 
 // Custom properties don't reach @page, so the margin is a rule of its own.
@@ -130,8 +131,9 @@ function period(from: string, to?: string): string {
   --cv-space: 1;
   --cv-scale: 1;
   /* The spacing step opens the lines a little too, so a looser page keeps
-     one rhythm instead of tight paragraphs between wide gaps. */
-  --cv-leading: calc(1.5 + (var(--cv-space) - 1) * 0.2);
+     one rhythm instead of tight paragraphs between wide gaps. It never closes
+     them: lines this long need the 1.5 to stay readable. */
+  --cv-leading: calc(1.5 + max(var(--cv-space) - 1, 0) * 0.2);
 
   font-family: "IBM Plex Sans", system-ui, sans-serif;
   font-size: calc(13px * var(--cv-scale));
@@ -155,19 +157,19 @@ function period(from: string, to?: string): string {
 }
 
 .cv__role {
-  margin-top: 4px;
+  margin-top: calc(4px * var(--cv-space));
   font-size: calc(15px * var(--cv-scale));
   font-weight: 500;
   color: var(--cv-accent);
 }
 
 .cv__summary {
-  margin-top: 6px;
+  margin-top: calc(6px * var(--cv-space));
   color: var(--cv-soft);
 }
 
 .cv__core {
-  margin-top: 6px;
+  margin-top: calc(6px * var(--cv-space));
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: calc(10.5px * var(--cv-scale));
   color: var(--cv-accent);
@@ -178,7 +180,7 @@ function period(from: string, to?: string): string {
   flex-wrap: wrap;
   gap: 2px 0;
   padding: 0;
-  margin-top: 10px;
+  margin-top: calc(10px * var(--cv-space));
   list-style: none;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: calc(10.5px * var(--cv-scale));
@@ -206,7 +208,8 @@ function period(from: string, to?: string): string {
   color: var(--cv-muted);
 }
 
-.cv__contact li + li::before {
+/* After the item, not before the next: a wrapped line never starts with one. */
+.cv__contact li:not(:last-child)::after {
   content: "·";
   margin-inline: 8px;
   color: var(--cv-muted);
@@ -306,7 +309,7 @@ function period(from: string, to?: string): string {
 }
 
 .cv__tech {
-  margin-top: 5px;
+  margin-top: calc(5px * var(--cv-space));
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: calc(10px * var(--cv-scale));
   line-height: 1.5;
@@ -314,7 +317,7 @@ function period(from: string, to?: string): string {
 }
 
 .cv__details {
-  margin-top: 4px;
+  margin-top: calc(4px * var(--cv-space));
   color: var(--cv-soft);
   text-wrap: pretty;
 }
