@@ -1,6 +1,12 @@
 import type { CvVariant, EntryPick } from "../../app/data/cv-variants";
 import { createError } from "h3";
 
+/**
+ * A variant as the desk sends it. A tab opened before a deploy may lack the
+ * newer fields: no note counts as empty, no core technologies keeps the stored ones.
+ */
+type VariantBody = Omit<CvVariant, "coreTechnologies"> & { coreTechnologies?: string[] };
+
 // URL slug: lowercase words joined by single hyphens, e.g. "ai-platform".
 const VARIANT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 // Ids taken by desk pages under /desk/cv, e.g. /desk/cv/projects.
@@ -24,9 +30,10 @@ function isVariant(value: Partial<CvVariant>): boolean {
   return (
     typeof value.label === "string" &&
     value.label.trim() !== "" &&
-    typeof value.note === "string" &&
+    (value.note === undefined || typeof value.note === "string") &&
     typeof value.role === "string" &&
     typeof value.summary === "string" &&
+    (value.coreTechnologies === undefined || isStringArray(value.coreTechnologies)) &&
     isPicks(value.experience) &&
     isPicks(value.education) &&
     isStringArray(value.projects) &&
@@ -38,7 +45,7 @@ function isVariant(value: Partial<CvVariant>): boolean {
  * Checks the shape of a variant sent by the desk; the route's id wins over
  * any id in the body. Whether its ids exist in cv.ts is saveVariant's check.
  */
-function parseVariantBody(id: string, body: unknown): CvVariant {
+function parseVariantBody(id: string, body: unknown): VariantBody {
   const value = (body ?? {}) as Partial<CvVariant>;
 
   if (!VARIANT_ID.test(id)) {
@@ -61,9 +68,10 @@ function parseVariantBody(id: string, body: unknown): CvVariant {
   return {
     id,
     label: variant.label.trim(),
-    note: variant.note.trim(),
+    note: (variant.note ?? "").trim(),
     role: variant.role.trim(),
     summary: variant.summary.trim(),
+    coreTechnologies: variant.coreTechnologies?.map((item) => item.trim()).filter(Boolean),
     experience: variant.experience,
     education: variant.education,
     projects: variant.projects,
@@ -71,4 +79,5 @@ function parseVariantBody(id: string, body: unknown): CvVariant {
   };
 }
 
+export type { VariantBody };
 export { parseVariantBody };

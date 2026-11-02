@@ -14,6 +14,14 @@ const draft = defineModel<CvVariant>({ required: true });
 const { data: content } = await useFetch("/api/desk/cv-content", { key: "desk-cv-content" });
 const { data: projects } = await useFetch("/api/desk/projects", { key: "desk-projects" });
 
+/** Core technologies as one comma-separated line; the server drops empty items. */
+const coreTechnologies = computed({
+  get: () => draft.value.coreTechnologies.join(", "),
+  set: (text: string) => {
+    draft.value.coreTechnologies = text.split(",").map((item) => item.trimStart());
+  },
+});
+
 function period(entry: EntryRecord): string {
   return `${formatMonth(entry.from)} – ${entry.to ? formatMonth(entry.to) : "Present"}`;
 }
@@ -196,13 +204,25 @@ function printedBullets(section: Section, entryId: string): number {
       <div class="picks__fields">
         <label class="field">
           <span class="field__label">role</span>
-          <input v-model="draft.role" class="input" required />
-          <span class="field__hint">The line under your name.</span>
+          <input v-model="draft.role" class="input" />
+          <span class="field__hint">The line under your name. Empty prints none.</span>
         </label>
         <label class="field field--wide">
           <span class="field__label">summary</span>
           <textarea v-model="draft.summary" class="input" rows="2" />
           <span class="field__hint">One line under the role. Empty prints none.</span>
+        </label>
+        <label class="field field--wide">
+          <span class="field__label">core technologies</span>
+          <textarea
+            v-model="coreTechnologies"
+            class="input"
+            rows="1"
+            placeholder="TypeScript, Vue, Nuxt"
+          />
+          <span class="field__hint">
+            Comma-separated, printed under the summary in this order. Empty prints none.
+          </span>
         </label>
       </div>
     </section>

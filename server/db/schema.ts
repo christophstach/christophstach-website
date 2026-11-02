@@ -28,6 +28,11 @@ const cvVariants = pgTable("cv_variants", {
     .array()
     .notNull()
     .default(sql`'{}'::text[]`),
+  /** Printed under the summary, in this order; empty prints none. */
+  coreTechnologies: text()
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
   /** skill_groups ids, in print order; empty prints no skills. */
   skills: text()
     .array()
@@ -134,11 +139,6 @@ const cvProfile = pgTable("cv_profile", {
   location: text().notNull().default(""),
   email: text().notNull().default(""),
   phone: text().notNull().default(""),
-  /** Not printed yet. */
-  coreTechnologies: text()
-    .array()
-    .notNull()
-    .default(sql`'{}'::text[]`),
   links: jsonb()
     .$type<{ label: string; href: string }[]>()
     .notNull()

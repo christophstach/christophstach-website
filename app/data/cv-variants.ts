@@ -19,10 +19,12 @@ interface CvVariant {
   label: string;
   /** Desk only: what it is for. Never printed. */
   note: string;
-  /** Role line under the name. */
+  /** Role line under the name; empty prints none. */
   role: string;
   /** One line under the role: how the career fits together for this kind of job. Empty prints none. */
   summary: string;
+  /** Printed under the summary, in this order; empty prints none. */
+  coreTechnologies: string[];
   experience: EntryPick[];
   education: EntryPick[];
   /** Project ids, in display order; only /curriculum shows them, not the PDF. */

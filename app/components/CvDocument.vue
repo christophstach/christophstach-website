@@ -18,8 +18,11 @@ function period(from: string, to?: string): string {
   <article class="cv">
     <header class="cv__header">
       <h1 class="cv__name">{{ cv.profile.name }}</h1>
-      <p class="cv__role">{{ cv.role }}</p>
+      <p v-if="cv.role" class="cv__role">{{ cv.role }}</p>
       <p v-if="cv.summary" class="cv__summary">{{ cv.summary }}</p>
+      <p v-if="cv.coreTechnologies.length" class="cv__core">
+        {{ cv.coreTechnologies.join(" · ") }}
+      </p>
       <ul class="cv__contact">
         <li>{{ cv.profile.location }}</li>
         <li>{{ cv.profile.email }}</li>
@@ -119,6 +122,13 @@ function period(from: string, to?: string): string {
 .cv__summary {
   margin-top: 6px;
   color: var(--cv-soft);
+}
+
+.cv__core {
+  margin-top: 6px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  color: var(--cv-accent);
 }
 
 .cv__contact {

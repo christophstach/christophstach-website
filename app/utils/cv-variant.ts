@@ -12,6 +12,7 @@ interface PrintedCv {
   profile: Profile;
   role: string;
   summary?: string;
+  coreTechnologies: string[];
   experience: PrintedEntry[];
   education: PrintedEntry[];
   projects: Project[];
@@ -75,6 +76,7 @@ function printVariant(variant: CvVariant, content: CvContent): PrintedCv {
     profile: content.profile,
     role: variant.role,
     summary: variant.summary,
+    coreTechnologies: variant.coreTechnologies,
     experience: pickEntries(variant.id, content.experience, variant.experience),
     education: pickEntries(variant.id, content.education, variant.education),
     projects: pickProjects(variant, content.projects),

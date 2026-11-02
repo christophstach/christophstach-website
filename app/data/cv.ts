@@ -89,7 +89,5 @@ export interface Profile {
   location: string;
   email: string;
   phone: string;
-  /** Not printed yet. */
-  coreTechnologies: string[];
   links: ProfileLink[];
 }

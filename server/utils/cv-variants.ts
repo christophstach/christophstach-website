@@ -1,6 +1,7 @@
 import type { CvVariant, EntryPick } from "../../app/data/cv-variants";
 import { asc, eq, sql } from "drizzle-orm";
 import { cvVariantEntries, cvVariants } from "../db/schema";
+import type { VariantBody } from "./cv-variant-body";
 import { createError } from "h3";
 import { loadCvContent } from "./cv-content";
 import { printVariant } from "../../app/utils/cv-variant";
@@ -30,6 +31,7 @@ function toVariant(row: VariantRow): CvVariant {
     note: row.note,
     role: row.role,
     summary: row.summary,
+    coreTechnologies: row.coreTechnologies,
     experience: picks(row, "experience"),
     education: picks(row, "education"),
     projects: row.projects,
@@ -100,7 +102,7 @@ async function requireMarkedVariant(mark: Mark): Promise<CvVariant> {
   return toVariant(row);
 }
 
-function entryRows(variant: CvVariant) {
+function entryRows(variant: VariantBody) {
   return SECTIONS.flatMap((section) =>
     variant[section].map((pick, position) => ({
       variantId: variant.id,
@@ -112,12 +114,13 @@ function entryRows(variant: CvVariant) {
   );
 }
 
-function variantColumns(variant: CvVariant) {
+function variantColumns(variant: VariantBody) {
   return {
     label: variant.label,
     note: variant.note,
     role: variant.role,
     summary: variant.summary,
+    ...(variant.coreTechnologies ? { coreTechnologies: variant.coreTechnologies } : {}),
     projects: variant.projects,
     skills: variant.skills,
     // The stored page check no longer matches the content.
@@ -130,11 +133,11 @@ function variantColumns(variant: CvVariant) {
  * Writes a variant and replaces its entries in one transaction. Content is
  * checked against cv.ts first, so a stored variant always prints.
  */
-async function saveVariant(variant: CvVariant, { create }: { create: boolean }) {
+async function saveVariant(variant: VariantBody, { create }: { create: boolean }) {
   const content = await loadCvContent();
 
   try {
-    printVariant(variant, content);
+    printVariant({ ...variant, coreTechnologies: variant.coreTechnologies ?? [] }, content);
   } catch (error) {
     throw createError({ statusCode: 400, message: (error as Error).message });
   }

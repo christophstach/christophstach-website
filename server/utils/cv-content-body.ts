@@ -83,10 +83,6 @@ function checkEntryFields(value: Partial<EntryRecord>) {
     throw invalid("Section must be experience or education.");
   }
 
-  if (!isText(value.name) || typeof value.note !== "string") {
-    throw invalid("An entry needs a name.");
-  }
-
   if (!isText(value.title) || !isText(value.organization)) {
     throw invalid("An entry needs a title and an organization.");
   }
@@ -111,12 +107,18 @@ function parseEntryBody(id: string, body: unknown): EntryRecord {
   checkEntryFields(value);
 
   const entry = value as EntryRecord;
+  // A tab opened before names existed sends none: fall back to what identified it.
+  const name = isText(entry.name) ? entry.name : entry.organization;
+
+  if (entry.name !== undefined && !isText(entry.name)) {
+    throw invalid("An entry needs a name.");
+  }
 
   return {
     id,
     section: entry.section,
-    name: entry.name.trim(),
-    note: entry.note.trim(),
+    name: name.trim(),
+    note: typeof entry.note === "string" ? entry.note.trim() : "",
     title: entry.title.trim(),
     organization: entry.organization.trim(),
     location: entry.location.trim(),
@@ -139,7 +141,7 @@ function parseSkillGroupsBody(body: unknown): SkillGroupRecord[] {
       throw invalid("Every skill group needs an id and a title.");
     }
 
-    if (!isText(item.name) || typeof item.note !== "string") {
+    if (item.name !== undefined && !isText(item.name)) {
       throw invalid("Every skill group needs a name.");
     }
 
@@ -149,8 +151,8 @@ function parseSkillGroupsBody(body: unknown): SkillGroupRecord[] {
 
     return {
       label: item.label,
-      name: item.name.trim(),
-      note: item.note.trim(),
+      name: (item.name ?? item.title).trim(),
+      note: typeof item.note === "string" ? item.note.trim() : "",
       title: item.title.trim(),
       items: cleanList(item.items),
     };
@@ -187,7 +189,7 @@ function parseProfileBody(body: unknown): Profile {
     throw invalid("The profile needs a name.");
   }
 
-  if (!texts.every((text) => typeof text === "string") || !isStringArray(value.coreTechnologies)) {
+  if (!texts.every((text) => typeof text === "string")) {
     throw invalid("Not a profile.");
   }
 
@@ -199,7 +201,6 @@ function parseProfileBody(body: unknown): Profile {
     location: profile.location.trim(),
     email: profile.email.trim(),
     phone: profile.phone.trim(),
-    coreTechnologies: cleanList(profile.coreTechnologies),
     links: parseProfileLinks(profile.links),
   };
 }
