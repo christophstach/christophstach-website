@@ -387,7 +387,7 @@ function printedBullets(section: Section, entryId: string): number {
       <header class="picks__head">
         <h2 id="picks-projects" class="picks__title">Projects</h2>
         <p class="picks__count">
-          Printed after the experience; the website variant's show on /curriculum
+          Printed after the education; the website variant's show on /curriculum
         </p>
         <NuxtLink to="/desk/cv/projects" class="text-link picks__edit">Edit projects</NuxtLink>
       </header>
