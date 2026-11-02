@@ -1,4 +1,10 @@
-import type { CvContent, EntryRecord, Profile, SkillGroup, TimelineEntry } from "../../app/data/cv";
+import type {
+  CvContent,
+  EntryRecord,
+  Profile,
+  SkillGroupRecord,
+  TimelineEntry,
+} from "../../app/data/cv";
 import { asc, desc, eq, notInArray, sql } from "drizzle-orm";
 import { cvEntries, cvProfile, cvVariantEntries, cvVariants, skillGroups } from "../db/schema";
 import { createError } from "h3";
@@ -12,6 +18,8 @@ function toRecord(row: EntryRow): EntryRecord {
   return {
     id: row.id,
     section: row.section,
+    name: row.name,
+    note: row.note,
     title: row.title,
     organization: row.organization,
     location: row.location,
@@ -48,14 +56,20 @@ async function listEntries(): Promise<EntryRecord[]> {
   return rows.map((row) => toRecord(row));
 }
 
-/** All skill groups, in order. */
-async function listSkillGroups(): Promise<SkillGroup[]> {
+/** All skill groups, in order, as the desk edits them. */
+async function listSkillGroups(): Promise<SkillGroupRecord[]> {
   const rows = await useDb()
     .select()
     .from(skillGroups)
     .orderBy(asc(skillGroups.position), asc(skillGroups.id));
 
-  return rows.map((row) => ({ label: row.id, title: row.title, items: row.items }));
+  return rows.map((row) => ({
+    label: row.id,
+    name: row.name,
+    note: row.note,
+    title: row.title,
+    items: row.items,
+  }));
 }
 
 /** The CV's header, the one row of cv_profile. */
@@ -77,7 +91,10 @@ async function loadProfile(): Promise<Profile> {
   };
 }
 
-/** Everything variants pick from, in the shapes the site renders. */
+/**
+ * Everything variants pick from, in the shapes the site renders. Each field is
+ * copied by name, so desk-only names and notes never reach the site or the PDF.
+ */
 async function loadCvContent(): Promise<CvContent> {
   const [profile, entries, skills, projects] = await Promise.all([
     loadProfile(),
@@ -94,8 +111,14 @@ async function loadCvContent(): Promise<CvContent> {
     education: entries
       .filter((entry) => entry.section === "education")
       .map((entry) => toTimelineEntry(entry)),
-    skills,
-    projects,
+    skills: skills.map((group) => ({ label: group.label, title: group.title, items: group.items })),
+    projects: projects.map((project) => ({
+      id: project.id,
+      title: project.title,
+      description: project.description,
+      tech: project.tech,
+      url: project.url,
+    })),
   };
 }
 
@@ -127,6 +150,8 @@ async function dropBullets(tx: Tx, entryId: string, keep: string[]) {
 
 function entryColumns(entry: EntryRecord) {
   return {
+    name: entry.name,
+    note: entry.note,
     title: entry.title,
     organization: entry.organization,
     location: entry.location,
@@ -193,7 +218,7 @@ async function deleteEntry(id: string) {
  * Replaces all skill groups with these, in this order. Groups left out are
  * deleted and taken out of every variant.
  */
-async function saveSkillGroups(groups: SkillGroup[]) {
+async function saveSkillGroups(groups: SkillGroupRecord[]) {
   const ids = groups.map((group) => group.label);
 
   await useDb().transaction(async (tx) => {
@@ -204,13 +229,19 @@ async function saveSkillGroups(groups: SkillGroup[]) {
     // One after the other: a transaction runs on a single connection.
     await groups.reduce(async (previous, group, position) => {
       await previous;
+
+      const columns = {
+        name: group.name,
+        note: group.note,
+        title: group.title,
+        items: group.items,
+        position,
+      };
+
       await tx
         .insert(skillGroups)
-        .values({ id: group.label, title: group.title, items: group.items, position })
-        .onConflictDoUpdate({
-          target: skillGroups.id,
-          set: { title: group.title, items: group.items, position },
-        });
+        .values({ id: group.label, ...columns })
+        .onConflictDoUpdate({ target: skillGroups.id, set: columns });
     }, Promise.resolve());
 
     await tx.update(cvVariants).set({

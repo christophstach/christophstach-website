@@ -68,7 +68,7 @@ async function create() {
     return;
   }
 
-  const body = { ...variantContent(base), label: form.value.label.trim() };
+  const body = { ...variantContent(base), label: form.value.label.trim(), note: "" };
   const created = await request.run(() =>
     $fetch<unknown>(`/api/desk/cv-variants/${id}`, { method: "POST", body }),
   );
@@ -115,7 +115,7 @@ async function create() {
         </label>
 
         <label class="field">
-          <span class="field__label">label</span>
+          <span class="field__label">name</span>
           <input v-model="form.label" class="input" required placeholder="Backend" />
         </label>
 
@@ -163,6 +163,7 @@ async function create() {
             </span>
 
             <span class="card__role">{{ variant.role }}</span>
+            <span v-if="variant.note" class="desk-note">{{ variant.note }}</span>
 
             <span class="card__meta">
               <span class="card__status" :class="`card__status--${status(variant).tone}`">

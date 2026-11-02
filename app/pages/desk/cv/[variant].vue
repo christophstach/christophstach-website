@@ -116,6 +116,7 @@ const actions = computed(() => [
           <span v-if="isWebsite" class="role-tag">/curriculum</span>
           <span>{{ purpose }}</span>
         </p>
+        <p v-if="draft.note" class="desk-note editor__note">{{ draft.note }}</p>
       </div>
 
       <DeskMenu :actions="actions" label="Variant actions" />
@@ -135,6 +136,17 @@ const actions = computed(() => [
           <span class="field__label">name in the desk</span>
           <input v-model="draft.label" class="input" required />
         </label>
+
+        <label class="field">
+          <span class="field__label">note</span>
+          <textarea
+            v-model="draft.note"
+            class="input"
+            rows="2"
+            placeholder="What this variant is for, e.g. which jobs."
+          />
+          <span class="field__hint">Only the desk shows the name and the note.</span>
+        </label>
       </aside>
 
       <DeskSaveBar
@@ -153,6 +165,10 @@ const actions = computed(() => [
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+}
+
+.editor__note {
+  max-inline-size: 48rem;
 }
 
 .editor__body {

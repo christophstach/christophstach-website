@@ -229,7 +229,7 @@ function printedBullets(section: Section, entryId: string): number {
           <button
             type="button"
             class="grip"
-            :aria-label="`Move ${group.title}: arrow up or down`"
+            :aria-label="`Move ${group.name || group.title}: arrow up or down`"
             title="Drag, or use the arrow keys"
             @keydown="moveKey('skills', group.label, $event)"
           >
@@ -238,8 +238,9 @@ function printedBullets(section: Section, entryId: string): number {
           <label class="row__main">
             <input type="checkbox" checked @change="toggleSkill(group.label)" />
             <span class="row__text">
-              <span class="row__name">{{ group.title }}</span>
+              <span class="row__name">{{ group.name || group.title }}</span>
               <span class="row__meta">{{ group.items.join(", ") }}</span>
+              <span v-if="group.note" class="row__note">{{ group.note }}</span>
             </span>
           </label>
         </li>
@@ -248,8 +249,9 @@ function printedBullets(section: Section, entryId: string): number {
           <label class="row__main">
             <input type="checkbox" @change="toggleSkill(group.label)" />
             <span class="row__text">
-              <span class="row__name">{{ group.title }}</span>
+              <span class="row__name">{{ group.name || group.title }}</span>
               <span class="row__meta">{{ group.items.join(", ") }}</span>
+              <span v-if="group.note" class="row__note">{{ group.note }}</span>
             </span>
           </label>
         </li>
@@ -287,7 +289,7 @@ function printedBullets(section: Section, entryId: string): number {
           <button
             type="button"
             class="grip"
-            :aria-label="`Move ${entry.title}: arrow up or down`"
+            :aria-label="`Move ${entry.name || entry.title}: arrow up or down`"
             title="Drag, or use the arrow keys"
             @keydown="moveKey(section.id, entry.id, $event)"
           >
@@ -296,8 +298,11 @@ function printedBullets(section: Section, entryId: string): number {
           <label class="row__main">
             <input type="checkbox" checked @change="removeEntry(section.id, entry.id)" />
             <span class="row__text">
-              <span class="row__name">{{ entry.title }}</span>
-              <span class="row__meta">{{ entry.organization }}, {{ period(entry) }}</span>
+              <span class="row__name">{{ entry.name || entry.title }}</span>
+              <span class="row__meta"
+                >{{ entry.title }} at {{ entry.organization }}, {{ period(entry) }}</span
+              >
+              <span v-if="entry.note" class="row__note">{{ entry.note }}</span>
             </span>
           </label>
           <span v-if="entry.bullets.length" class="row__aside">
@@ -347,8 +352,11 @@ function printedBullets(section: Section, entryId: string): number {
           <label class="row__main">
             <input type="checkbox" @change="addEntry(section.id, entry)" />
             <span class="row__text">
-              <span class="row__name">{{ entry.title }}</span>
-              <span class="row__meta">{{ entry.organization }}, {{ period(entry) }}</span>
+              <span class="row__name">{{ entry.name || entry.title }}</span>
+              <span class="row__meta"
+                >{{ entry.title }} at {{ entry.organization }}, {{ period(entry) }}</span
+              >
+              <span v-if="entry.note" class="row__note">{{ entry.note }}</span>
             </span>
           </label>
         </li>
@@ -377,7 +385,7 @@ function printedBullets(section: Section, entryId: string): number {
           <button
             type="button"
             class="grip"
-            :aria-label="`Move ${project.title}: arrow up or down`"
+            :aria-label="`Move ${project.name || project.title}: arrow up or down`"
             title="Drag, or use the arrow keys"
             @keydown="moveKey('projects', project.id, $event)"
           >
@@ -386,8 +394,9 @@ function printedBullets(section: Section, entryId: string): number {
           <label class="row__main">
             <input type="checkbox" checked @change="toggleProject(project.id)" />
             <span class="row__text">
-              <span class="row__name">{{ project.title }}</span>
+              <span class="row__name">{{ project.name || project.title }}</span>
               <span class="row__meta">{{ project.tech.join(", ") }}</span>
+              <span v-if="project.note" class="row__note">{{ project.note }}</span>
             </span>
           </label>
         </li>
@@ -396,8 +405,9 @@ function printedBullets(section: Section, entryId: string): number {
           <label class="row__main">
             <input type="checkbox" @change="toggleProject(project.id)" />
             <span class="row__text">
-              <span class="row__name">{{ project.title }}</span>
+              <span class="row__name">{{ project.name || project.title }}</span>
               <span class="row__meta">{{ project.tech.join(", ") }}</span>
+              <span v-if="project.note" class="row__note">{{ project.note }}</span>
             </span>
           </label>
         </li>
@@ -549,6 +559,14 @@ span.grip {
 .row__meta {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+}
+
+.row__note {
+  font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
+  font-style: italic;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
 }
 
 .row__aside {

@@ -18,6 +18,8 @@ const cvVariants = pgTable("cv_variants", {
   /** URL slug, e.g. /desk/cv-print/frontend. */
   id: text().primaryKey(),
   label: text().notNull(),
+  /** Desk only: what it is for. Never printed or shown on the site. */
+  note: text().notNull().default(""),
   role: text().notNull(),
   /** Empty prints no summary line. */
   summary: text().notNull().default(""),
@@ -77,6 +79,10 @@ const cvEntries = pgTable("cv_entries", {
   /** Stable id, e.g. "mbition"; also the URL slug in the desk. */
   id: text().primaryKey(),
   section: text({ enum: ["experience", "education"] }).notNull(),
+  /** Desk only: how the desk lists it. Never printed or shown on the site. */
+  name: text().notNull().default(""),
+  /** Desk only: what it is for. Never printed or shown on the site. */
+  note: text().notNull().default(""),
   title: text().notNull(),
   organization: text().notNull(),
   /** Empty shows none. */
@@ -106,6 +112,10 @@ const cvEntries = pgTable("cv_entries", {
 const skillGroups = pgTable("skill_groups", {
   /** Terminal-style label used on the site, e.g. "frontend"; variants refer to it. */
   id: text().primaryKey(),
+  /** Desk only: how the desk lists it. Never printed or shown on the site. */
+  name: text().notNull().default(""),
+  /** Desk only: what it is for. Never printed or shown on the site. */
+  note: text().notNull().default(""),
   /** Prose heading used in the PDF. */
   title: text().notNull(),
   items: text()
@@ -140,7 +150,12 @@ const cvProfile = pgTable("cv_profile", {
 const projects = pgTable("projects", {
   /** URL slug, e.g. /desk/projects/tiger. */
   id: text().primaryKey(),
+  /** Desk only: how the desk lists it. Never printed or shown on the site. */
+  name: text().notNull().default(""),
+  /** Desk only: what it is for. Never printed or shown on the site. */
+  note: text().notNull().default(""),
   title: text().notNull(),
+  /** Public: /curriculum shows it. */
   description: text().notNull(),
   tech: text()
     .array()

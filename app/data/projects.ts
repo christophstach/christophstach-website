@@ -9,4 +9,12 @@ interface Project {
   url: string;
 }
 
-export type { Project };
+/** A project as the desk edits it, with its desk-only name and note. */
+interface ProjectRecord extends Project {
+  /** Desk only: how the desk lists it. Never shown on the site. */
+  name: string;
+  /** Desk only: what it is for. Never shown on the site. */
+  note: string;
+}
+
+export type { Project, ProjectRecord };

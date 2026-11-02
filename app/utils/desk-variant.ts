@@ -5,6 +5,7 @@ function variantContent(variant: CvVariant): CvVariant {
   return {
     id: variant.id,
     label: variant.label,
+    note: variant.note,
     role: variant.role,
     summary: variant.summary,
     experience: variant.experience.map((pick) => ({ id: pick.id, bullets: [...pick.bullets] })),

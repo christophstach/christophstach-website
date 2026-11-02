@@ -24,6 +24,7 @@ function isVariant(value: Partial<CvVariant>): boolean {
   return (
     typeof value.label === "string" &&
     value.label.trim() !== "" &&
+    typeof value.note === "string" &&
     typeof value.role === "string" &&
     typeof value.summary === "string" &&
     isPicks(value.experience) &&
@@ -60,6 +61,7 @@ function parseVariantBody(id: string, body: unknown): CvVariant {
   return {
     id,
     label: variant.label.trim(),
+    note: variant.note.trim(),
     role: variant.role.trim(),
     summary: variant.summary.trim(),
     experience: variant.experience,

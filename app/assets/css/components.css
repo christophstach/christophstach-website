@@ -332,6 +332,18 @@ textarea.input {
   color: var(--color-signal);
 }
 
+/* A desk-only note in a list: what an entry, group, project or variant is for. */
+.desk-note {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
 /* A label, an address and a remove button; the address wraps below on phones. */
 .link-row {
   display: grid;
