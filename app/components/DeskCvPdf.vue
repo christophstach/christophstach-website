@@ -61,7 +61,7 @@ watch(pages, async () => {
   <section class="cv-pdf" aria-labelledby="cv-pdf-title">
     <div class="cv-pdf__head">
       <h2 id="cv-pdf-title" class="cv-pdf__title">Pages</h2>
-      <span v-if="data?.trial" class="cv-pdf__trial">unsaved steps</span>
+      <span v-if="data?.trial" class="cv-pdf__trial">unsaved layout</span>
     </div>
 
     <p v-if="error" class="cv-pdf__note">Couldn't read the PDF. {{ error }}</p>

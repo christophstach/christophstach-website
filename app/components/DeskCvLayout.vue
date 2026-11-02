@@ -27,19 +27,19 @@ const controls: { key: Key; label: string; hint: string; steps: Record<string, s
   {
     key: "spacing",
     label: "spacing",
-    hint: "gaps and line height",
+    hint: "gaps, line height",
     steps: { compact: "compact", normal: "normal", airy: "airy", spacious: "spacious" },
   },
   {
     key: "textSize",
     label: "text size",
-    hint: "body text, px",
+    hint: "px",
     steps: { small: "12.5", normal: "13", large: "13.5", larger: "14" },
   },
   {
     key: "margin",
     label: "page margin",
-    hint: "every side, mm",
+    hint: "mm",
     steps: { narrow: "14", normal: "18", wide: "22" },
   },
 ];
@@ -73,47 +73,49 @@ const isSaved = computed(() => sameLayout(layout.value, saved));
       </button>
     </div>
 
-    <fieldset v-for="control in controls" :key="control.key" class="cv-layout__control">
-      <legend class="cv-layout__legend">
-        <span class="field__label">{{ control.label }}</span>
-        <span class="cv-layout__unit">{{ control.hint }}</span>
-      </legend>
-      <div class="cv-layout__steps">
-        <label
-          v-for="step in stepsOf(control.key)"
-          :key="step"
-          class="cv-layout__step"
-          :class="{
-            'cv-layout__step--on': layout[control.key] === step,
-            'cv-layout__step--saved': saved[control.key] === step,
-          }"
-        >
-          <input
-            type="radio"
-            class="cv-layout__radio"
-            :name="`cv-layout-${control.key}`"
-            :value="step"
-            :checked="layout[control.key] === step"
-            @change="pick(control.key, step)"
-          />
-          {{ control.steps[step] }}
-        </label>
-      </div>
-    </fieldset>
+    <div class="cv-layout__controls">
+      <fieldset v-for="control in controls" :key="control.key" class="cv-layout__control">
+        <legend class="cv-layout__legend">
+          <span class="field__label">{{ control.label }}</span>
+          <span class="cv-layout__unit">{{ control.hint }}</span>
+        </legend>
+        <div class="cv-layout__steps" :style="{ '--cv-layout-steps': stepsOf(control.key).length }">
+          <label
+            v-for="step in stepsOf(control.key)"
+            :key="step"
+            class="cv-layout__step"
+            :class="{
+              'cv-layout__step--on': layout[control.key] === step,
+              'cv-layout__step--saved': saved[control.key] === step,
+            }"
+          >
+            <input
+              type="radio"
+              class="cv-layout__radio"
+              :name="`cv-layout-${control.key}`"
+              :value="step"
+              :checked="layout[control.key] === step"
+              @change="pick(control.key, step)"
+            />
+            {{ control.steps[step] }}
+          </label>
+        </div>
+      </fieldset>
+    </div>
 
     <div class="cv-layout__foot">
       <button
+        v-if="!isChecked"
         type="button"
         class="button button--outline cv-layout__check"
-        :disabled="isChecked"
         @click="emit('check')"
       >
         Check pages
       </button>
-      <p class="field__hint">
-        <template v-if="isChecked && isSaved">The pages above use these steps.</template>
+      <p class="field__hint" role="status">
+        <template v-if="isChecked && isSaved">The pages above use this layout.</template>
         <template v-else-if="isChecked">Checked above, not saved yet.</template>
-        <template v-else>Prints the PDF with these steps, without saving.</template>
+        <template v-else>Prints the PDF with this layout, without saving.</template>
       </p>
     </div>
   </section>
@@ -121,6 +123,11 @@ const isSaved = computed(() => sameLayout(layout.value, saved));
 
 <style scoped>
 .cv-layout {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.cv-layout__controls {
   display: grid;
   gap: var(--space-4);
 }
@@ -154,23 +161,23 @@ const isSaved = computed(() => sameLayout(layout.value, saved));
 }
 
 .cv-layout__control {
-  display: grid;
-  gap: var(--space-1-5);
   min-inline-size: 0;
   padding: 0;
   margin: 0;
   border: 0;
 }
 
-/* The label left, what the numbers mean right, on one line above the steps. */
+/* The label, then what the steps mean, on one line above the steps. */
 .cv-layout__legend {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: var(--space-2);
-  inline-size: 100%;
   padding: 0;
   margin-bottom: var(--space-1-5);
+}
+
+.cv-layout__legend .field__label {
+  color: var(--color-text-soft);
 }
 
 .cv-layout__unit {
@@ -179,11 +186,15 @@ const isSaved = computed(() => sameLayout(layout.value, saved));
   color: var(--color-text-muted);
 }
 
-/* A segmented control: the steps side by side in one bordered strip. */
+/* A segmented control: the steps side by side in one bordered strip. Every
+   strip keeps the columns of the longest control (four steps), so "normal"
+   lines up across the controls and a changed step stands out of that line.
+   The 6px are the strip's own padding and border. */
 .cv-layout__steps {
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
+  inline-size: calc((100% - 6px) * var(--cv-layout-steps) / 4 + 6px);
   padding: 2px;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
@@ -208,6 +219,7 @@ const isSaved = computed(() => sameLayout(layout.value, saved));
 
 .cv-layout__step--on {
   background-color: var(--color-accent-subtle-bg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 35%, transparent);
   color: var(--color-accent-subtle-text);
   font-weight: var(--font-semibold);
 }
@@ -240,18 +252,12 @@ const isSaved = computed(() => sameLayout(layout.value, saved));
 }
 
 .cv-layout__foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
 }
 
-.cv-layout__check:disabled {
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.cv-layout__foot .field__hint {
-  flex: 1 1 10rem;
+.cv-layout__check {
+  justify-content: center;
 }
 </style>
