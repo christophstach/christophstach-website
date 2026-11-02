@@ -1,4 +1,5 @@
 import type { CvVariant, EntryPick } from "../../app/data/cv-variants";
+import { DEFAULT_CV_LAYOUT, normalizeCvLayout } from "../../app/data/cv-print-layout";
 import { asc, eq, sql } from "drizzle-orm";
 import { cvVariantEntries, cvVariants } from "../db/schema";
 import type { VariantBody } from "./cv-variant-body";
@@ -36,6 +37,7 @@ function toVariant(row: VariantRow): CvVariant {
     education: picks(row, "education"),
     projects: row.projects,
     skills: row.skills,
+    layout: normalizeCvLayout(row.layout),
   };
 }
 
@@ -123,6 +125,7 @@ function variantColumns(variant: VariantBody) {
     ...(variant.coreTechnologies ? { coreTechnologies: variant.coreTechnologies } : {}),
     projects: variant.projects,
     skills: variant.skills,
+    ...(variant.layout ? { layout: variant.layout } : {}),
     // The stored page check no longer matches the content.
     pageFills: [],
     updatedAt: new Date(),
@@ -137,7 +140,14 @@ async function saveVariant(variant: VariantBody, { create }: { create: boolean }
   const content = await loadCvContent();
 
   try {
-    printVariant({ ...variant, coreTechnologies: variant.coreTechnologies ?? [] }, content);
+    printVariant(
+      {
+        ...variant,
+        coreTechnologies: variant.coreTechnologies ?? [],
+        layout: variant.layout ?? DEFAULT_CV_LAYOUT,
+      },
+      content,
+    );
   } catch (error) {
     throw createError({ statusCode: 400, message: (error as Error).message });
   }

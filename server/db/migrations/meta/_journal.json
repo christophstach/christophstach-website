@@ -120,6 +120,13 @@
       "when": 1793635087206,
       "tag": "0016_drop_profile_core_technologies",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793644505336,
+      "tag": "0017_cv_variant_layout",
+      "breakpoints": true
     }
   ]
 }

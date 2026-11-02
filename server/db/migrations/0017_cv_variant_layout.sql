@@ -1,0 +1,1 @@
+ALTER TABLE "cv_variants" ADD COLUMN "layout" jsonb DEFAULT '{"spacing":"normal","textSize":"normal","margin":"normal"}'::jsonb NOT NULL;

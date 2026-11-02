@@ -1,11 +1,18 @@
 import type { CvVariant, EntryPick } from "../../app/data/cv-variants";
 import { createError } from "h3";
+import { isLayoutStep } from "../../app/data/cv-print-layout";
 
 /**
  * A variant as the desk sends it. A tab opened before a deploy may lack the
- * newer fields: no note counts as empty, no core technologies keeps the stored ones.
+ * newer fields: no note counts as empty, no core technologies or layout keeps
+ * the stored ones.
  */
-type VariantBody = Omit<CvVariant, "coreTechnologies"> & { coreTechnologies?: string[] };
+type CvLayout = CvVariant["layout"];
+
+type VariantBody = Omit<CvVariant, "coreTechnologies" | "layout"> & {
+  coreTechnologies?: string[];
+  layout?: CvLayout;
+};
 
 // URL slug: lowercase words joined by single hyphens, e.g. "ai-platform".
 const VARIANT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
@@ -26,6 +33,18 @@ function isPicks(value: unknown): value is EntryPick[] {
   );
 }
 
+function isLayout(value: unknown): value is CvLayout {
+  const layout = value as Partial<Record<keyof CvLayout, unknown>> | null;
+
+  return (
+    typeof layout === "object" &&
+    layout !== null &&
+    isLayoutStep("spacing", layout.spacing) &&
+    isLayoutStep("textSize", layout.textSize) &&
+    isLayoutStep("margin", layout.margin)
+  );
+}
+
 function isVariant(value: Partial<CvVariant>): boolean {
   return (
     typeof value.label === "string" &&
@@ -37,7 +56,8 @@ function isVariant(value: Partial<CvVariant>): boolean {
     isPicks(value.experience) &&
     isPicks(value.education) &&
     isStringArray(value.projects) &&
-    isStringArray(value.skills)
+    isStringArray(value.skills) &&
+    (value.layout === undefined || isLayout(value.layout))
   );
 }
 
@@ -76,6 +96,11 @@ function parseVariantBody(id: string, body: unknown): VariantBody {
     education: variant.education,
     projects: variant.projects,
     skills: variant.skills,
+    layout: variant.layout && {
+      spacing: variant.layout.spacing,
+      textSize: variant.layout.textSize,
+      margin: variant.layout.margin,
+    },
   };
 }
 

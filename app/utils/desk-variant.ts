@@ -13,6 +13,7 @@ function variantContent(variant: CvVariant): CvVariant {
     education: variant.education.map((pick) => ({ id: pick.id, bullets: [...pick.bullets] })),
     projects: [...variant.projects],
     skills: [...variant.skills],
+    layout: { ...variant.layout },
   };
 }
 

@@ -51,7 +51,10 @@ into templates. Two
 variants hold a public role and can't be deleted: the one marked primary is the printed CV
 (`/cv-print`, `/christoph-stach-cv.pdf`), the one marked website is the experience and
 education and the projects on `/curriculum` (`/api/cv-website`). The others are private, at `/desk/cv-print/<id>` and `/api/desk/cv/<id>`. All variants render
-through the one `CvDocument.vue`, so a variant changes content, never layout. Dates are ISO
+through the one `CvDocument.vue`, so a variant changes content, never the design. To fill its
+pages a variant picks layout steps (spacing, text size, page margin; `CV_LAYOUT_STEPS` in
+`app/data/cv-print-layout.ts`, stored in the `layout` column), set in the variant editor's rail;
+`CvDocument.vue` turns them into `--cv-space` and `--cv-scale` and its `@page` margin. Dates are ISO
 month strings (`"2023-10"`) formatted for display via `app/utils/format.ts` (`formatMonth`).
 
 **CSS design system is layered, imported once via `app/assets/css/main.css`:**
@@ -126,7 +129,7 @@ block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via
   `routeRules` caches it with ISR until the next deployment. When the desk saves the primary
   variant or makes another one primary, `revalidatePaths` renews that cache on demand with
   `NUXT_ISR_BYPASS_TOKEN` (also needed at build time, for the Vercel ISR config). Page breaks are CSS rules in `CvDocument.vue`; don't tune
-  spacing to move a break; the desk variant editor shows how
+  the CSS spacing to move a break (a variant fills its pages with its layout steps); the desk variant editor shows how
   full each page is (`server/api/desk/cv-pdf.get.ts`, `DeskCvPdf.vue`, rules in
   `app/utils/cv-layout.ts`; the result is stored as `page_fills` with the build that made it; after a deploy the desk
   layout re-checks every variant in the background, `app/utils/desk-page-checks.ts`), flagging more than two
