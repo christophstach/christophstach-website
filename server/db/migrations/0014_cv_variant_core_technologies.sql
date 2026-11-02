@@ -1,0 +1,1 @@
+ALTER TABLE "cv_variants" ADD COLUMN "core_technologies" text[] DEFAULT '{}'::text[] NOT NULL;

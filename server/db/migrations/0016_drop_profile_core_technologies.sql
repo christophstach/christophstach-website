@@ -1,0 +1,1 @@
+ALTER TABLE "cv_profile" DROP COLUMN "core_technologies";

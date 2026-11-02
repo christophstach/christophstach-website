@@ -19,7 +19,7 @@ if (!stored.value) {
   throw createError({ statusCode: 500, message: "No CV profile.", fatal: true });
 }
 
-/** The form's state: core technologies as one comma-separated line. */
+/** The form's state: a copy, so editing never touches the fetched profile. */
 function toForm(profile: Profile) {
   return {
     name: profile.name,
@@ -27,7 +27,6 @@ function toForm(profile: Profile) {
     location: profile.location,
     email: profile.email,
     phone: profile.phone,
-    coreTechnologies: profile.coreTechnologies.join(", "),
     links: profile.links.map((link) => ({ ...link })),
   };
 }
@@ -50,7 +49,7 @@ const request = useDeskRequest();
 const pageChecks = usePageChecks();
 
 async function save() {
-  const body = { ...draft.value, coreTechnologies: draft.value.coreTechnologies.split(",") };
+  const body = draft.value;
 
   if (await request.run(() => $fetch<unknown>("/api/desk/profile", { method: "PUT", body }))) {
     await refreshNuxtData(["desk-profile", "desk-cv-variants"]);
@@ -145,18 +144,6 @@ function discard() {
           <Icon name="tabler:plus" size="16" />
           Add link
         </button>
-      </DeskFormSection>
-
-      <DeskFormSection
-        title="core technologies"
-        description="Your main stack, in display order. Not printed yet."
-        single
-      >
-        <label class="field">
-          <span class="field__label">technologies</span>
-          <textarea v-model="draft.coreTechnologies" class="input" rows="2" />
-          <span class="field__hint">Comma-separated.</span>
-        </label>
       </DeskFormSection>
     </div>
 

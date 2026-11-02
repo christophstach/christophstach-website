@@ -8,6 +8,7 @@ function variantContent(variant: CvVariant): CvVariant {
     note: variant.note,
     role: variant.role,
     summary: variant.summary,
+    coreTechnologies: [...variant.coreTechnologies],
     experience: variant.experience.map((pick) => ({ id: pick.id, bullets: [...pick.bullets] })),
     education: variant.education.map((pick) => ({ id: pick.id, bullets: [...pick.bullets] })),
     projects: [...variant.projects],

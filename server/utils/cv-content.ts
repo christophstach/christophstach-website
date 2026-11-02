@@ -86,7 +86,6 @@ async function loadProfile(): Promise<Profile> {
     location: row.location,
     email: row.email,
     phone: row.phone,
-    coreTechnologies: row.coreTechnologies,
     links: row.links,
   };
 }

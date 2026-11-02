@@ -99,6 +99,27 @@
       "when": 1793634576891,
       "tag": "0013_seed_names",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793635084730,
+      "tag": "0014_cv_variant_core_technologies",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1793635085903,
+      "tag": "0015_move_core_technologies",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793635087206,
+      "tag": "0016_drop_profile_core_technologies",
+      "breakpoints": true
     }
   ]
 }

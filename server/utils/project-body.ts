@@ -6,9 +6,7 @@ const PROJECT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
 function isProject(value: Partial<ProjectRecord>): boolean {
   return (
-    typeof value.name === "string" &&
-    value.name.trim() !== "" &&
-    typeof value.note === "string" &&
+    (value.name === undefined || (typeof value.name === "string" && value.name.trim() !== "")) &&
     typeof value.title === "string" &&
     value.title.trim() !== "" &&
     typeof value.description === "string" &&
@@ -37,8 +35,9 @@ function parseProjectBody(id: string, body: unknown): ProjectRecord {
 
   return {
     id,
-    name: project.name.trim(),
-    note: project.note.trim(),
+    // A tab opened before names existed sends none: fall back to the title.
+    name: (project.name ?? project.title).trim(),
+    note: typeof project.note === "string" ? project.note.trim() : "",
     title: project.title.trim(),
     description: project.description.trim(),
     tech: project.tech.map((item) => item.trim()).filter(Boolean),
