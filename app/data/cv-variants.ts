@@ -40,10 +40,10 @@ interface CvVariant {
 
 /**
  * Shows the download buttons for the primary CV on the home and curriculum
- * pages. Temporarily off while the CV is reworked; set back to true to show
- * them again. The PDF route and the desk keep working either way.
+ * pages. Set to false to hide them, for example while the CV is reworked. The
+ * PDF route and the desk keep working either way.
  */
-const cvDownloadVisible = false;
+const cvDownloadVisible = true;
 
 export type { CvVariant, EntryPick };
 export { cvDownloadVisible };
