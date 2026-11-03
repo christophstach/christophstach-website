@@ -42,9 +42,17 @@
   --phosphor-900: #062b21;
   --phosphor-950: #04130d;
 
+  /* Color palette: red (destructive actions) */
+  --red-300: #ff7b7b;
+  /* 700 is the light-mode danger color and carries small text, like --amber-700. */
+  --red-700: #b4232a;
+
   /* Color palette: amber (secondary signal) */
   --amber-400: #ffb454;
   --amber-500: #f59e0b;
+  /* 700 is the light-mode signal and carries small text, so it is tuned to
+     clear 4.5:1 on both --color-bg and --color-surface. */
+  --amber-700: #a14a08;
 
   /* Typography */
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", "Menlo", monospace;
@@ -147,7 +155,8 @@
   --color-accent-subtle-text: var(--phosphor-700);
   --color-ring: rgb(8 122 94 / 0.3);
 
-  --color-signal: var(--amber-500);
+  --color-signal: var(--amber-700);
+  --color-danger: var(--red-700);
 
   /* The CV sheet in the desk: paper in the PDF's own colors, in both themes. */
   --color-paper: var(--slate-0);
@@ -189,6 +198,7 @@
   --color-ring: rgb(52 230 163 / 0.3);
 
   --color-signal: var(--amber-400);
+  --color-danger: var(--red-300);
 
   --color-paper: #e8ecea;
   --color-paper-shadow: 0 0 0 1px rgb(255 255 255 / 0.04), 0 16px 40px -12px rgb(0 0 0 / 0.6);

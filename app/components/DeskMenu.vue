@@ -112,6 +112,6 @@ function choose(action: MenuAction) {
 
 .menu__item--danger,
 .menu__item--danger:hover {
-  color: var(--color-signal);
+  color: var(--color-danger);
 }
 </style>

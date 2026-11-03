@@ -37,12 +37,15 @@ automatically. No hex values or primitives in components; the paper is the one e
 | Headings                | `--color-heading`                 | `#0f1514` | `#f5f7f7` |
 | Text                    | `--color-text`, `-soft`, `-muted` | `#283133` | `#d4dadb` |
 | Links, actions, success | `--color-accent`                  | `#087a5e` | `#34e6a3` |
-| Warnings, errors        | `--color-signal`                  | `#f59e0b` | `#ffb454` |
+| Warnings, errors        | `--color-signal`                  | `#a14a08` | `#ffb454` |
+| Delete actions          | `--color-danger`                  | `#b4232a` | `#ff7b7b` |
 
 - Green is the only accent. It marks what can be acted on and what is fine, so keep it rare.
 - Amber is only for what needs attention, never for decoration.
-- Don't add a color for a new meaning. If the two signals don't cover it, use text.
-- Small text in the accent must clear 4.5:1 on both `--color-bg` and `--color-surface`.
+- Red is only for actions that delete something, so it reads as a warning before the click.
+- Don't add a color for a new meaning. If these don't cover it, use text.
+- Small text in the accent, the signal or the danger color must clear 4.5:1 on both `--color-bg` and
+  `--color-surface`.
 
 ## Type
 
