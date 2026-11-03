@@ -4,8 +4,8 @@ import heroImage from "~/assets/images/hero.webp";
 import { useFetch } from "nuxt/app";
 
 useSeoMeta({
-  title: "Senior Full-Stack Engineer in Berlin",
-  ogTitle: "Christoph Stach, Senior Full-Stack Engineer in Berlin",
+  title: "Senior Software Engineer in Berlin",
+  ogTitle: "Christoph Stach, Senior Software Engineer in Berlin",
 });
 
 // Jobs and skill groups live in the database, edited in the desk; the page is
@@ -50,8 +50,13 @@ const monthsEmployed = experience.reduce(
   0,
 );
 
-const years = useCountUp(Math.floor(monthsEmployed / 12));
-const companies = useCountUp(experience.length);
+const yearsEmployed = Math.floor(monthsEmployed / 12);
+
+// A company with several roles on the CV counts once.
+const companyCount = new Set(experience.map((entry) => entry.organization)).size;
+
+const years = useCountUp(yearsEmployed);
+const companies = useCountUp(companyCount);
 const degrees = useCountUp(2);
 const techs = useCountUp(totalSkills);
 </script>
@@ -70,19 +75,18 @@ const techs = useCountUp(totalSkills);
             <p class="terminal__cmd"><span class="terminal__prompt">$</span> whoami</p>
             <h1 class="hero__title">Christoph Stach</h1>
             <p class="hero__role">
-              Senior Full-Stack Engineer<span class="hero__sep">//</span>Berlin<span
-                class="hero__sep"
+              Senior Software Engineer<span class="hero__sep">//</span>Berlin<span class="hero__sep"
                 >//</span
-              >12+ yrs
+              >{{ yearsEmployed }}+ yrs
             </p>
 
             <p class="terminal__cmd"><span class="terminal__prompt">$</span> cat about.txt</p>
             <p class="hero__text">
-              Built modern web apps in <strong>TypeScript</strong> across
-              <strong>Vue/Nuxt</strong> and <strong>React/Next.js</strong> for over a decade, plus a
-              <strong>Python</strong> platform for AI agents. Owned features across the full
-              development cycle and enforced clean, type-safe code, with an eye for usability,
-              accessibility, performance, and detail in component design.
+              Senior software engineer with a strong background in
+              <strong>web development</strong> who owned features across the full development cycle,
+              enforced code quality and kept software maintainable. Built
+              <strong>LLM agents</strong> and worked with AI coding tools. Experience across
+              enterprise, mid-sized and startup environments.
             </p>
 
             <div class="hero__actions">
@@ -165,31 +169,35 @@ const techs = useCountUp(totalSkills);
 
       <div class="about__content">
         <p>
-          At <strong>MBition (Mercedes-Benz)</strong>, I work as a Senior Full Stack Engineer. My
-          home base is the web: I ship product features end-to-end in
-          <strong>Vue and Nuxt</strong> with strict <strong>TypeScript</strong> and zod-validated
-          REST contracts, maintain pnpm monorepos for better DX, and build reliable CI/CD pipelines
-          in <strong>GitLab CI and Azure DevOps</strong>. Alongside that I work in
-          <strong>Python</strong>, building and operating a platform that hosts LLM agents on
-          Kubernetes, providing the shared service, base classes, and CI/CD that agent teams plug
-          their business logic into.
+          At <strong>MBition (Mercedes-Benz)</strong>, I work as a Senior Software Engineer and own
+          the <strong>Python</strong> platform on which multiple Mercedes-Benz teams build and run
+          their LLM agents on <strong>Kubernetes</strong>. Its service is the cloud backend for the
+          in-car voice assistant serving several million vehicles. I re-architected it to fully
+          asynchronous Python, which cut its memory use by 50%, and rebuilt the CI/CD pipelines,
+          which took deployment from a ~2-hour manual process to an automated 15 minutes.
         </p>
 
         <p>
-          Before that, I spent several years at DERICON building frontends with
-          <strong>Vue, Nuxt, React, and Remix</strong>, including a graph-based no-code workflow
-          builder that empowered non-technical users to model and deploy workflows themselves.
-          Earlier in my career I worked as a PHP/JavaScript full-stack developer, modernising legacy
-          systems and improving maintainability and feature velocity.
+          Before that, on the company's speech platform, I built a no-code platform for configuring
+          and deploying speech applications, shipping features end-to-end in
+          <strong>Vue and Nuxt</strong> with strict <strong>TypeScript</strong>. I owned code
+          quality across the team and cut build times by ~50% by consolidating multiple products
+          into a pnpm monorepo.
         </p>
 
         <p>
-          Alongside my professional work, I completed both a <strong>B.Sc.</strong> and
-          <strong>M.Sc. in Applied Computer Science</strong> at
+          Earlier, alongside my studies at DERICON, I built and owned a graph-based no-code workflow
+          builder in <strong>React and Remix</strong>. At SLH, I modernized a legacy PHP application
+          into a modular frontend/backend architecture.
+        </p>
+
+        <p>
+          I hold a <strong>B.Sc.</strong> and an <strong>M.Sc. in Applied Computer Science</strong>
+          from
           <a href="https://www.htw-berlin.de/" target="_blank" rel="noopener" class="text-link"
             >HTW Berlin</a
-          >, specialising in AI, bioinformatics, deep learning, and data science, with research on
-          nanopore-based DNA sequencing and neural style transfer.
+          >, specializing in data science and health computing, with theses on style transfer for
+          low-power hardware and nanopore-based DNA sequencing.
         </p>
       </div>
     </section>

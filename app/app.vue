@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const description =
-  "Christoph Stach is a full-stack engineer based in Berlin with over a decade of experience building modern web applications with Vue/Nuxt and React/Next.js, and more recently Python backends for AI and LLM agents.";
+  "Christoph Stach is a senior software engineer based in Berlin with a strong background in web development, who owns the Python platform behind LLM agents at MBition (Mercedes-Benz).";
 
 const siteUrl = "https://christophstach.de";
 const route = useRoute();
@@ -18,7 +18,7 @@ useSeoMeta({
   ogImageWidth: 1200,
   ogImageHeight: 630,
   ogImageType: "image/png",
-  ogImageAlt: "Christoph Stach — Senior Full-Stack Engineer based in Berlin",
+  ogImageAlt: "Christoph Stach — Senior Software Engineer based in Berlin",
   twitterCard: "summary_large_image",
   twitterImage: `${siteUrl}/images/og.png`,
 });
@@ -31,7 +31,7 @@ const personJsonLd = {
   // Crawler-facing copy of the hero portrait: the bundled asset gets a hashed
   // URL, so this needs a stable one. Keep it in sync with assets/images/hero.webp.
   image: `${siteUrl}/images/hero.png`,
-  jobTitle: "Senior Full-Stack Engineer",
+  jobTitle: "Senior Software Engineer",
   description,
   worksFor: { "@type": "Organization", name: "MBition GmbH (Mercedes-Benz)" },
   address: { "@type": "PostalAddress", addressLocality: "Berlin", addressCountry: "DE" },
