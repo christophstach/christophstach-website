@@ -17,3 +17,6 @@ node_modules
 
 # Misc
 .DS_Store
+
+# Claude Code: local, machine-specific
+.claude
