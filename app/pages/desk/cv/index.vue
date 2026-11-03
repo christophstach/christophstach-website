@@ -70,7 +70,7 @@ async function create() {
 
   const body = { ...variantContent(base), label: form.value.label.trim(), note: "" };
   const created = await request.run(() =>
-    $fetch<unknown>(`/api/desk/cv-variants/${id}`, { method: "POST", body }),
+    $fetch(`/api/desk/cv-variants/${id}`, { method: "POST", body }),
   );
 
   if (created) {

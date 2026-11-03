@@ -89,7 +89,7 @@ async function save() {
     items: group.items.split(","),
   }));
 
-  if (await request.run(() => $fetch<unknown>("/api/desk/skill-groups", { method: "PUT", body }))) {
+  if (await request.run(() => $fetch("/api/desk/skill-groups", { method: "PUT", body }))) {
     await refreshNuxtData(["desk-cv-content", "desk-cv-variants"]);
     pageChecks.forget();
     draft.value = toForm();

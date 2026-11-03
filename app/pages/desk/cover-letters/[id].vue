@@ -86,7 +86,7 @@ const revision = ref(0);
 const url = `/api/desk/cover-letters/${id}`;
 
 async function save() {
-  if (await request.run(() => $fetch<unknown>(url, { method: "PUT", body: draft.value }))) {
+  if (await request.run(() => $fetch(url, { method: "PUT", body: draft.value }))) {
     await refreshNuxtData("desk-cover-letters");
     draft.value = toForm(saved.value);
     revision.value += 1;
@@ -104,7 +104,7 @@ async function remove() {
     return;
   }
 
-  if (await request.run(() => $fetch<unknown>(url, { method: "DELETE" }))) {
+  if (await request.run(() => $fetch(url, { method: "DELETE" }))) {
     guard.leave();
     await navigateTo("/desk/cover-letters");
     await refreshNuxtData("desk-cover-letters");

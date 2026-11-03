@@ -50,9 +50,7 @@ async function create() {
     links: [],
   };
 
-  if (
-    await request.run(() => $fetch<unknown>(`/api/desk/cv-entries/${id}`, { method: "POST", body }))
-  ) {
+  if (await request.run(() => $fetch(`/api/desk/cv-entries/${id}`, { method: "POST", body }))) {
     await refreshNuxtData(["desk-cv-content", "desk-cv-variants"]);
     pageChecks.forget();
     form.value = { id: "", name: "", title: "", organization: "", from: "" };

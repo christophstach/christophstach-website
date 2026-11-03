@@ -45,13 +45,13 @@ function removeLink(index: number) {
   draft.value.links.splice(index, 1);
 }
 
-const request = useDeskRequest();
+const { busy, error: requestError, run } = useDeskRequest();
 const pageChecks = usePageChecks();
 
 async function save() {
   const body = draft.value;
 
-  if (await request.run(() => $fetch<unknown>("/api/desk/profile", { method: "PUT", body }))) {
+  if (await run(() => $fetch("/api/desk/profile", { method: "PUT", body }))) {
     await refreshNuxtData(["desk-profile", "desk-cv-variants"]);
     pageChecks.forget();
     draft.value = structuredClone(saved.value);
@@ -60,7 +60,7 @@ async function save() {
 
 function discard() {
   draft.value = structuredClone(saved.value);
-  request.error.value = "";
+  requestError.value = "";
 }
 </script>
 
@@ -74,8 +74,8 @@ function discard() {
       </div>
     </header>
 
-    <p v-if="request.error.value && !dirty" class="desk-error" role="alert">
-      {{ request.error.value }}
+    <p v-if="requestError && !dirty" class="desk-error" role="alert">
+      {{ requestError }}
     </p>
 
     <div class="panels">
@@ -147,12 +147,7 @@ function discard() {
       </DeskFormSection>
     </div>
 
-    <DeskSaveBar
-      v-if="dirty"
-      :busy="request.busy.value"
-      :error="request.error.value"
-      @discard="discard"
-    />
+    <DeskSaveBar v-if="dirty" :busy="busy" :error="requestError" @discard="discard" />
   </form>
 </template>
 

@@ -65,7 +65,7 @@ async function refreshVariants() {
 }
 
 async function save() {
-  const done = await request.run(() => $fetch<unknown>(url, { method: "PUT", body: draft.value }));
+  const done = await request.run(() => $fetch(url, { method: "PUT", body: draft.value }));
 
   if (done) {
     await refreshVariants();
@@ -82,7 +82,7 @@ function discard() {
 }
 
 async function mark(role: "primary" | "website") {
-  if (await request.run(() => $fetch<unknown>(`${url}/${role}`, { method: "POST" }))) {
+  if (await request.run(() => $fetch(`${url}/${role}`, { method: "POST" }))) {
     await refreshVariants();
   }
 }
@@ -93,7 +93,7 @@ async function remove() {
     return;
   }
 
-  if (await request.run(() => $fetch<unknown>(url, { method: "DELETE" }))) {
+  if (await request.run(() => $fetch(url, { method: "DELETE" }))) {
     guard.leave();
     await navigateTo("/desk/cv");
     await refreshVariants();

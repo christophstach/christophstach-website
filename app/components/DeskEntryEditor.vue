@@ -112,7 +112,7 @@ async function refreshContent() {
 async function save() {
   const body = { ...draft.value, section, tech: draft.value.tech.split(",") };
 
-  if (await request.run(() => $fetch<unknown>(url, { method: "PUT", body }))) {
+  if (await request.run(() => $fetch(url, { method: "PUT", body }))) {
     await refreshContent();
     draft.value = structuredClone(saved.value);
   }
@@ -132,7 +132,7 @@ async function remove() {
     return;
   }
 
-  if (await request.run(() => $fetch<unknown>(url, { method: "DELETE" }))) {
+  if (await request.run(() => $fetch(url, { method: "DELETE" }))) {
     guard.leave();
     await navigateTo(`/desk/cv/${section}`);
     await refreshContent();

@@ -87,11 +87,7 @@ async function create() {
     letterDate: new Date().toISOString().slice(0, 10),
   };
 
-  if (
-    await request.run(() =>
-      $fetch<unknown>(`/api/desk/cover-letters/${id}`, { method: "POST", body }),
-    )
-  ) {
+  if (await request.run(() => $fetch(`/api/desk/cover-letters/${id}`, { method: "POST", body }))) {
     await refreshNuxtData("desk-cover-letters");
     await navigateTo(`/desk/cover-letters/${id}`);
   }

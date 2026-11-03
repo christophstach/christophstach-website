@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 Personal CV website for Christoph Stach (christophstach.de), built with **Nuxt** on the
-nightly channel (`nuxt-nightly@latest`, `compatibilityVersion: 5`), deployed on Vercel. The
+nightly channel (`nuxt-nightly@4x`, because its `latest` tag is stale; `compatibilityVersion: 5`), deployed on Vercel. The
 public pages are server-rendered and cached with ISR, the private `/desk` area is
 server-rendered behind GitHub auth. CV content (entries, bullets, skills, projects) and the CV
 variants, which pick from it for `/curriculum` and the printed CV, live in Postgres (Neon),

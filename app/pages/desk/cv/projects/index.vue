@@ -37,9 +37,7 @@ async function create() {
     url: "",
   };
 
-  if (
-    await request.run(() => $fetch<unknown>(`/api/desk/projects/${id}`, { method: "POST", body }))
-  ) {
+  if (await request.run(() => $fetch(`/api/desk/projects/${id}`, { method: "POST", body }))) {
     await refreshNuxtData("desk-projects");
     form.value = { id: "", name: "", title: "" };
     await navigateTo(`/desk/cv/projects/${id}`);

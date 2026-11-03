@@ -53,7 +53,7 @@ const url = `/api/desk/projects/${id}`;
 async function save() {
   const body = { ...draft.value, tech: draft.value.tech.split(",") };
 
-  if (await request.run(() => $fetch<unknown>(url, { method: "PUT", body }))) {
+  if (await request.run(() => $fetch(url, { method: "PUT", body }))) {
     await refreshNuxtData(["desk-projects", "desk-cv-variants"]);
     pageChecks.forget();
     draft.value = { ...saved.value };
@@ -75,7 +75,7 @@ async function remove() {
     return;
   }
 
-  if (await request.run(() => $fetch<unknown>(url, { method: "DELETE" }))) {
+  if (await request.run(() => $fetch(url, { method: "DELETE" }))) {
     guard.leave();
     await navigateTo("/desk/cv/projects");
     await refreshNuxtData(["desk-projects", "desk-cv-variants"]);

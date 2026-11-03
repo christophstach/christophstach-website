@@ -19,27 +19,27 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@nuxt/fonts": "^0.14.0",
-    "@nuxt/icon": "^2.5.1",
-    "@nuxtjs/color-mode": "^4.0.1",
+    "@nuxt/fonts": "^1.2.0",
+    "@nuxt/icon": "^2.6.2",
+    "@nuxtjs/color-mode": "^4.1.0",
     "@sparticuz/chromium": "153.0.0",
     "drizzle-orm": "^0.45.4",
-    "nuxt": "npm:nuxt-nightly@4.6.0-29853280.6c7f9fd4",
-    "nuxt-auth-utils": "^0.5.31",
-    "postgres": "^3.4.9",
-    "puppeteer-core": "25.12.0",
+    "nuxt": "npm:nuxt-nightly@4.6.3-2611022032-768d213",
+    "nuxt-auth-utils": "^0.6.0",
+    "postgres": "^4.0.0",
+    "puppeteer-core": "25.16.0",
     "std-env": "^4.3.0",
-    "unpdf": "1.8.1",
-    "vue": "^3.5.43",
+    "unpdf": "2.1.0",
+    "vue": "^3.5.44",
     "vue-router": "^5.4.0"
   },
   "devDependencies": {
-    "@iconify-json/tabler": "^1.2.42",
+    "@iconify-json/tabler": "^1.2.43",
     "drizzle-kit": "^0.31.11",
-    "oxfmt": "^0.72.0",
-    "oxlint": "^1.87.0",
+    "oxfmt": "^0.75.0",
+    "oxlint": "^1.90.0",
     "typescript": "^6.0.3",
-    "vue-tsc": "^3.3.13"
+    "vue-tsc": "^3.3.14"
   },
   "packageManager": "pnpm@12.16.1"
 }

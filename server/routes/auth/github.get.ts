@@ -1,5 +1,4 @@
-import { sendRedirect } from "h3";
-import { useRuntimeConfig } from "nitropack/runtime";
+import { sendRedirect, useRuntimeConfig } from "nuxt/server";
 
 // defineOAuthGitHubEventHandler and setUserSession are Nitro auto-imports:
 // nuxt-auth-utils exposes no import path, and an explicit `#imports` import
@@ -8,7 +7,7 @@ import { useRuntimeConfig } from "nitropack/runtime";
 export default defineOAuthGitHubEventHandler({
   async onSuccess(event, { user }) {
     // The desk is single-user: only the configured GitHub account gets a session.
-    if (user.id !== Number(useRuntimeConfig(event).deskGithubId)) {
+    if (user.id !== Number(useRuntimeConfig().deskGithubId)) {
       return sendRedirect(event, "/login?error=forbidden");
     }
 
