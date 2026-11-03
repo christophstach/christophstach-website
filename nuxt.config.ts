@@ -60,6 +60,12 @@ export default defineNuxtConfig({
     // runtime imports from `#imports`. (@nuxt/icon needed this too until it
     // dropped `#imports` from its server handler, nuxt/icon#467.)
     imports: {},
+    // Nitro's own string rule for inlining the Nuxt runtime only matches forward
+    // slashes. On Windows the runtime stays external and loads empty stubs, and
+    // every page fails with "Either manifest or precomputed data must be provided".
+    externals: {
+      inline: [/nuxt-nightly[/\\]dist/u],
+    },
     vercel: {
       // Read at build time: Vercel only revalidates ISR routes on demand for
       // requests carrying this token (see revalidatePublicPdf).
