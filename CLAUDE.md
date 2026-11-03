@@ -108,7 +108,7 @@ vars are listed in `.env.example`.
 
 **Cover letters** are private to the desk, one per application (`cover_letters`,
 `server/utils/cover-letters.ts`, `server/api/desk/cover-letters/`, edited at
-`/desk/cover-letters/<id>`). Name and contact come from the profile, the role under the name
+`/desk/cover-letters/<id>`, listed in the sidebar from the `desk-cover-letters` key). Name and contact come from the profile, the role under the name
 from the linked CV variant or else the profile. `CoverLetterDocument.vue` is printed from
 `/desk/cover-letter-print/<id>` and shown live in the editor; it shares `CvHead.vue` and the
 `.cv-paper` palette with the CV. A letter has one fixed layout (`COVER_LETTER_MARGIN_MM`), and

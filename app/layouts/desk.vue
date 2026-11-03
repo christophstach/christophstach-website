@@ -22,6 +22,19 @@ const { data: variants } = useFetch("/api/desk/cv-variants", {
   lazy: true,
 });
 
+// The letters listed under "cover-letters", on the same terms.
+const { data: letters } = useFetch("/api/desk/cover-letters", {
+  key: "desk-cover-letters",
+  lazy: true,
+});
+
+const letterLinks = computed(() =>
+  (letters.value ?? []).map((letter) => ({
+    to: `/desk/cover-letters/${letter.id}`,
+    label: letter.label,
+  })),
+);
+
 // After a deploy no variant has a page check on the new build; run them in
 // the background so the overview shows every variant's page status.
 const pageChecks = usePageChecks();
@@ -137,6 +150,14 @@ async function signOut() {
                 </li>
               </ul>
             </DeskSubnav>
+
+            <DeskSubnav
+              v-if="section.to === '/desk/cover-letters' && !collapsed"
+              class="desk__subnav"
+              label="Cover letters"
+              :items="letterLinks"
+              :add="{ to: '/desk/cover-letters?new', label: 'new letter' }"
+            />
           </li>
         </ul>
       </nav>
