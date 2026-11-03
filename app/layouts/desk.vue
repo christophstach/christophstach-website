@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from "vue";
 import { navigateTo, useCookie, useFetch } from "nuxt/app";
+import { onMounted, watch } from "vue";
 import { deskSections } from "~/data/desk";
 import { usePageChecks } from "~/utils/desk-page-checks";
 import { useUserSession } from "#imports";
@@ -15,25 +15,11 @@ const collapsed = useCookie<boolean>("desk-sidebar-collapsed", {
   sameSite: "lax",
 });
 
-// The variants listed under "cv". The pages fetch the same key, so a write
-// that refreshes it updates the sidebar too.
+// The variants, for the page checks below. The pages fetch the same key.
 const { data: variants } = useFetch("/api/desk/cv-variants", {
   key: "desk-cv-variants",
   lazy: true,
 });
-
-// The letters listed under "cover-letters", on the same terms.
-const { data: letters } = useFetch("/api/desk/cover-letters", {
-  key: "desk-cover-letters",
-  lazy: true,
-});
-
-const letterLinks = computed(() =>
-  (letters.value ?? []).map((letter) => ({
-    to: `/desk/cover-letters/${letter.id}`,
-    label: letter.label,
-  })),
-);
 
 // After a deploy no variant has a page check on the new build; run them in
 // the background so the overview shows every variant's page status.
@@ -51,16 +37,7 @@ onMounted(() => {
   );
 });
 
-function roleTag(id: string): string | undefined {
-  const tags = [
-    id === variants.value?.primaryId && "pdf",
-    id === variants.value?.websiteId && "web",
-  ].filter(Boolean);
-
-  return tags.length > 0 ? tags.join(" · ") : undefined;
-}
-
-// Under "cv": the variants, then the content they pick from.
+// Under "cv": the content the variants pick from.
 const contentLinks = [
   { to: "/desk/cv/profile", label: "profile", icon: "tabler:id" },
   { to: "/desk/cv/experience", label: "experience", icon: "tabler:briefcase" },
@@ -68,14 +45,6 @@ const contentLinks = [
   { to: "/desk/cv/skills", label: "skills", icon: "tabler:tools" },
   { to: "/desk/cv/projects", label: "projects", icon: "tabler:folders" },
 ];
-
-const variantLinks = computed(() =>
-  (variants.value?.variants ?? []).map((variant) => ({
-    to: `/desk/cv/${variant.id}`,
-    label: variant.label,
-    tag: roleTag(variant.id),
-  })),
-);
 
 async function signOut() {
   await clear();
@@ -130,34 +99,22 @@ async function signOut() {
               <span class="desk__label">{{ section.label }}</span>
             </NuxtLink>
 
-            <DeskSubnav
+            <ul
               v-if="section.to === '/desk/cv' && !collapsed"
-              class="desk__subnav"
-              label="CV variants"
-              :items="variantLinks"
-              :add="{ to: '/desk/cv?new', label: 'new variant' }"
+              class="desk__content"
+              aria-label="CV content"
             >
-              <ul class="desk__content" aria-label="CV content">
-                <li v-for="link in contentLinks" :key="link.to">
-                  <NuxtLink
-                    :to="link.to"
-                    class="desk__content-link"
-                    active-class="desk__content-link--active"
-                  >
-                    <Icon :name="link.icon" size="14" />
-                    {{ link.label }}
-                  </NuxtLink>
-                </li>
-              </ul>
-            </DeskSubnav>
-
-            <DeskSubnav
-              v-if="section.to === '/desk/cover-letters' && !collapsed"
-              class="desk__subnav"
-              label="Cover letters"
-              :items="letterLinks"
-              :add="{ to: '/desk/cover-letters?new', label: 'new letter' }"
-            />
+              <li v-for="link in contentLinks" :key="link.to">
+                <NuxtLink
+                  :to="link.to"
+                  class="desk__content-link"
+                  active-class="desk__content-link--active"
+                >
+                  <Icon :name="link.icon" size="14" />
+                  {{ link.label }}
+                </NuxtLink>
+              </li>
+            </ul>
           </li>
         </ul>
       </nav>
@@ -295,13 +252,13 @@ async function signOut() {
   color: var(--color-accent-subtle-text);
 }
 
-/* The content links at the end of the cv list, set apart from the variants. */
+/* The top bar has no room for the content links. */
 .desk__content {
-  display: grid;
+  display: none;
   gap: 1px;
-  padding: var(--space-2) 0 0;
-  margin: var(--space-1) 0 0;
-  border-top: 1px solid var(--color-border);
+  padding: 0 0 0 var(--space-3);
+  margin: var(--space-1) 0 var(--space-2) 1.1rem;
+  border-left: 1px solid var(--color-border-strong);
   list-style: none;
 }
 
@@ -327,11 +284,6 @@ async function signOut() {
 .desk__content-link--active:hover {
   background-color: var(--color-accent-subtle-bg);
   color: var(--color-accent-subtle-text);
-}
-
-/* The top bar has no room for the variants. */
-.desk__subnav {
-  display: none;
 }
 
 .desk__session {
@@ -425,7 +377,7 @@ async function signOut() {
     overflow-y: auto;
   }
 
-  .desk__subnav {
+  .desk__content {
     display: grid;
   }
 

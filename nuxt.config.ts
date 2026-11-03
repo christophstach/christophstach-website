@@ -13,6 +13,12 @@ export default defineNuxtConfig({
     classSuffix: "",
   },
 
+  devServer: {
+    // Unset, this Nuxt nightly resolves the host to an empty object, and the dev
+    // server fails with "options.hostname.toLowerCase is not a function".
+    host: "localhost",
+  },
+
   fonts: {
     families: [
       // Static weights from Fontsource: Chrome prints weights of a variable font

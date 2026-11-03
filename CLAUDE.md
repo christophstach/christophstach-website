@@ -97,9 +97,10 @@ OAuth handler (`server/routes/auth/github.get.ts`) only creates a session for th
 user ID in `runtimeConfig.deskGithubId` (`NUXT_DESK_GITHUB_ID`). `app/middleware/desk.global.ts`
 redirects anonymous `/desk/**` requests to `/login`, including during SSR. Sidebar sections
 are data in `app/data/desk.ts`: a new section is one entry there plus a page under
-`app/pages/desk/`. The layout lists the CV variants under the cv section, then a projects link, from
-the same `useFetch` key the pages use (`desk-cv-variants`; projects use `desk-projects`); after a write,
-`refreshNuxtData` with that key updates page and sidebar. Desk editors share `DeskPickList`
+`app/pages/desk/`. The sidebar links the sections and the CV content, not single variants or letters; those are
+listed on `/desk`, `/desk/cv` and `/desk/cover-letters`, from the `useFetch` keys `desk-cv-variants`
+and `desk-cover-letters` (content `desk-cv-content`, projects `desk-projects`); after a write,
+`refreshNuxtData` with that key updates the pages. Desk editors share `DeskPickList`
 (pick and drag-reorder ids), `DeskFormSection` (titled form sections), `DeskSaveBar` and `DeskMenu`.
 The variant editor lists every section as plain checkbox lists (`DeskVariantPicks.vue`): checked
 rows print in the order shown, picked entries list their bullets underneath. Any server API for the desk goes under `server/api/desk/` and must call
@@ -108,7 +109,7 @@ vars are listed in `.env.example`.
 
 **Cover letters** are private to the desk, one per application (`cover_letters`,
 `server/utils/cover-letters.ts`, `server/api/desk/cover-letters/`, edited at
-`/desk/cover-letters/<id>`, listed in the sidebar from the `desk-cover-letters` key). Name and contact come from the profile, the role under the name
+`/desk/cover-letters/<id>`, listed from the `desk-cover-letters` key). Name and contact come from the profile, the role under the name
 from the linked CV variant or else the profile. `CoverLetterDocument.vue` is printed from
 `/desk/cover-letter-print/<id>` and shown live in the editor; it shares `CvHead.vue` and the
 `.cv-paper` palette with the CV. A letter has one fixed layout (`COVER_LETTER_MARGIN_MM`), and
