@@ -59,6 +59,9 @@ pages a variant picks layout steps (spacing, text size, page margin; `CV_LAYOUT_
 `/api/desk/cv-pdf` and `/desk/cv-print/<id>`; such a trial is shown, never stored as `page_fills`. CV texts are plain, except for links written as `[text](https://…)` (`CvText.vue`), so render them through that component. Dates are ISO
 month strings (`"2023-10"`) formatted for display via `app/utils/format.ts` (`formatMonth`).
 
+**Design direction** (the look, wording and motion, and the brief for the frontend-design skill)
+is in `DESIGN.md`. Read it before changing or adding UI.
+
 **CSS design system is layered, imported once via `app/assets/css/main.css`:**
 
 1. `tokens.css` — two tiers: _primitives_ (raw scales: color palettes, type, spacing) and
