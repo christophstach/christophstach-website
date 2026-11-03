@@ -59,7 +59,7 @@ if (error.value) {
     </div>
 
     <section v-if="cv?.projects.length" class="projects reveal--scroll">
-      <h2 class="section-label page__section-label">projects --recent</h2>
+      <h2 class="section-label page__section-label">projects</h2>
 
       <ul class="projects__grid">
         <li v-for="project in cv.projects" :key="project.id" class="projects__card">
