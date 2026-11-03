@@ -56,7 +56,7 @@ pages a variant picks layout steps (spacing, text size, page margin; `CV_LAYOUT_
 `app/data/cv-print-layout.ts`, stored in the `layout` column), set in the variant editor's rail;
 `CvDocument.vue` turns them into `--cv-space` (gaps and line height) and `--cv-scale` and its
 `@page` margin. "Check pages" prints unsaved steps through `?spacing=…&textSize=…&margin=…` on
-`/api/desk/cv-pdf` and `/desk/cv-print/<id>`; such a trial is shown, never stored as `page_fills`. Dates are ISO
+`/api/desk/cv-pdf` and `/desk/cv-print/<id>`; such a trial is shown, never stored as `page_fills`. A bullet is plain text, except for links written as `[text](https://…)` (`CvBulletText.vue`). Dates are ISO
 month strings (`"2023-10"`) formatted for display via `app/utils/format.ts` (`formatMonth`).
 
 **CSS design system is layered, imported once via `app/assets/css/main.css`:**
