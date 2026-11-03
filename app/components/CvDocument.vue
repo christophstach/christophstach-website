@@ -36,7 +36,7 @@ function period(from: string, to?: string): string {
 
 <template>
   <article class="cv-paper" :style="layoutVars">
-    <CvHead :profile="cv.profile" :role="cv.role">
+    <CvHead :profile="cv.profile">
       <p v-if="cv.summary" class="cv__summary"><CvText :text="cv.summary" /></p>
       <p v-if="cv.coreTechnologies.length" class="cv__core cv__tags">
         <span v-for="tech in cv.coreTechnologies" :key="tech"><CvText :text="tech" /></span>

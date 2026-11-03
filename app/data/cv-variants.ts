@@ -22,7 +22,7 @@ interface CvVariant {
   label: string;
   /** Desk only: what it is for. Never printed. */
   note: string;
-  /** Role line under the name; empty prints none. */
+  /** Not printed on the CV; a cover letter linked to this variant prints it under the name. */
   role: string;
   /** One line under the role: how the career fits together for this kind of job. Empty prints none. */
   summary: string;

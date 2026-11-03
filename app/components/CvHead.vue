@@ -2,10 +2,10 @@
 import type { Profile } from "~/data/cv";
 import { stripScheme } from "~/utils/format";
 
-const { profile, role } = defineProps<{
+const { profile, role = "" } = defineProps<{
   profile: Profile;
-  /** Printed under the name; empty prints none. */
-  role: string;
+  /** Printed under the name; a cover letter passes it, the CV doesn't. */
+  role?: string;
 }>();
 </script>
 
