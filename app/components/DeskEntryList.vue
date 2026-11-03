@@ -60,14 +60,12 @@ async function create() {
 </script>
 
 <template>
-  <div class="overview">
-    <header class="overview__header">
-      <div class="overview__heading">
-        <p class="overview__path">
-          <NuxtLink to="/desk/cv" class="overview__crumb">~/desk/cv</NuxtLink> / {{ section }}
-        </p>
-        <h1 class="overview__title">{{ heading }}</h1>
-        <p class="overview__intro">
+  <div class="desk-page">
+    <header class="desk-head">
+      <div class="desk-head__text">
+        <p class="desk-head__path"><NuxtLink to="/desk/cv">~/desk/cv</NuxtLink> / {{ section }}</p>
+        <h1 class="desk-head__title">{{ heading }}</h1>
+        <p class="desk-head__sub">
           The entries and bullets variants pick from. A change here reaches every variant that uses
           it.
         </p>
@@ -149,62 +147,11 @@ async function create() {
       </li>
     </ul>
 
-    <p v-else class="overview__empty">No entries yet.</p>
+    <p v-else class="panel panel__empty">No entries yet.</p>
   </div>
 </template>
 
 <style scoped>
-.overview {
-  display: grid;
-  gap: var(--space-10);
-  max-width: 64rem;
-  padding: var(--space-10) var(--space-6);
-}
-
-@media (min-width: 48rem) {
-  .overview {
-    padding: var(--space-12) var(--space-12);
-  }
-}
-
-.overview__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-6);
-}
-
-.overview__heading {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.overview__path,
-.overview__empty {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.overview__crumb {
-  color: inherit;
-}
-
-.overview__crumb:hover {
-  color: var(--color-accent);
-}
-
-.overview__title {
-  font-size: var(--text-3xl);
-  font-weight: var(--font-bold);
-  letter-spacing: var(--tracking-tight);
-}
-
-.overview__intro {
-  color: var(--color-text-soft);
-}
-
 .create {
   display: grid;
   gap: var(--space-5);

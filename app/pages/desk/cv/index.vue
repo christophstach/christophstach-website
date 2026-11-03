@@ -82,12 +82,12 @@ async function create() {
 </script>
 
 <template>
-  <div class="overview">
-    <header class="overview__header">
-      <div class="overview__heading">
-        <p class="overview__path">~/desk/cv</p>
-        <h1 class="overview__title">CV variants</h1>
-        <p class="overview__intro">
+  <div class="desk-page">
+    <header class="desk-head">
+      <div class="desk-head__text">
+        <p class="desk-head__path">~/desk/cv</p>
+        <h1 class="desk-head__title">CV variants</h1>
+        <p class="desk-head__sub">
           Each variant picks entries and bullets from the CV. One is the PDF, one the website.
         </p>
       </div>
@@ -141,96 +141,48 @@ async function create() {
       </div>
     </form>
 
-    <section
-      v-for="group in groups"
-      v-show="group.variants.length"
-      :key="group.id"
-      class="group"
-      :aria-labelledby="`group-${group.id}`"
-    >
-      <h2 :id="`group-${group.id}`" class="section-label">{{ group.heading }}</h2>
+    <div class="panels">
+      <section
+        v-for="group in groups"
+        v-show="group.variants.length"
+        :key="group.id"
+        class="panel"
+        :aria-labelledby="`group-${group.id}`"
+      >
+        <header class="panel__head">
+          <h2 :id="`group-${group.id}`" class="panel__title">{{ group.heading }}</h2>
+        </header>
 
-      <ul class="cards">
-        <li v-for="variant in group.variants" :key="variant.id">
-          <NuxtLink :to="`/desk/cv/${variant.id}`" class="card">
-            <span class="card__top">
-              <span class="card__label">{{ variant.label }}</span>
-              <span class="card__tags">
+        <ul class="panel__rows">
+          <li v-for="variant in group.variants" :key="variant.id">
+            <NuxtLink :to="`/desk/cv/${variant.id}`" class="panel-row">
+              <span class="row__top">
+                <span class="panel-row__label">{{ variant.label }}</span>
                 <span v-if="variant.id === primaryId" class="role-tag">PDF</span>
                 <span v-if="variant.id === websiteId" class="role-tag">/curriculum</span>
-                <span v-if="!isPublic(variant)" class="card__private">private</span>
               </span>
-            </span>
 
-            <span class="card__role">{{ variant.role }}</span>
-            <span v-if="variant.note" class="desk-note">{{ variant.note }}</span>
+              <span class="row__role">{{ variant.role }}</span>
+              <span v-if="variant.note" class="desk-note">{{ variant.note }}</span>
 
-            <span class="card__meta">
-              <span class="card__status" :class="`card__status--${status(variant).tone}`">
-                <span class="card__dot" aria-hidden="true" />
-                {{ status(variant).text }}
+              <span class="panel-row__meta">
+                <span class="desk-status" :class="`desk-status--${status(variant).tone}`">
+                  {{ status(variant).text }}
+                </span>
+                <span>{{ variantCounts(variant) }}</span>
+                <span>{{ formatRelative(variant.updatedAt) }}</span>
               </span>
-              <span>{{ variantCounts(variant) }}</span>
-              <span>{{ formatRelative(variant.updatedAt) }}</span>
-            </span>
-          </NuxtLink>
-        </li>
-      </ul>
-    </section>
+            </NuxtLink>
+          </li>
+        </ul>
+      </section>
+    </div>
 
-    <p v-if="!variants.length" class="overview__empty">No CV variants in the database.</p>
+    <p v-if="!variants.length" class="panel panel__empty">No CV variants in the database.</p>
   </div>
 </template>
 
 <style scoped>
-.overview {
-  display: grid;
-  gap: var(--space-10);
-  max-width: 64rem;
-  padding: var(--space-10) var(--space-6);
-}
-
-@media (min-width: 48rem) {
-  .overview {
-    padding: var(--space-12) var(--space-12);
-  }
-}
-
-.overview__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-6);
-}
-
-.overview__heading {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.overview__path {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.overview__title {
-  font-size: var(--text-3xl);
-  font-weight: var(--font-bold);
-  letter-spacing: var(--tracking-tight);
-}
-
-.overview__intro {
-  color: var(--color-text-soft);
-}
-
-.overview__empty {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
 .create {
   display: grid;
   gap: var(--space-5);
@@ -268,105 +220,15 @@ async function create() {
   gap: var(--space-3);
 }
 
-.group {
-  display: grid;
-  gap: var(--space-4);
-}
-
-.cards {
-  display: grid;
-  gap: var(--space-4);
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-@media (min-width: 64rem) {
-  .cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  block-size: 100%;
-  padding: var(--space-5) var(--space-6);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-lg);
-  background-color: var(--color-surface);
-  color: var(--color-text);
-  transition:
-    border-color var(--transition-fast),
-    box-shadow var(--transition-fast);
-}
-
-.card:hover {
-  border-color: var(--color-accent);
-  box-shadow: var(--shadow-md);
-}
-
-.card__top {
+.row__top {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
 }
 
-.card__label {
-  font-size: var(--text-lg);
-  font-weight: var(--font-semibold);
-  color: var(--color-heading);
-}
-
-.card__tags {
-  display: flex;
-  gap: var(--space-1-5);
-}
-
-.card__private {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-
-.card__role {
+.row__role {
   color: var(--color-text-soft);
-}
-
-.card__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-5);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-
-.card__status {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1-5);
-}
-
-.card__dot {
-  inline-size: 0.5rem;
-  block-size: 0.5rem;
-  border-radius: var(--radius-full);
-  background-color: var(--color-border-strong);
-}
-
-.card__status--ok .card__dot {
-  background-color: var(--color-accent);
-}
-
-.card__status--warn {
-  color: var(--color-signal);
-}
-
-.card__status--warn .card__dot {
-  background-color: var(--color-signal);
+  font-size: var(--text-sm);
 }
 </style>

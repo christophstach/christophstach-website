@@ -159,23 +159,32 @@ async function create() {
       </div>
     </form>
 
-    <ul v-if="letters?.length" class="letters">
-      <li v-for="letter in letters" :key="letter.id">
-        <NuxtLink :to="`/desk/cover-letters/${letter.id}`" class="letter">
-          <span class="letter__label">{{ letter.label }}</span>
-          <span v-if="letter.note" class="desk-note">{{ letter.note }}</span>
-          <span class="letter__meta">
-            <span v-if="letter.letterDate">{{ formatDay(letter.letterDate, "en") }}</span>
-            <span>{{ COVER_LETTER_WORDING[letter.language].name }}</span>
-            <span :class="`letter__status--${letterStatus(letter.pageFills).tone}`">
-              {{ letterStatus(letter.pageFills).text }}
-            </span>
-          </span>
-        </NuxtLink>
-      </li>
-    </ul>
+    <section v-if="letters?.length" class="panel" aria-labelledby="panel-letters">
+      <header class="panel__head">
+        <h2 id="panel-letters" class="panel__title">applications</h2>
+      </header>
 
-    <p v-else-if="!creating" class="letters__empty">No cover letters yet.</p>
+      <ul class="panel__rows">
+        <li v-for="letter in letters" :key="letter.id">
+          <NuxtLink :to="`/desk/cover-letters/${letter.id}`" class="panel-row">
+            <span class="panel-row__label">{{ letter.label }}</span>
+            <span v-if="letter.note" class="desk-note">{{ letter.note }}</span>
+            <span class="panel-row__meta">
+              <span
+                class="desk-status"
+                :class="`desk-status--${letterStatus(letter.pageFills).tone}`"
+              >
+                {{ letterStatus(letter.pageFills).text }}
+              </span>
+              <span v-if="letter.letterDate">{{ formatDay(letter.letterDate, "en") }}</span>
+              <span>{{ COVER_LETTER_WORDING[letter.language].name }}</span>
+            </span>
+          </NuxtLink>
+        </li>
+      </ul>
+    </section>
+
+    <p v-else-if="!creating" class="panel panel__empty">No cover letters yet.</p>
   </div>
 </template>
 
@@ -215,46 +224,5 @@ async function create() {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
-}
-
-.letters {
-  display: grid;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-  border-top: 1px solid var(--color-border);
-}
-
-.letter {
-  display: grid;
-  gap: var(--space-1-5);
-  padding: var(--space-4) var(--space-2);
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-text);
-}
-
-.letter:hover {
-  background-color: var(--color-hover);
-}
-
-.letter__label {
-  font-weight: var(--font-semibold);
-  color: var(--color-heading);
-}
-
-.letter__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-4);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.letter__status--warn {
-  color: var(--color-signal);
-}
-
-.letters__empty {
-  color: var(--color-text-muted);
 }
 </style>
