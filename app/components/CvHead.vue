@@ -14,10 +14,10 @@ const { profile, role } = defineProps<{
 <template>
   <header class="cv__header">
     <h1 class="cv__name">{{ profile.name }}</h1>
-    <p v-if="role" class="cv__role">{{ role }}</p>
+    <p v-if="role" class="cv__role"><CvText :text="role" /></p>
     <slot />
     <ul class="cv__contact">
-      <li>{{ profile.location }}</li>
+      <li><CvText :text="profile.location" /></li>
       <li>
         <a :href="`mailto:${profile.email}`">{{ profile.email }}</a>
       </li>

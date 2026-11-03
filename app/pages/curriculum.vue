@@ -73,14 +73,14 @@ if (error.value) {
               rel="noopener"
               >{{ project.title }}</a
             >
-            <template v-else>{{ project.title }}</template>
+            <CvText v-else :text="project.title" />
           </h3>
 
-          <p class="projects__description">{{ project.description }}</p>
+          <p class="projects__description"><CvText :text="project.description" /></p>
 
           <ul class="projects__tech" aria-label="Technologies">
             <li v-for="tech in project.tech" :key="tech" class="chip chip--accent">
-              {{ tech }}
+              <CvText :text="tech" />
             </li>
           </ul>
         </li>

@@ -21,24 +21,24 @@ function formatDay(isoDate: string, language: keyof typeof DAY_LOCALES): string 
 }
 
 /**
- * A bullet's text split at its links, written as [text](https://…). Bullets are
+ * A CV text split at its links, written as [text](https://…). CV texts are
  * plain text otherwise; the parts are rendered with text interpolation only.
  */
-function bulletParts(bullet: string): { text: string; href?: string }[] {
+function textParts(value: string): { text: string; href?: string }[] {
   const parts: { text: string; href?: string }[] = [];
   let end = 0;
 
-  for (const link of bullet.matchAll(/\[(?<text>[^\]]+)\]\((?<href>https?:\/\/[^)\s]+)\)/gu)) {
+  for (const link of value.matchAll(/\[(?<text>[^\]]+)\]\((?<href>https?:\/\/[^)\s]+)\)/gu)) {
     if (link.index > end) {
-      parts.push({ text: bullet.slice(end, link.index) });
+      parts.push({ text: value.slice(end, link.index) });
     }
 
     parts.push({ text: link.groups?.text ?? "", href: link.groups?.href });
     end = link.index + link[0].length;
   }
 
-  if (end < bullet.length) {
-    parts.push({ text: bullet.slice(end) });
+  if (end < value.length) {
+    parts.push({ text: value.slice(end) });
   }
 
   return parts;
@@ -79,4 +79,4 @@ function formatRelative(iso: string, now = Date.now()): string {
   return unit ? relativeFormatter.format(Math.round(seconds / unit[1]), unit[0]) : "just now";
 }
 
-export { bulletParts, formatDay, formatMonth, formatRelative, monthsBetween, stripScheme };
+export { formatDay, formatMonth, formatRelative, monthsBetween, stripScheme, textParts };

@@ -15,23 +15,25 @@ defineProps<{
       </span>
 
       <h3 class="timeline__title">
-        {{ entry.title }}
-        <span class="timeline__organization">@ {{ entry.organization }}</span>
+        <CvText :text="entry.title" />{{ " " }}
+        <span class="timeline__organization">@ <CvText :text="entry.organization" /></span>
       </h3>
 
       <p class="timeline__meta">
         <time>{{ formatMonth(entry.from) }} – {{ entry.to ? formatMonth(entry.to) : "Now" }}</time>
-        <span v-if="entry.location" class="timeline__location">{{ entry.location }}</span>
+        <span v-if="entry.location" class="timeline__location"
+          ><CvText :text="entry.location"
+        /></span>
       </p>
 
       <ul v-if="entry.tech?.length" class="timeline__tech" aria-label="Technologies">
         <li v-for="tech in entry.tech" :key="tech" class="chip chip--accent">
-          {{ tech }}
+          <CvText :text="tech" />
         </li>
       </ul>
 
       <ul v-if="entry.bullets.length" class="timeline__bullets">
-        <li v-for="bullet in entry.bullets" :key="bullet"><CvBulletText :text="bullet" /></li>
+        <li v-for="bullet in entry.bullets" :key="bullet"><CvText :text="bullet" /></li>
       </ul>
 
       <p v-if="entry.links?.length" class="timeline__links">

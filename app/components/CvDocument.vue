@@ -37,9 +37,9 @@ function period(from: string, to?: string): string {
 <template>
   <article class="cv-paper" :style="layoutVars">
     <CvHead :profile="cv.profile" :role="cv.role">
-      <p v-if="cv.summary" class="cv__summary">{{ cv.summary }}</p>
+      <p v-if="cv.summary" class="cv__summary"><CvText :text="cv.summary" /></p>
       <p v-if="cv.coreTechnologies.length" class="cv__core cv__tags">
-        <span v-for="tech in cv.coreTechnologies" :key="tech">{{ tech }}</span>
+        <span v-for="tech in cv.coreTechnologies" :key="tech"><CvText :text="tech" /></span>
       </p>
     </CvHead>
 
@@ -48,7 +48,7 @@ function period(from: string, to?: string): string {
       <dl class="cv__skills">
         <div v-for="group in cv.skills" :key="group.label" class="cv__skill">
           <dt>{{ group.title }}</dt>
-          <dd>{{ group.items.join(", ") }}</dd>
+          <dd><CvText :text="group.items.join(', ')" /></dd>
         </div>
       </dl>
     </section>
@@ -57,18 +57,18 @@ function period(from: string, to?: string): string {
       <h2 class="cv__section-title">Professional Experience</h2>
       <div v-for="entry in cv.experience" :key="entry.id" class="cv__job cv__item">
         <div class="cv__job-head">
-          <h3 class="cv__item-title">{{ entry.title }}</h3>
+          <h3 class="cv__item-title"><CvText :text="entry.title" /></h3>
           <div class="cv__org">
-            {{ entry.organization
-            }}<span v-if="entry.location" class="cv__location"> · {{ entry.location }}</span
+            <CvText :text="entry.organization" /><span v-if="entry.location" class="cv__location">
+              · <CvText :text="entry.location" /></span
             ><span class="cv__period"> · {{ period(entry.from, entry.to) }}</span>
           </div>
           <div v-if="entry.tech?.length" class="cv__tech cv__tags">
-            <span v-for="tech in entry.tech" :key="tech">{{ tech }}</span>
+            <span v-for="tech in entry.tech" :key="tech"><CvText :text="tech" /></span>
           </div>
         </div>
         <ul v-if="entry.bullets.length" class="cv__bullets">
-          <li v-for="bullet in entry.bullets" :key="bullet"><CvBulletText :text="bullet" />.</li>
+          <li v-for="bullet in entry.bullets" :key="bullet"><CvText :text="bullet" />.</li>
         </ul>
       </div>
     </section>
@@ -76,13 +76,14 @@ function period(from: string, to?: string): string {
     <section class="cv__section">
       <h2 class="cv__section-title">Education</h2>
       <div v-for="entry in cv.education" :key="entry.id" class="cv__entry cv__item">
-        <h3 class="cv__item-title">{{ entry.title }}</h3>
+        <h3 class="cv__item-title"><CvText :text="entry.title" /></h3>
         <div class="cv__org">
-          {{ entry.organization
-          }}<span class="cv__period"> · {{ period(entry.from, entry.to) }}</span>
+          <CvText :text="entry.organization" /><span class="cv__period">
+            · {{ period(entry.from, entry.to) }}</span
+          >
         </div>
         <div v-if="entry.bullets.length" class="cv__details">
-          {{ entry.bullets.join(" · ") }}
+          <CvText :text="entry.bullets.join(' · ')" />
         </div>
       </div>
     </section>
@@ -90,14 +91,16 @@ function period(from: string, to?: string): string {
       <h2 class="cv__section-title">Projects</h2>
       <div v-for="project in cv.projects" :key="project.id" class="cv__entry cv__item">
         <div class="cv__item-row">
-          <h3 class="cv__item-title">{{ project.title }}</h3>
+          <h3 class="cv__item-title"><CvText :text="project.title" /></h3>
           <a v-if="project.url" :href="project.url" class="cv__url">{{
             stripScheme(project.url)
           }}</a>
         </div>
-        <div v-if="project.description" class="cv__details">{{ project.description }}</div>
+        <div v-if="project.description" class="cv__details">
+          <CvText :text="project.description" />
+        </div>
         <div v-if="project.tech.length" class="cv__tech cv__tags">
-          <span v-for="tech in project.tech" :key="tech">{{ tech }}</span>
+          <span v-for="tech in project.tech" :key="tech"><CvText :text="tech" /></span>
         </div>
       </div>
     </section>

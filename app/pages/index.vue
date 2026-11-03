@@ -210,7 +210,9 @@ const techs = useCountUp(totalSkills);
             />
           </div>
           <ul class="meter__tags" :aria-label="`${group.label} technologies`">
-            <li v-for="item in group.items" :key="item" class="chip chip--accent">{{ item }}</li>
+            <li v-for="item in group.items" :key="item" class="chip chip--accent">
+              <CvText :text="item" />
+            </li>
           </ul>
         </li>
       </ul>
