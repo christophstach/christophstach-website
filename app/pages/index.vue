@@ -78,10 +78,11 @@ const techs = useCountUp(totalSkills);
 
             <p class="terminal__cmd"><span class="terminal__prompt">$</span> cat about.txt</p>
             <p class="hero__text">
-              Building modern web apps in <strong>TypeScript</strong> across
+              Built modern web apps in <strong>TypeScript</strong> across
               <strong>Vue/Nuxt</strong> and <strong>React/Next.js</strong> for over a decade, plus a
-              <strong>Python</strong> platform for AI agents. I care about clean, type-safe code,
-              usability, accessibility, and performance, with an eye for detail in component design.
+              <strong>Python</strong> platform for AI agents. Owned features across the full
+              development cycle and enforced clean, type-safe code, with an eye for usability,
+              accessibility, performance, and detail in component design.
             </p>
 
             <div class="hero__actions">
