@@ -21,6 +21,38 @@ function cycle() {
     colorMode.preference = next;
   }
 }
+
+// The public pages ship no Vue (noScripts in nuxt.config.ts), so the fallback has to
+// work on its own, through the helpers of the color-mode script in the document head.
+const fallbackScript = `(() => {
+  const button = document.currentScript.parentElement;
+  const colorMode = window.__NUXT_COLOR_MODE__;
+  const modes = ${JSON.stringify(modes)};
+  let preference = modes.includes(colorMode.preference) ? colorMode.preference : "system";
+
+  const apply = () => {
+    const value = preference === "system" ? colorMode.getColorScheme() : preference;
+    colorMode.removeColorScheme(colorMode.value);
+    colorMode.addColorScheme(value);
+    colorMode.value = value;
+    colorMode.preference = preference;
+    button.dataset.preference = preference;
+    button.title = "Color scheme: " + preference;
+    button.setAttribute("aria-label", button.title + ". Activate to switch");
+  };
+
+  button.addEventListener("click", () => {
+    preference = modes[(modes.indexOf(preference) + 1) % modes.length];
+    try {
+      localStorage.setItem("nuxt-color-mode", preference);
+    } catch {}
+    apply();
+  });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if (preference === "system") apply();
+  });
+  apply();
+})();`;
 </script>
 
 <template>
@@ -36,18 +68,20 @@ function cycle() {
     </button>
 
     <template #fallback>
-      <span class="icon-button" aria-hidden="true">
+      <button type="button" class="icon-button theme-toggle" aria-label="Switch color scheme">
         <Icon name="tabler:sun" class="theme-toggle__sun" size="20" />
         <Icon name="tabler:moon" class="theme-toggle__moon" size="20" />
-      </span>
+        <Icon name="tabler:device-desktop" class="theme-toggle__system" size="20" />
+        <component :is="'script'" v-html="fallbackScript" />
+      </button>
     </template>
   </ClientOnly>
 </template>
 
 <style scoped>
-/* Pre-hydration fallback: reflect the resolved theme via CSS until the
-   preference is known on the client. */
-.theme-toggle__moon {
+/* Before the script has run: reflect the resolved theme. */
+.theme-toggle__moon,
+.theme-toggle__system {
   display: none;
 }
 
@@ -56,6 +90,17 @@ function cycle() {
 }
 
 .dark .theme-toggle__moon {
+  display: block;
+}
+
+/* After it has run: show the preference, which may be "system". */
+.theme-toggle[data-preference] :is(.theme-toggle__sun, .theme-toggle__moon, .theme-toggle__system) {
+  display: none;
+}
+
+.theme-toggle[data-preference="light"] .theme-toggle__sun,
+.theme-toggle[data-preference="dark"] .theme-toggle__moon,
+.theme-toggle[data-preference="system"] .theme-toggle__system {
   display: block;
 }
 </style>

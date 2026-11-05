@@ -95,15 +95,20 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
+    // No Vue in the browser on the two public pages (noScripts): the server output
+    // is the page, which keeps them fast on phones. Their components can only use
+    // what works without hydration, and what they import from app/assets is missing
+    // from the client build, so their images live in public/.
+    //
     // Server-rendered: it counts the jobs and shows the skill groups from the
     // database. Cached (ISR) until the next deployment or until the desk
     // changes CV content (on-demand revalidation).
-    "/": { prerender: false, isr: true },
+    "/": { prerender: false, isr: true, noScripts: true },
     "/api/cv-home": { isr: true },
     // Server-rendered from the website CV variant in the database and cached
     // (ISR) until the next deployment or until the desk changes that variant
     // (on-demand revalidation). Not prerendered: the home page links here.
-    "/curriculum": { prerender: false, isr: true },
+    "/curriculum": { prerender: false, isr: true, noScripts: true },
     "/api/cv-website": { isr: true },
     // Server-rendered: it prints the primary CV variant, which lives in the
     // database and changes without a deployment.

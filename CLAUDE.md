@@ -85,6 +85,7 @@ tags so browser chrome is correct before hydration.
 **Routing/prerender** is declared in `nuxt.config.ts` `routeRules`: `/` is server-rendered
 (it counts jobs and shows skills via `/api/cv-home`) and cached with ISR, renewed whenever the
 desk changes CV content (`allPublicPaths`);
+`/` and `/curriculum` set `noScripts`: they ship no Vue to the browser, so their components only get what works without hydration (`ThemeToggle.vue` has its own small inline script), and what they import from `app/assets` is missing from the client build, so their images live in `public/`.
 `/curriculum` is server-rendered from the database and cached with ISR, renewed on demand when
 the desk changes the website variant (`revalidatePaths`, `server/utils/cv-public-paths.ts`); `/about-me` 301-redirects to `/`. Add new prerendered routes there — and also add
 the URL to `public/sitemap.xml`, a hand-maintained static file (no sitemap module), or it goes
@@ -150,5 +151,5 @@ block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via
   layout re-checks every variant in the background, `app/utils/desk-page-checks.ts`), flagging more than two
   pages, a gap before the last page and a nearly empty last page. The serverless Chromium has no system fonts, so the PDF
   must only use the site's own web fonts (IBM Plex Sans, JetBrains Mono via `@nuxt/fonts`).
-- `public/images/hero.png` is a crawler-facing copy of `app/assets/images/hero.webp` for the
-  JSON-LD `Person.image` (the bundled asset gets a hashed URL). Keep the two in sync.
+- `public/images/hero.png` is a crawler-facing copy of `public/images/hero.webp` for the
+  JSON-LD `Person.image`. Keep the two in sync.

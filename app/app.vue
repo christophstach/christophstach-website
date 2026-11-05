@@ -28,8 +28,8 @@ const personJsonLd = {
   "@type": "Person",
   name: "Christoph Stach",
   url: siteUrl,
-  // Crawler-facing copy of the hero portrait: the bundled asset gets a hashed
-  // URL, so this needs a stable one. Keep it in sync with assets/images/hero.webp.
+  // Crawler-facing copy of the hero portrait, in a format every crawler reads.
+  // Keep it in sync with public/images/hero.webp.
   image: `${siteUrl}/images/hero.png`,
   jobTitle: "Senior Software Engineer",
   description,

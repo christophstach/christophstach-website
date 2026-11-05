@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { cvDownloadVisible } from "~/data/cv-variants";
-import heroImage from "~/assets/images/hero.webp";
 import { useFetch } from "nuxt/app";
 
 useSeoMeta({
@@ -16,33 +15,6 @@ const skills = cv.value?.skills ?? [];
 
 const totalSkills = skills.reduce((sum, group) => sum + group.items.length, 0);
 
-function useCountUp(target: number, duration = 1100) {
-  const value = ref(target);
-
-  onMounted(() => {
-    if (globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-
-    const start = performance.now();
-    value.value = 0;
-
-    const tick = (now: number) => {
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - (1 - progress) ** 3;
-      value.value = Math.round(target * eased);
-
-      if (progress < 1) {
-        requestAnimationFrame(tick);
-      }
-    };
-
-    requestAnimationFrame(tick);
-  });
-
-  return value;
-}
-
 // Counted as time actually employed, so the career gap between SLH and DERICON is not billed as experience.
 const monthsEmployed = experience.reduce(
   (sum, entry) => sum + monthsBetween(entry.from, entry.to),
@@ -54,11 +26,6 @@ const yearsEmployed = Math.floor(monthsEmployed / 120) * 10;
 
 // A company with several roles on the CV counts once.
 const companyCount = new Set(experience.map((entry) => entry.organization)).size;
-
-const years = useCountUp(yearsEmployed);
-const companies = useCountUp(companyCount);
-const degrees = useCountUp(2);
-const techs = useCountUp(totalSkills);
 </script>
 
 <template>
@@ -130,7 +97,7 @@ const techs = useCountUp(totalSkills);
 
         <figure class="hero__figure reveal" style="animation-delay: 140ms">
           <img
-            :src="heroImage"
+            src="/images/hero.webp"
             alt="Portrait of Christoph Stach"
             width="272"
             height="272"
@@ -146,19 +113,19 @@ const techs = useCountUp(totalSkills);
       <h2 class="section-label">stats --summary</h2>
       <ul class="stats__grid" aria-label="Career at a glance">
         <li class="stat">
-          <span class="stat__value">{{ years }}<span class="stat__unit">+</span></span>
+          <span class="stat__value">{{ yearsEmployed }}<span class="stat__unit">+</span></span>
           <span class="stat__label">years_exp</span>
         </li>
         <li class="stat">
-          <span class="stat__value">{{ companies }}</span>
+          <span class="stat__value">{{ companyCount }}</span>
           <span class="stat__label">companies</span>
         </li>
         <li class="stat">
-          <span class="stat__value">{{ degrees }}</span>
+          <span class="stat__value">2</span>
           <span class="stat__label">cs_degrees</span>
         </li>
         <li class="stat">
-          <span class="stat__value">{{ techs }}</span>
+          <span class="stat__value">{{ totalSkills }}</span>
           <span class="stat__label">technologies</span>
         </li>
       </ul>
