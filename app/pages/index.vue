@@ -50,7 +50,8 @@ const monthsEmployed = experience.reduce(
   0,
 );
 
-const yearsEmployed = Math.floor(monthsEmployed / 12);
+// Whole decades only: part-time years make a more exact number overstate it.
+const yearsEmployed = Math.floor(monthsEmployed / 120) * 10;
 
 // A company with several roles on the CV counts once.
 const companyCount = new Set(experience.map((entry) => entry.organization)).size;
