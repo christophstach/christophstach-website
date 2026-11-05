@@ -15,7 +15,6 @@ const experience = cv.value?.experience ?? [];
 const skills = cv.value?.skills ?? [];
 
 const totalSkills = skills.reduce((sum, group) => sum + group.items.length, 0);
-const maxGroup = Math.max(1, ...skills.map((group) => group.items.length));
 
 function useCountUp(target: number, duration = 1100) {
   const value = ref(target);
@@ -204,22 +203,14 @@ const techs = useCountUp(totalSkills);
     </section>
 
     <section class="stack reveal--scroll">
-      <h2 class="section-label">stack --distribution</h2>
+      <h2 class="section-label">stack --tree</h2>
 
-      <ul class="meters">
-        <li v-for="group in skills" :key="group.label" class="meter">
-          <div class="meter__head">
-            <span class="meter__label">{{ group.label }}</span>
-            <span class="meter__count">[{{ group.items.length }}]</span>
-          </div>
-          <div class="meter__track">
-            <div
-              class="meter__fill"
-              :style="{ '--meter-value': `${(group.items.length / maxGroup) * 100}%` }"
-            />
-          </div>
-          <ul class="meter__tags" :aria-label="`${group.label} technologies`">
-            <li v-for="item in group.items" :key="item" class="chip chip--accent">
+      <p class="tree__root" aria-hidden="true">stack/</p>
+      <ul class="tree">
+        <li v-for="group in skills" :key="group.label" class="tree__group">
+          <span class="tree__label">{{ group.label }}/</span>
+          <ul class="tree__items" :aria-label="`${group.label} technologies`">
+            <li v-for="item in group.items" :key="item" class="chip tree__item">
               <CvText :text="item" />
             </li>
           </ul>
@@ -457,69 +448,101 @@ const techs = useCountUp(totalSkills);
   font-weight: var(--font-semibold);
 }
 
-/* Stack distribution meters */
+/* Stack, drawn like `tree` output. The branches are CSS rather than box-drawing
+   characters, so they stay connected when a group's tools wrap onto more lines. */
 .stack {
   padding-block: var(--space-10) var(--space-12);
   border-top: 1px solid var(--color-rule);
 }
 
-.meters {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  margin-top: var(--space-6);
-  list-style: none;
-}
-
-.meter__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+.tree__root,
+.tree__label {
   font-family: var(--font-mono);
+  line-height: var(--tree-row);
 }
 
-.meter__label {
+.tree__root {
+  --tree-row: 1.75rem;
+
+  margin-top: var(--space-5);
   font-weight: var(--font-semibold);
   color: var(--color-heading);
 }
 
-.meter__count {
-  font-size: var(--text-sm);
-  color: var(--color-accent);
+.tree {
+  --tree-row: 1.75rem;
+  --tree-gap: var(--space-2);
+  --tree-branch: var(--space-4);
+
+  list-style: none;
 }
 
-.meter__track {
-  height: 0.5rem;
-  margin-top: var(--space-2);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  background-color: var(--color-bg);
-  overflow: hidden;
+.tree__group {
+  position: relative;
+  padding-block: var(--tree-gap);
+  padding-left: calc(var(--tree-branch) + var(--space-2));
 }
 
-.meter__fill {
-  width: var(--meter-value);
-  height: 100%;
-  background-color: var(--color-accent);
-  box-shadow: var(--glow-accent);
-  animation: meter-grow 1s ease both;
+/* The trunk runs the full height of each group and stops at the last branch. */
+.tree__group::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  border-left: 1px solid var(--color-border-strong);
 }
 
-@keyframes meter-grow {
-  from {
-    width: 0;
-  }
-
-  to {
-    width: var(--meter-value);
-  }
+.tree__group:last-child::before {
+  bottom: auto;
+  height: calc(var(--tree-gap) + var(--tree-row) / 2);
 }
 
-.meter__tags {
+.tree__group::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--tree-gap) + var(--tree-row) / 2);
+  left: 0;
+  width: var(--tree-branch);
+  border-top: 1px solid var(--color-border-strong);
+}
+
+.tree__label {
+  display: block;
+  font-weight: var(--font-semibold);
+  color: var(--color-heading);
+}
+
+.tree__items {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1-5);
-  margin-top: var(--space-3);
   list-style: none;
+}
+
+.tree__item {
+  padding: 0.1rem var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--color-text-soft);
+}
+
+/* From tablets up, labels and tools share a line, with the tools in one aligned column. */
+@media (min-width: 40rem) {
+  .tree {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+
+  .tree__group {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    column-gap: var(--space-5);
+  }
+
+  .tree__items {
+    padding-top: calc((var(--tree-row) - 1.5rem) / 2);
+  }
 }
 </style>
