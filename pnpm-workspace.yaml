@@ -2,10 +2,10 @@ allowBuilds:
   "@parcel/watcher": true
   esbuild: true
 minimumReleaseAgeExclude:
-  - "@nuxt/kit-nightly@4.6.3-2611022032-768d213"
-  - "@nuxt/nitro-server-nightly@4.6.3-2611022032-768d213"
-  - "@nuxt/schema-nightly@4.6.3-2611022032-768d213"
-  - "@nuxt/vite-builder-nightly@4.6.3-2611022032-768d213"
-  - "@nuxt/vite-server-nightly@4.6.3-2611022032-768d213"
-  - nuxt-nightly@4.6.3-2611022032-768d213
+  - "@nuxt/kit-nightly@4.6.4-2611050021-c80eb9c"
+  - "@nuxt/nitro-server-nightly@4.6.4-2611050021-c80eb9c"
+  - "@nuxt/schema-nightly@4.6.4-2611050021-c80eb9c"
+  - "@nuxt/vite-builder-nightly@4.6.4-2611050021-c80eb9c"
+  - "@nuxt/vite-server-nightly@4.6.4-2611050021-c80eb9c"
+  - nuxt-nightly@4.6.4-2611050021-c80eb9c
   - unrouting@0.3.2

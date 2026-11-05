@@ -24,7 +24,7 @@
     "@nuxtjs/color-mode": "^4.1.0",
     "@sparticuz/chromium": "153.0.0",
     "drizzle-orm": "^0.45.4",
-    "nuxt": "npm:nuxt-nightly@4.6.3-2611022032-768d213",
+    "nuxt": "npm:nuxt-nightly@4.6.4-2611050021-c80eb9c",
     "nuxt-auth-utils": "^0.6.0",
     "postgres": "^4.0.0",
     "puppeteer-core": "25.16.0",
@@ -36,8 +36,8 @@
   "devDependencies": {
     "@iconify-json/tabler": "^1.2.43",
     "drizzle-kit": "^0.31.11",
-    "oxfmt": "^0.75.0",
-    "oxlint": "^1.90.0",
+    "oxfmt": "^0.76.0",
+    "oxlint": "^1.91.0",
     "typescript": "^6.0.3",
     "vue-tsc": "^3.3.14"
   },
