@@ -235,6 +235,9 @@ const techs = useCountUp(totalSkills);
 }
 
 .hero__grid {
+  /* The source photo is only 272px wide, so it stays small to stay sharp. */
+  --hero-portrait-size: 16rem;
+
   display: grid;
   gap: var(--space-8);
   align-items: start;
@@ -242,7 +245,7 @@ const techs = useCountUp(totalSkills);
 
 @media (min-width: 56rem) {
   .hero__grid {
-    grid-template-columns: 1.7fr 1fr;
+    grid-template-columns: minmax(0, 1fr) var(--hero-portrait-size);
     gap: var(--space-10);
   }
 }
@@ -355,6 +358,7 @@ const techs = useCountUp(totalSkills);
 
 /* Portrait framed like an image preview pane. */
 .hero__figure {
+  max-width: var(--hero-portrait-size);
   margin: 0;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
@@ -367,6 +371,7 @@ const techs = useCountUp(totalSkills);
   height: auto;
   aspect-ratio: 1;
   object-fit: cover;
+  filter: grayscale(1);
 }
 
 .hero__figcaption {
