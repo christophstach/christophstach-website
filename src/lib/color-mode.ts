@@ -1,19 +1,7 @@
 // The color mode is remembered in a cookie, so the server can render the
 // page in the visitor's choice. "system" (also a missing or unknown value)
 // leaves it to the browser: the head script in src/color-mode-script.ts.
-import { getRequestEvent, isServer } from "@solidjs/web";
-
-function readCookie(header: string | null | undefined, name: string): string | undefined {
-  for (const part of header?.split(";") ?? []) {
-    const [key, value] = part.split("=");
-
-    if (key?.trim() === name) {
-      return value?.trim();
-    }
-  }
-
-  return undefined;
-}
+import { pageCookie } from "./cookies";
 
 export type ColorMode = "light" | "dark" | "system";
 
@@ -38,7 +26,5 @@ export function colorModeCookie(mode: ColorMode): string {
 // The server reads the request cookie; the client reads the same cookie from
 // the document, so both sides of a hydration agree.
 export function getColorMode(): ColorMode {
-  const header = isServer ? getRequestEvent()?.request.headers.get("cookie") : document.cookie;
-
-  return parseColorMode(readCookie(header, COLOR_MODE_COOKIE));
+  return parseColorMode(pageCookie(COLOR_MODE_COOKIE));
 }

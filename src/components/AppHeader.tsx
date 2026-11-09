@@ -1,12 +1,13 @@
 import { For } from "solid-js";
 import { ThemeToggle } from "./ThemeToggle";
 import { getColorMode } from "../lib/color-mode";
+import { paths } from "../router";
 import styles from "./AppHeader.module.css";
 import { useLocation } from "@solidjs/router";
 
 const LINKS = [
-  { to: "/", text: "Home" },
-  { to: "/curriculum", text: "Curriculum" },
+  { to: paths(), text: "Home" },
+  { to: paths.curriculum(), text: "Curriculum" },
 ] as const;
 
 export function AppHeader() {
@@ -15,7 +16,7 @@ export function AppHeader() {
   return (
     <header class={styles.header}>
       <div class={["container", styles.inner]}>
-        <a href="/" class={styles.brand}>
+        <a href={paths()} class={styles.brand}>
           <span class={styles.brandLong}>Christoph</span>
           <span class={styles.brandShort}>C.</span>
           <span class={styles.brandAccent}>Stach</span>

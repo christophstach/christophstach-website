@@ -3,6 +3,7 @@
 // modules and passes everything else down the chain.
 import type { StartMiddleware } from "@solidjs/vite-plugin";
 import { createAPIHandler } from "filesystem-routing/api";
+import { paths } from "./router";
 import { readDeskUser } from "./server/session";
 import routes from "virtual:file-routes";
 
@@ -13,19 +14,21 @@ import routes from "virtual:file-routes";
  */
 /** Where a request for this path has to go instead, given the session; undefined lets it through. */
 async function guardedPath(request: Request, path: string): Promise<string | undefined> {
-  const isDesk = path === "/desk" || path.startsWith("/desk/");
+  const desk = paths.desk();
+  const login = paths.login();
+  const isDesk = path === desk || path === `${desk}/` || path.startsWith(`${desk}/`);
 
-  if (!isDesk && path !== "/login") {
+  if (!isDesk && path !== login) {
     return undefined;
   }
 
   const signedIn = (await readDeskUser(request)) !== undefined;
 
   if (isDesk) {
-    return signedIn ? undefined : "/login";
+    return signedIn ? undefined : login;
   }
 
-  return signedIn ? "/desk" : undefined;
+  return signedIn ? desk : undefined;
 }
 
 const deskGuard: StartMiddleware = async (event, next) => {

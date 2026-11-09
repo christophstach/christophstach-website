@@ -1,9 +1,16 @@
 import { IconArrowRight, IconBrandGithub, IconBrandLinkedin, IconDownload } from "../icons";
+import { CV_PDF_PATH } from "../../data/endpoints";
 import { cvDownloadVisible } from "../../data/cv-variants";
 import styles from "./home.module.css";
 
 /** The terminal window with name, role and links, beside the portrait. */
-export function HomeHero(props: { yearsEmployed: number }) {
+interface HomeHeroProps {
+  yearsEmployed: number;
+  /** The typed link to /curriculum, from the page (see there why). */
+  curriculumHref: string;
+}
+
+export function HomeHero(props: HomeHeroProps) {
   return (
     <section class={styles.hero}>
       <div class={styles.hero__grid}>
@@ -40,13 +47,13 @@ export function HomeHero(props: { yearsEmployed: number }) {
             </p>
 
             <div class={styles.hero__actions}>
-              <a href="/curriculum" class="button button--primary">
+              <a href={props.curriculumHref} class="button button--primary">
                 ./curriculum
                 <IconArrowRight size={16} />
               </a>
 
               {cvDownloadVisible && (
-                <a href="/christoph-stach-cv.pdf" download class="button button--outline">
+                <a href={CV_PDF_PATH} download class="button button--outline">
                   <IconDownload size={16} />
                   cv.pdf
                 </a>

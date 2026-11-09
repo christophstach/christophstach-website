@@ -1,3 +1,4 @@
+import { CV_PDF_PATH, CV_WEBSITE_API_PATH } from "../../data/endpoints";
 import { IconBriefcase, IconDownload, IconSchool } from "../../components/icons";
 import { CurriculumProjects } from "../../components/curriculum/CurriculumProjects";
 import { CvTimeline } from "../../components/CvTimeline";
@@ -14,7 +15,7 @@ export default async function Curriculum() {
   // Imported here, inside the server function, so the client build never
   // resolves the server-only module.
   const { fetchPublic } = await import("../../server/fetch-public");
-  const cv = await fetchPublic("/api/cv-website", cvWebsiteSchema);
+  const cv = await fetchPublic(CV_WEBSITE_API_PATH, cvWebsiteSchema);
 
   return () => (
     <div class={["container", styles.page]}>
@@ -35,7 +36,7 @@ export default async function Curriculum() {
 
       {cvDownloadVisible && (
         <div class={[styles.page__actions, "reveal"]} style={{ "animation-delay": "180ms" }}>
-          <a href="/christoph-stach-cv.pdf" download class="button button--primary">
+          <a href={CV_PDF_PATH} download class="button button--primary">
             <IconDownload size={16} />
             Download CV (PDF)
           </a>

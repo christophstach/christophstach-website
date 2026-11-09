@@ -3,6 +3,7 @@ import { AppHeader } from "./AppHeader";
 import { IconArrowRight } from "./icons";
 import { SiteMeta } from "../seo";
 import layout from "./SiteLayout.module.css";
+import { paths } from "../router";
 import styles from "./ErrorPage.module.css";
 import { useLocation } from "@solidjs/router";
 
@@ -46,12 +47,12 @@ export function ErrorPage(props: ErrorPageProps) {
           <p class={styles.message}>{shellMessage()}</p>
 
           <div class={styles.actions}>
-            <a href="/" class="button button--primary">
+            <a href={paths()} class="button button--primary">
               cd ~
               <IconArrowRight size={16} />
             </a>
 
-            <a href="/curriculum" class="button button--outline">
+            <a href={paths.curriculum()} class="button button--outline">
               curriculum
             </a>
           </div>

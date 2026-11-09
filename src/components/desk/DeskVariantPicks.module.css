@@ -1,0 +1,184 @@
+.picks {
+  display: grid;
+  gap: var(--space-6);
+}
+
+/* Each section is one panel: its title on top, then the rows. */
+.picks__section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+}
+
+.picks__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.picks__title {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-heading);
+}
+
+.picks__count {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.picks__edit {
+  margin-inline-start: auto;
+  font-size: var(--text-sm);
+}
+
+.picks__fields {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-5);
+}
+
+@media (min-width: 40rem) {
+  .picks__fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.rows,
+.subrows {
+  display: grid;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+/* A row: grip, checkbox and text, an optional count on the right, and for
+   entries their bullets below. Rows are divided by hairlines. */
+.rows {
+  padding-inline: var(--space-3) var(--space-5);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-2);
+  padding-block: var(--space-3);
+}
+
+.row + .row {
+  border-top: 1px solid var(--color-border);
+}
+
+.row--off {
+  color: var(--color-text-muted);
+}
+
+.row--dragged {
+  opacity: 0.4;
+}
+
+.grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: grab;
+}
+
+span.grip {
+  cursor: default;
+}
+
+.grip:hover,
+.grip:focus-visible {
+  color: var(--color-accent);
+}
+
+/* Grip, checkbox and count sit centered on the row's text. */
+.row__main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-inline-size: 0;
+  cursor: pointer;
+}
+
+.row__main input {
+  flex: none;
+  accent-color: var(--color-accent);
+}
+
+.row__text {
+  display: grid;
+  gap: 0.125rem;
+  min-inline-size: 0;
+}
+
+.row__name {
+  font-weight: var(--font-medium);
+  color: var(--color-heading);
+}
+
+.row--off .row__name {
+  font-weight: var(--font-regular);
+  color: inherit;
+}
+
+.row__meta {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.row__note {
+  font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
+  font-style: italic;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.row__aside {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.rows .subrows {
+  padding-inline: 0;
+}
+
+.subrows {
+  grid-column: 2 / -1;
+  margin-top: var(--space-2);
+}
+
+.subrow {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-2);
+  margin-inline-start: -1.5rem;
+  padding-block: var(--space-1-5);
+}
+
+.subrow__text {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.subrow.row--off .subrow__text {
+  color: var(--color-text-muted);
+}

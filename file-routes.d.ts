@@ -99,6 +99,18 @@ declare module "virtual:file-routes" {
       page: true;
       $component: FileRouteLazyRef<Pick<typeof import("./src/routes/cv-print"), Extract<"default", keyof typeof import("./src/routes/cv-print")>>>;
       $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/cv-print"), Extract<"route", keyof typeof import("./src/routes/cv-print")>>>;
+    },
+    {
+      path: "/desk/(shell)";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)")>>>;
+      $$route?: undefined;
+    },
+    {
+      path: "/desk/(shell)/";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/index"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/index")>>>;
+      $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/index"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/index")>>>;
     }
   ];
   export default routes;
@@ -155,6 +167,23 @@ declare module "virtual:file-routes" {
       $component: FileRouteLazyRef<Pick<typeof import("./src/routes/cv-print"), Extract<"default", keyof typeof import("./src/routes/cv-print")>>>;
       $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/cv-print"), Extract<"route", keyof typeof import("./src/routes/cv-print")>>>;
       children?: undefined;
+    },
+    {
+      path: "/desk/";
+      id: "/desk/(shell)";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)")>>>;
+      $$route?: undefined;
+      children: readonly [
+        {
+          path: "/";
+          id: "/";
+          page: true;
+          $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/index"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/index")>>>;
+          $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/index"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/index")>>>;
+          children?: undefined;
+        }
+      ];
     }
   ];
 }

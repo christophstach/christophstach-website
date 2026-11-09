@@ -1,0 +1,54 @@
+.editor__body {
+  display: grid;
+  gap: var(--space-10);
+}
+
+@media (min-width: 84rem) {
+  .editor__body {
+    grid-template-columns: minmax(0, 1fr) 26rem;
+    column-gap: var(--space-6);
+    align-items: start;
+  }
+
+  .editor__rail {
+    position: sticky;
+    top: var(--space-6);
+  }
+}
+
+.editor__rail {
+  display: grid;
+  align-content: start;
+  gap: var(--space-6);
+  min-inline-size: 0;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+}
+
+.preview {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.preview__title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-heading);
+}
+
+.preview__frame {
+  overflow-x: auto;
+}
+
+/* An A4 sheet at the rail's width: 23.5rem of the sheet's 210mm. */
+.preview__sheet {
+  box-sizing: border-box;
+  inline-size: 210mm;
+  min-block-size: 297mm;
+  background-color: var(--color-paper);
+  box-shadow: var(--color-paper-shadow);
+  zoom: 0.47;
+}

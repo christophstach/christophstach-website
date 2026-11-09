@@ -1,0 +1,38 @@
+.editor__role {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.editor__note {
+  max-inline-size: 48rem;
+}
+
+.editor__body {
+  display: grid;
+  gap: var(--space-10);
+}
+
+@media (min-width: 72rem) {
+  .editor__body {
+    grid-template-columns: minmax(0, 1fr) 17rem;
+    column-gap: var(--space-6);
+    align-items: start;
+  }
+
+  .editor__rail {
+    position: sticky;
+    top: var(--space-6);
+  }
+}
+
+.editor__rail {
+  display: grid;
+  align-content: start;
+  gap: var(--space-6);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+}

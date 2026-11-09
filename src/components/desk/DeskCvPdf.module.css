@@ -1,0 +1,38 @@
+.cv-pdf {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.cv-pdf__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.cv-pdf__trial {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-signal);
+}
+
+.cv-pdf__title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-heading);
+}
+
+.cv-pdf__note {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.cv-pdf__warnings {
+  display: grid;
+  gap: var(--space-1-5);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  color: var(--color-signal);
+}

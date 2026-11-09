@@ -1,7 +1,9 @@
 import { number, object, string } from "zod/mini";
 import type { APIHandler } from "filesystem-routing/api";
+import { GITHUB_SIGN_IN_PATH } from "../../data/endpoints";
 import { env } from "virtual:solid-env/server";
 import { parseInput } from "../../server/input";
+import { paths } from "../../router";
 import { signInCookies } from "../../server/session";
 
 // GitHub OAuth for the desk: without a code, send the browser to GitHub; with
@@ -40,7 +42,7 @@ function authorize(url: URL): Response {
   const authorizeUrl = new URL("https://github.com/login/oauth/authorize");
 
   authorizeUrl.searchParams.set("client_id", env.GITHUB_CLIENT_ID);
-  authorizeUrl.searchParams.set("redirect_uri", new URL("/auth/github", url).href);
+  authorizeUrl.searchParams.set("redirect_uri", new URL(GITHUB_SIGN_IN_PATH, url).href);
   authorizeUrl.searchParams.set("state", state);
 
   return redirect(authorizeUrl, [stateCookie(state, 600)]);
@@ -55,7 +57,7 @@ async function githubUser(url: URL, code: string) {
       client_id: env.GITHUB_CLIENT_ID,
       client_secret: env.GITHUB_CLIENT_SECRET,
       code,
-      redirect_uri: new URL("/auth/github", url).href,
+      redirect_uri: new URL(GITHUB_SIGN_IN_PATH, url).href,
     }),
   });
   const token = parseInput(tokenSchema, await tokenResponse.json());
@@ -79,7 +81,7 @@ async function signIn(request: Request, url: URL, code: string): Promise<Respons
 
     // The desk is single-user: only the configured GitHub account gets a session.
     if (user.id !== env.DESK_GITHUB_USER_ID) {
-      return redirect(new URL("/login?error=forbidden", url), [clearState]);
+      return redirect(new URL(paths.login({ error: "forbidden" }), url), [clearState]);
     }
 
     const session = await signInCookies(request, {
@@ -88,9 +90,9 @@ async function signIn(request: Request, url: URL, code: string): Promise<Respons
       avatarUrl: user.avatar_url,
     });
 
-    return redirect(new URL("/desk", url), [clearState, ...session]);
+    return redirect(new URL(paths.desk(), url), [clearState, ...session]);
   } catch {
-    return redirect(new URL("/login?error=oauth", url), [clearState]);
+    return redirect(new URL(paths.login({ error: "oauth" }), url), [clearState]);
   }
 }
 
@@ -103,7 +105,7 @@ export const GET: APIHandler = ({ request }) => {
     url.searchParams.has("error") ||
     (code !== null && (state === null || state !== requestState(request)))
   ) {
-    return redirect(new URL("/login?error=oauth", url), [stateCookie("", 0)]);
+    return redirect(new URL(paths.login({ error: "oauth" }), url), [stateCookie("", 0)]);
   }
 
   return code === null ? authorize(url) : signIn(request, url, code);

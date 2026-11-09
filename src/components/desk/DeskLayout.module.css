@@ -1,0 +1,295 @@
+.desk {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+}
+
+/* Below 48rem the sidebar is a top bar: path, session, then the sections. */
+.desk__sidebar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-rule);
+  background-color: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.desk__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.desk__path {
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
+  letter-spacing: var(--tracking-tight);
+  white-space: nowrap;
+}
+
+.desk__path-home {
+  color: var(--color-text-muted);
+  font-weight: var(--font-regular);
+  transition: color var(--transition-fast);
+}
+
+.desk__path-home:hover {
+  color: var(--color-accent);
+}
+
+.desk__path-desk {
+  color: var(--color-heading);
+}
+
+/* Collapsing only exists in the side layout. */
+.desk__collapse {
+  display: none;
+}
+
+.desk__nav {
+  order: 3;
+  flex-basis: 100%;
+  overflow-x: auto;
+}
+
+.desk__nav > ul {
+  display: flex;
+  gap: var(--space-1);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+/* One row shape for sections, the user and sign out, so icons line up in a
+   single column whether the sidebar is open or collapsed. */
+.desk__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  padding: var(--space-1-5) var(--space-2);
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+}
+
+.desk__icon {
+  flex: none;
+}
+
+.desk__link,
+.desk__logout {
+  color: var(--color-text-soft);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.desk__link:hover,
+.desk__logout:hover {
+  background-color: var(--color-hover);
+  color: var(--color-hover-text);
+}
+
+.desk__link--active,
+.desk__link--active:hover {
+  background-color: var(--color-accent-subtle-bg);
+  color: var(--color-accent-subtle-text);
+}
+
+/* The top bar has no room for the content links. */
+.desk__content {
+  display: none;
+  gap: 1px;
+  padding: 0 0 0 var(--space-3);
+  margin: var(--space-1) 0 var(--space-2) 1.1rem;
+  border-left: 1px solid var(--color-border-strong);
+  list-style: none;
+}
+
+.desk__content-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-soft);
+  font-size: var(--text-xs);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.desk__content-link:hover {
+  background-color: var(--color-hover);
+  color: var(--color-hover-text);
+}
+
+.desk__content-link--active,
+.desk__content-link--active:hover {
+  background-color: var(--color-accent-subtle-bg);
+  color: var(--color-accent-subtle-text);
+}
+
+.desk__session {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+.desk__user {
+  color: var(--color-text-muted);
+}
+
+.desk__avatar {
+  flex: none;
+  border-radius: var(--radius-sm);
+}
+
+.desk__actions {
+  display: flex;
+  align-items: center;
+}
+
+.desk__logout {
+  flex: 1;
+}
+
+/* Top bar: user and sign out show as icons only. Labels stay readable to
+   screen readers. */
+.desk__session .desk__label,
+.desk--collapsed .desk__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.desk__main {
+  min-width: 0;
+}
+
+.desk__main:focus {
+  outline: none;
+}
+
+@media (min-width: 48rem) {
+  .desk {
+    grid-template-rows: none;
+    grid-template-columns: 15rem 1fr;
+    transition: grid-template-columns 180ms ease;
+  }
+
+  .desk--collapsed {
+    grid-template-columns: 3.75rem 1fr;
+  }
+
+  .desk__sidebar {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: var(--space-6);
+    height: 100dvh;
+    padding: var(--space-4) var(--space-2-5);
+    overflow: hidden;
+    border-right: 1px solid var(--color-rule);
+    border-bottom: 0;
+  }
+
+  .desk__path {
+    padding-inline: var(--space-2);
+  }
+
+  .desk__collapse {
+    display: inline-flex;
+  }
+
+  .desk__nav {
+    order: 0;
+    flex: 1;
+    flex-basis: auto;
+    overflow: visible;
+  }
+
+  .desk__nav > ul {
+    flex-direction: column;
+  }
+
+  .desk__nav {
+    overflow-y: auto;
+  }
+
+  .desk__content {
+    display: grid;
+  }
+
+  .desk__session {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+    margin-left: 0;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .desk__session .desk__label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  /* Separates who is signed in from the actions on that session. */
+  .desk__actions {
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border);
+  }
+
+  /* Collapsed: a column of icons. The path shrinks to `~`, and the actions
+     stack so both fit the narrow rail. */
+  .desk--collapsed .desk__top {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .desk--collapsed .desk__path {
+    padding-inline: 0;
+  }
+
+  .desk--collapsed .desk__item {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .desk--collapsed .desk__actions {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .desk--collapsed .desk__logout {
+    width: 100%;
+  }
+
+  .desk--collapsed .desk__session .desk__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
+@media (min-width: 48rem) and (prefers-reduced-motion: reduce) {
+  .desk {
+    transition: none;
+  }
+}

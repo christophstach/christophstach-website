@@ -1,0 +1,49 @@
+/* Letter text is a step larger than the CV's: 10.5pt, read as running text.
+   No positioned text, as in the CV: it would print out of reading order. */
+.letter {
+  --cv-scale: calc(14 / 13);
+}
+
+.letter__to {
+  margin-top: 28px;
+  white-space: pre-line;
+}
+
+.letter__company {
+  font-weight: 600;
+}
+
+.letter__date {
+  margin-top: 16px;
+  color: var(--cv-soft);
+}
+
+.letter__subject {
+  margin-top: 24px;
+  font-family: inherit;
+  font-size: calc(15px * var(--cv-scale));
+  font-weight: 600;
+  line-height: 1.35;
+  color: inherit;
+  break-after: avoid;
+}
+
+.letter__salutation {
+  margin-top: 16px;
+}
+
+.letter__paragraph {
+  margin-top: 10px;
+  white-space: pre-line;
+  text-wrap: pretty;
+}
+
+.letter__signature {
+  margin-top: 20px;
+  break-inside: avoid;
+}
+
+.letter__name {
+  margin-top: 10px;
+  font-weight: 500;
+}

@@ -1,3 +1,4 @@
+import { GITHUB_SIGN_IN_PATH } from "../../data/endpoints";
 import { IconBrandGithub } from "../../components/icons";
 import { Show } from "solid-js";
 import styles from "../../components/login/login.module.css";
@@ -33,7 +34,7 @@ export default function Login() {
 
       {/* A plain link: the OAuth route is a server handler, not an app page. */}
       <a
-        href="/auth/github"
+        href={GITHUB_SIGN_IN_PATH}
         class={["button button--primary", styles.login__action]}
         rel="external"
       >
