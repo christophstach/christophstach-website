@@ -22,12 +22,15 @@
     "@nuxt/fonts": "^1.2.0",
     "@nuxt/icon": "^2.6.2",
     "@nuxtjs/color-mode": "^4.1.0",
+    "@solidjs/router": "2.0.0-next.44",
+    "@solidjs/web": "2.0.0-rc.21",
     "@sparticuz/chromium": "153.0.0",
     "drizzle-orm": "^0.45.4",
     "nuxt": "npm:nuxt-nightly@4.6.4-2611050021-c80eb9c",
     "nuxt-auth-utils": "^0.6.0",
     "postgres": "^4.0.0",
     "puppeteer-core": "25.16.0",
+    "solid-js": "2.0.0-rc.21",
     "std-env": "^4.3.0",
     "unpdf": "2.1.0",
     "vue": "^3.5.44",
@@ -35,11 +38,20 @@
   },
   "devDependencies": {
     "@iconify-json/tabler": "^1.2.43",
+    "@solidjs/diagnostics": "2.0.0-rc.21",
+    "@solidjs/vite-plugin": "3.0.0-next.57",
+    "@tanstack/intent": "^0.5.6",
     "drizzle-kit": "^0.31.11",
     "oxfmt": "^0.76.0",
     "oxlint": "^1.91.0",
     "typescript": "^6.0.3",
     "vue-tsc": "^3.3.14"
   },
-  "packageManager": "pnpm@12.16.1"
+  "packageManager": "pnpm@12.16.1",
+  "intent": {
+    "skills": [
+      "solid-js",
+      "@solidjs/*"
+    ]
+  }
 }

@@ -153,3 +153,15 @@ block) all live in `app.vue`; per-page `title`/`ogTitle` are set in the page via
   must only use the site's own web fonts (IBM Plex Sans, JetBrains Mono via `@nuxt/fonts`).
 - `public/images/hero.png` is a crawler-facing copy of `public/images/hero.webp` for the
   JSON-LD `Person.image`. Keep the two in sync.
+
+<!-- intent-skills:start -->
+## Skill Loading
+
+Use the repository’s installed Intent. If it is unavailable, report the missing dependency instead of downloading a replacement.
+Before editing files for a substantial task:
+- Run `pnpm exec intent list` from the workspace root to see available local skills.
+- If a listed skill matches the task, run `pnpm exec intent load <package>#<skill>` before changing files.
+- Use the loaded `SKILL.md` guidance while making the change.
+- Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
+- Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
+<!-- intent-skills:end -->
