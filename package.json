@@ -47,7 +47,7 @@
     "drizzle-kit": "^0.31.11",
     "filesystem-routing": "0.5.0",
     "oxfmt": "^0.76.0",
-    "oxlint": "1.93.0",
+    "oxlint": "1.92.0",
     "oxlint-tsgolint": "7.0.2006",
     "typescript": "7.0.2",
     "vite": "8.3.7",
