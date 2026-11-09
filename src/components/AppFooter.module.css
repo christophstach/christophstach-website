@@ -16,3 +16,9 @@
   display: flex;
   gap: var(--space-1);
 }
+
+@media print {
+  .footer {
+    display: none !important;
+  }
+}

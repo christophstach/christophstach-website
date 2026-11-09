@@ -95,8 +95,7 @@ ol {
 /* When printing (incl. the headless-Chrome CV export of /cv-print),
    drop the site chrome so only the page content is rendered. */
 @media print {
-  .header,
-  .footer,
+  /* The header and footer hide themselves in their own modules. */
   .skip-link {
     display: none !important;
   }

@@ -1,0 +1,45 @@
+.cv__header {
+  padding-bottom: calc(16px * var(--cv-space));
+  margin-bottom: calc(28px * var(--cv-space));
+  border-bottom: 2px solid var(--cv-accent);
+  break-inside: avoid;
+}
+
+.cv__name {
+  font-family: inherit;
+  font-size: calc(30px * var(--cv-scale));
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: inherit;
+}
+
+.cv__role {
+  margin-top: calc(4px * var(--cv-space));
+  font-size: calc(15px * var(--cv-scale));
+  font-weight: 500;
+  color: var(--cv-accent);
+}
+
+.cv__contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 0;
+  padding: 0;
+  margin-top: calc(10px * var(--cv-space));
+  list-style: none;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--cv-scale));
+  color: var(--cv-soft);
+}
+
+.cv__contact--links {
+  margin-top: 2px;
+}
+
+/* After the item, not before the next: a wrapped line never starts with one. */
+.cv__contact li:not(:last-child)::after {
+  content: "·";
+  margin-inline: 8px;
+  color: var(--cv-muted);
+}

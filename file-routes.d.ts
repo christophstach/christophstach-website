@@ -73,6 +73,19 @@ declare module "virtual:file-routes" {
       $GET: FileRouteLazyRef<Pick<typeof import("./src/routes/api/cv-website"), Extract<"GET", keyof typeof import("./src/routes/api/cv-website")>>>;
       $HEAD: FileRouteLazyRef<Pick<typeof import("./src/routes/api/cv-website"), Extract<"GET", keyof typeof import("./src/routes/api/cv-website")>>>;
       $$route?: undefined;
+    },
+    {
+      path: "/christoph-stach-cv.pdf";
+      page: false;
+      $GET: FileRouteLazyRef<Pick<typeof import("./src/routes/christoph-stach-cv.pdf"), Extract<"GET", keyof typeof import("./src/routes/christoph-stach-cv.pdf")>>>;
+      $HEAD: FileRouteLazyRef<Pick<typeof import("./src/routes/christoph-stach-cv.pdf"), Extract<"GET", keyof typeof import("./src/routes/christoph-stach-cv.pdf")>>>;
+      $$route?: undefined;
+    },
+    {
+      path: "/cv-print";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/cv-print"), Extract<"default", keyof typeof import("./src/routes/cv-print")>>>;
+      $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/cv-print"), Extract<"route", keyof typeof import("./src/routes/cv-print")>>>;
     }
   ];
   export default routes;
@@ -113,6 +126,14 @@ declare module "virtual:file-routes" {
           children?: undefined;
         }
       ];
+    },
+    {
+      path: "/cv-print";
+      id: "/cv-print";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/cv-print"), Extract<"default", keyof typeof import("./src/routes/cv-print")>>>;
+      $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/cv-print"), Extract<"route", keyof typeof import("./src/routes/cv-print")>>>;
+      children?: undefined;
     }
   ];
 }
