@@ -1,4 +1,4 @@
-import { For, Show, createMemo, snapshot } from "solid-js";
+import { For, Show, createMemo, createSignal, snapshot } from "solid-js";
 import { deleteDeskProject, saveDeskProject } from "../../../../../lib/desk/content";
 import { getDeskProjects, getDeskVariants } from "../../../../../lib/desk/queries";
 import { useNavigate, useParams } from "@solidjs/router";
@@ -43,15 +43,22 @@ export default function ProjectEditor() {
   const navigate = useNavigate();
   const projects = createMemo(() => getDeskProjects());
   const variants = createMemo(() => getDeskVariants());
-  const stored = () => {
+  const [removing, setRemoving] = createSignal(false);
+  // While deleting, the refetched list no longer has the project: keep
+  // showing the last one until the page has navigated away.
+  const stored = createMemo((previous?: ProjectRecord) => {
     const project = projects().find((candidate) => candidate.id === params.id);
 
-    if (project === undefined) {
-      throw Object.assign(new Error(`No project "${params.id}".`), { status: 404 });
+    if (project !== undefined) {
+      return project;
     }
 
-    return project;
-  };
+    if (removing() && previous !== undefined) {
+      return previous;
+    }
+
+    throw Object.assign(new Error(`No project "${params.id}".`), { status: 404 });
+  });
   const { form, setForm, saved, dirty, reset, leave } = useDraft(
     () => toForm(stored()),
     EMPTY_FORM,
@@ -91,10 +98,14 @@ export default function ProjectEditor() {
       return;
     }
 
+    setRemoving(true);
+
     if (await request.run(() => deleteDeskProject(params.id))) {
       forgetPageChecks();
       leave();
       navigate(paths.desk.cv.projects());
+    } else {
+      setRemoving(false);
     }
   }
 

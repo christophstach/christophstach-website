@@ -1,4 +1,4 @@
-import { createMemo, createStore, snapshot } from "solid-js";
+import { createMemo, createStore } from "solid-js";
 import { useUnsavedGuard } from "./unsaved";
 
 /** Equal when two values serialize alike, so a refetch of unchanged data is no change. */
@@ -25,7 +25,8 @@ function useDraft<Form extends object>(stored: () => Form, empty: NoFn<Form>) {
   const [form, setForm] = createStore<Form>((draft) => {
     Object.assign(draft, saved());
   }, empty);
-  const dirty = () => !sameJson(snapshot(form), saved());
+  // Serializing the store itself (not a snapshot) reads, and so tracks, every field.
+  const dirty = () => !sameJson(form, saved());
   const guard = useUnsavedGuard(dirty);
 
   return {

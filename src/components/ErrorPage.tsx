@@ -6,6 +6,7 @@ import { httpStatus } from "@solidjs/web";
 import layout from "./SiteLayout.module.css";
 import { paths } from "../router";
 import styles from "./ErrorPage.module.css";
+import { untrack } from "solid-js";
 import { useLocation } from "@solidjs/router";
 
 interface ErrorPageProps {
@@ -19,7 +20,7 @@ export function ErrorPage(props: ErrorPageProps) {
   const location = useLocation();
 
   // The response answers with the page's status during SSR (a no-op in the browser).
-  httpStatus(props.status);
+  httpStatus(untrack(() => props.status));
   const notFound = () => props.status === 404;
 
   // Mirrors what a shell says when you cd into a path that isn't there.

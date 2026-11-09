@@ -1,11 +1,12 @@
 import { Bullets, EMPTY_ENTRY_FORM, Links, bind, toForm } from "./DeskEntryParts";
-import { Show, createMemo, snapshot } from "solid-js";
+import { Show, createMemo, createSignal, snapshot } from "solid-js";
 import { deleteDeskEntry, saveDeskEntry } from "../../lib/desk/content";
 import { getDeskContent, getDeskVariants } from "../../lib/desk/queries";
 import { DeskFormSection } from "./DeskFormSection";
 import { DeskMenu } from "./DeskMenu";
 import { DeskMeta } from "./DeskMeta";
 import { DeskSaveBar } from "./DeskSaveBar";
+import type { EntryRecord } from "../../data/cv";
 import { IconTrash } from "../icons";
 import type { Section } from "./DeskEntryParts";
 import { forgetPageChecks } from "../../lib/desk/page-checks";
@@ -25,17 +26,24 @@ export function DeskEntryEditor(props: { section: Section; id: string }) {
   const navigate = useNavigate();
   const content = createMemo(() => getDeskContent());
   const variants = createMemo(() => getDeskVariants());
-  const stored = () => {
+  const [removing, setRemoving] = createSignal(false);
+  // While deleting, the refetched content no longer has the entry: keep
+  // showing the last one until the page has navigated away.
+  const stored = createMemo((previous?: EntryRecord) => {
     const entry = content().entries.find(
       (candidate) => candidate.id === props.id && candidate.section === props.section,
     );
 
-    if (entry === undefined) {
-      throw notFound(`No ${props.section} entry "${props.id}".`);
+    if (entry !== undefined) {
+      return entry;
     }
 
-    return entry;
-  };
+    if (removing() && previous !== undefined) {
+      return previous;
+    }
+
+    throw notFound(`No ${props.section} entry "${props.id}".`);
+  });
   const { form, setForm, saved, dirty, reset, leave } = useDraft(
     () => toForm(stored()),
     EMPTY_ENTRY_FORM,
@@ -74,10 +82,14 @@ export function DeskEntryEditor(props: { section: Section; id: string }) {
       return;
     }
 
+    setRemoving(true);
+
     if (await request.run(() => deleteDeskEntry(props.id))) {
       forgetPageChecks();
       leave();
       navigate(paths.desk.cv[props.section]());
+    } else {
+      setRemoving(false);
     }
   }
 
