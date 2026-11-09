@@ -54,6 +54,17 @@
   ],
   "overrides": [
     {
+      // Components are mostly markup; a page section's JSX runs long without
+      // getting harder to follow.
+      "files": ["**/*.tsx"],
+      "rules": {
+        "max-lines-per-function": [
+          "error",
+          { "max": 120, "skipBlankLines": true, "skipComments": true }
+        ]
+      }
+    },
+    {
       "files": ["src/server/**"],
       "env": { "node": true, "browser": false }
     },

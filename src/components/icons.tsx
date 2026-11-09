@@ -74,4 +74,10 @@ export function IconArrowRight(props: IconProps): JSX.Element {
   return <TablerIcon {...props} path="M5 12h14m-6 6l6-6m-6-6l6 6" />;
 }
 
+export function IconDownload(props: IconProps): JSX.Element {
+  return (
+    <TablerIcon {...props} path="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 11l5 5l5-5m-5-7v12" />
+  );
+}
+
 export type { IconProps };

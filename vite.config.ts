@@ -11,9 +11,12 @@ const buildId =
 export default defineConfig({
   plugins: [
     solid({
-      // Streaming SSR with no entry files: the plugin wraps src/App.tsx in
+      // SSR with no entry files: the plugin wraps src/App.tsx in
       // src/Document.tsx. env.ts is picked up by convention.
-      start: { middleware: "./src/middleware.ts" },
+      // Complete documents, not streams: head tags of async pages (titles, link
+      // previews) must be in the first byte for crawlers, and a redirect while
+      // rendering becomes a real 3xx.
+      start: { middleware: "./src/middleware.ts", renderMode: "async" },
       ssr: true,
       // Dev-only: answers POST /__solid/diagnostics.
       diagnostics: true,
@@ -22,7 +25,7 @@ export default defineConfig({
       extensions: [".jsx", ".tsx"],
     }),
     // httpMethods: route modules may export GET/POST/... (API routes).
-    fileRoutes({ httpMethods: true, types: true }),
+    fileRoutes({ httpMethods: true, types: true, serverComponents: true }),
     // Nitro serves the Solid handler and writes .vercel/output. serverDir
     // stays off (Nitro's default) so it never scans the Nuxt server/.
     nitro({ preset: "vercel", serverDir: false }),

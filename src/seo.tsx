@@ -1,5 +1,4 @@
 import { Link, Meta, Script, Title } from "@solidjs/meta";
-import { useLocation } from "@solidjs/router";
 
 const SITE_URL = "https://christophstach.de";
 const SITE_NAME = "Christoph Stach";
@@ -50,18 +49,22 @@ const PERSON_JSON_LD = JSON.stringify({
 });
 
 interface SiteMetaProps {
+  /** The page's path, e.g. "/curriculum", for the canonical URL. */
+  path: string;
   /** The page title, shown as "<title> · Christoph Stach"; none shows the name alone. */
-  title?: string;
+  title?: string | undefined;
   /** The title for link previews; defaults to the site name. */
-  ogTitle?: string;
+  ogTitle?: string | undefined;
   /** Keeps the page out of search results. */
   noindex?: boolean;
 }
 
-/** The head of a public page: title, description, link previews, canonical URL, JSON-LD. */
+/**
+ * The head of a public page: title, description, link previews, canonical URL,
+ * JSON-LD. Takes the path rather than reading the router, so server pages can use it.
+ */
 export function SiteMeta(props: SiteMetaProps) {
-  const location = useLocation();
-  const canonical = () => `${SITE_URL}${location.pathname}`;
+  const canonical = () => `${SITE_URL}${props.path}`;
 
   return (
     <>

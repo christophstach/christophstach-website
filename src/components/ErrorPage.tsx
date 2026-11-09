@@ -25,7 +25,7 @@ export function ErrorPage(props: ErrorPageProps) {
 
   return (
     <div class={layout.layout}>
-      <SiteMeta title={notFound() ? "Page not found" : "Error"} noindex />
+      <SiteMeta path={location.pathname} title={notFound() ? "Page not found" : "Error"} noindex />
       <AppHeader />
 
       <main class={styles.main}>
