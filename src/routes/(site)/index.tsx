@@ -3,7 +3,6 @@ import { HomeHero } from "../../components/home/HomeHero";
 import { HomeStack } from "../../components/home/HomeStack";
 import { HomeStats } from "../../components/home/HomeStats";
 import { cvHomeSchema } from "../../data/public-api";
-import { fetchPublic } from "../../server/fetch-public";
 import { monthsBetween } from "../../lib/format";
 
 // A server page: rendered on the server per request, its code never reaches
@@ -12,6 +11,9 @@ import { monthsBetween } from "../../lib/format";
 export default async function Home() {
   "use server";
 
+  // Imported here, inside the server function, so the client build never
+  // resolves the server-only module.
+  const { fetchPublic } = await import("../../server/fetch-public");
   const { experience, skills } = await fetchPublic("/api/cv-home", cvHomeSchema);
 
   const totalSkills = skills.reduce((sum, group) => sum + group.items.length, 0);
