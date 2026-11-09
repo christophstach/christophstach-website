@@ -190,9 +190,6 @@ importers:
       drizzle-orm:
         specifier: ^0.45.4
         version: 0.45.4(postgres@4.0.0)
-      h3:
-        specifier: 2.0.8
-        version: 2.0.8(crossws@0.4.17(srvx@1.0.8))(ocache@0.3.1)
       nitro:
         specifier: 3.0.261103-rc
         version: 3.0.261103-rc

@@ -25,7 +25,6 @@
     "@solidjs/web": "2.0.0-rc.21",
     "@sparticuz/chromium": "153.0.0",
     "drizzle-orm": "^0.45.4",
-    "h3": "2.0.8",
     "nitro": "3.0.261103-rc",
     "nuxt": "npm:nuxt-nightly@4.6.4-2611050021-c80eb9c",
     "nuxt-auth-utils": "^0.6.0",
