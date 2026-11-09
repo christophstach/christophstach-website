@@ -44,7 +44,7 @@
   color: var(--color-heading);
 }
 
-/* Icon-only variant, for links whose icon already names them. Drops the `$`
+/* Icon-only variant, for links whose icon already names them. Drops the dollar-sign
    prefix, which reads as a prompt waiting for a command that never comes. */
 .button--icon {
   padding-inline: var(--space-3);
