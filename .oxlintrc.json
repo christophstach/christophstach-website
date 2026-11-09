@@ -13,6 +13,7 @@
   },
   "rules": {
     "eqeqeq": "error",
+    "no-duplicate-imports": ["error", { "allowSeparateTypeImports": true }],
     "no-console": "error",
     "no-debugger": "error",
     "no-underscore-dangle": ["error", { "allow": ["__BUILD_ID__"] }],
