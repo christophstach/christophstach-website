@@ -9,6 +9,7 @@ import { letterStatus, pageStatus } from "../../../lib/cv-layout";
 import { DeskMeta } from "../../../components/desk/DeskMeta";
 import type { RouteDefinition } from "@solidjs/router";
 import { formatRelative } from "../../../lib/format";
+import { paths } from "../../../router";
 import { running } from "../../../lib/desk/page-checks";
 import styles from "../../../components/desk/page-index.module.css";
 
@@ -29,15 +30,19 @@ function ContentPanel() {
     const inSection = (section: string) => entries.filter((entry) => entry.section === section);
 
     return [
-      { to: "/desk/cv/experience", label: "experience", count: inSection("experience").length },
-      { to: "/desk/cv/education", label: "education", count: inSection("education").length },
       {
-        to: "/desk/cv/experience",
+        to: paths.desk.cv.experience(),
+        label: "experience",
+        count: inSection("experience").length,
+      },
+      { to: paths.desk.cv.education(), label: "education", count: inSection("education").length },
+      {
+        to: paths.desk.cv.experience(),
         label: "bullets",
         count: entries.reduce((sum, entry) => sum + entry.bullets.length, 0),
       },
-      { to: "/desk/cv/skills", label: "skill groups", count: skills.length },
-      { to: "/desk/cv/projects", label: "projects", count: projects().length },
+      { to: paths.desk.cv.skills(), label: "skill groups", count: skills.length },
+      { to: paths.desk.cv.projects(), label: "projects", count: projects().length },
     ];
   };
 
@@ -83,7 +88,7 @@ function VariantsPanel() {
         <h2 id="panel-variants" class="panel__title">
           cv variants
         </h2>
-        <a href="/desk/cv?new" class={["text-link panel__end", styles["add-link"]]}>
+        <a href={paths.desk.cv({ new: "" })} class={["text-link panel__end", styles["add-link"]]}>
           New variant
         </a>
       </header>
@@ -93,7 +98,7 @@ function VariantsPanel() {
           <For each={variants()}>
             {(variant) => (
               <li>
-                <a href={`/desk/cv/${variant.id}`} class={["panel-row", styles.row]}>
+                <a href={paths.desk.cv(variant.id)} class={["panel-row", styles.row]}>
                   <span class={styles.row__main}>
                     <span class="panel-row__label">{variant.label}</span>
                     <Show when={variant.id === data().primaryId}>

@@ -1,5 +1,6 @@
 import { For, Show } from "solid-js";
 import { deskContentLinks, deskSections } from "../../data/desk";
+import { paths } from "../../router";
 import styles from "./DeskLayout.module.css";
 import { useLocation } from "@solidjs/router";
 
@@ -9,7 +10,7 @@ export function DeskNav(props: { collapsed: boolean }) {
 
   // The overview is active on /desk only, a section on its subpages too.
   const isActive = (to: string) =>
-    to === "/desk"
+    to === paths.desk()
       ? location.pathname === to
       : location.pathname === to || location.pathname.startsWith(`${to}/`);
 
@@ -32,7 +33,7 @@ export function DeskNav(props: { collapsed: boolean }) {
                 <span class={styles.desk__label}>{section.label}</span>
               </a>
 
-              <Show when={section.to === "/desk/cv" && !props.collapsed}>
+              <Show when={section.to === paths.desk.cv() && !props.collapsed}>
                 <ul class={styles.desk__content} aria-label="CV content">
                   <For each={deskContentLinks}>
                     {(link) => (

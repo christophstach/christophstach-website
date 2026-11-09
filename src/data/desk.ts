@@ -10,6 +10,7 @@ import {
 } from "../components/icons";
 import type { IconProps } from "../components/icons";
 import type { JSX } from "@solidjs/web";
+import { paths } from "../router";
 
 /** A link of the private desk's sidebar. */
 export interface DeskLink {
@@ -20,16 +21,16 @@ export interface DeskLink {
 }
 
 export const deskSections: DeskLink[] = [
-  { to: "/desk", label: "overview", icon: IconLayoutDashboard },
-  { to: "/desk/cv", label: "cv", icon: IconFileCv },
+  { to: paths.desk(), label: "overview", icon: IconLayoutDashboard },
+  { to: paths.desk.cv(), label: "cv", icon: IconFileCv },
   { to: "/desk/cover-letters", label: "cover-letters", icon: IconMail },
 ];
 
 /** Under "cv": the content the variants pick from. */
 export const deskContentLinks: DeskLink[] = [
-  { to: "/desk/cv/profile", label: "profile", icon: IconId },
-  { to: "/desk/cv/experience", label: "experience", icon: IconBriefcase },
-  { to: "/desk/cv/education", label: "education", icon: IconSchool },
-  { to: "/desk/cv/skills", label: "skills", icon: IconTools },
-  { to: "/desk/cv/projects", label: "projects", icon: IconFolders },
+  { to: paths.desk.cv.profile(), label: "profile", icon: IconId },
+  { to: paths.desk.cv.experience(), label: "experience", icon: IconBriefcase },
+  { to: paths.desk.cv.education(), label: "education", icon: IconSchool },
+  { to: paths.desk.cv.skills(), label: "skills", icon: IconTools },
+  { to: paths.desk.cv.projects(), label: "projects", icon: IconFolders },
 ];

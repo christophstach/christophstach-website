@@ -60,8 +60,12 @@
       "rules": {
         "max-lines-per-function": [
           "error",
-          { "max": 120, "skipBlankLines": true, "skipComments": true }
-        ]
+          { "max": 160, "skipBlankLines": true, "skipComments": true }
+        ],
+        // A desk editor composes many components and helpers, and keeps its
+        // handlers next to the state they write.
+        "import/max-dependencies": ["error", { "max": 20 }],
+        "max-statements": ["error", 25]
       }
     },
     {

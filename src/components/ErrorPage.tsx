@@ -2,6 +2,7 @@ import { AppFooter } from "./AppFooter";
 import { AppHeader } from "./AppHeader";
 import { IconArrowRight } from "./icons";
 import { SiteMeta } from "../seo";
+import { httpStatus } from "@solidjs/web";
 import layout from "./SiteLayout.module.css";
 import { paths } from "../router";
 import styles from "./ErrorPage.module.css";
@@ -16,6 +17,9 @@ interface ErrorPageProps {
 /** The themed error page, for unknown paths and failed renders. */
 export function ErrorPage(props: ErrorPageProps) {
   const location = useLocation();
+
+  // The response answers with the page's status during SSR (a no-op in the browser).
+  httpStatus(props.status);
   const notFound = () => props.status === 404;
 
   // Mirrors what a shell says when you cd into a path that isn't there.
