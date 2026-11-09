@@ -16,6 +16,13 @@
     // Solid props are read-only proxies typed as plain objects; marking every component
     // parameter Readonly<> adds noise without catching anything.
     "typescript/prefer-readonly-parameter-types": "off",
+    // The ported body parsers check every field with a type guard and then assert the
+    // checked shape; rewriting them as schemas is out of scope for the port.
+    "typescript/no-unsafe-type-assertion": "off",
+    // Truthiness checks on strings and query results are deliberate here (an empty
+    // string counts as missing), as in the code this was ported from.
+    "typescript/strict-boolean-expressions": "off",
+    "typescript/prefer-nullish-coalescing": ["error", { "ignorePrimitives": { "string": true } }],
     "no-duplicate-imports": ["error", { "allowSeparateTypeImports": true }],
     "no-console": "error",
     "no-debugger": "error",
@@ -29,7 +36,10 @@
     "import/no-named-export": "off",
     "import/prefer-default-export": "off",
     "import/group-exports": "off",
-    "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
+    "import/no-unassigned-import": [
+      "error",
+      { "allow": ["**/*.css", "server-only", "client-only"] }
+    ],
     "unicorn/filename-case": ["error", { "cases": { "kebabCase": true, "pascalCase": true } }]
   },
   "ignorePatterns": [

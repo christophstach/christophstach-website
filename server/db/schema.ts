@@ -9,7 +9,7 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
-import type { CvLayout } from "../../app/data/cv-print-layout";
+import type { CvLayout } from "../../src/data/cv-print-layout";
 
 // Column names are snake_case in the database: drizzle.config.ts and useDb()
 // both pass casing "snake_case", so the properties here stay camelCase.

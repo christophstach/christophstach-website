@@ -1,0 +1,203 @@
+import "server-only";
+import type { EntryRecord, Profile, ProfileLink, SkillGroupRecord, TimelineLink } from "../data/cv";
+import { HttpError } from "./http";
+
+// URL slug: lowercase words joined by single hyphens, e.g. "mbition".
+const ENTRY_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
+// Bullet and skill group ids, e.g. "agent-platform" or "backend_api".
+const KEY = /^[a-z0-9][a-z0-9_-]*$/u;
+const MONTH = /^\d{4}-(?:0[1-9]|1[0-2])$/u;
+const SECTIONS = new Set(["experience", "education"]);
+
+function invalid(message: string) {
+  return new HttpError(400, message);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isText(value: unknown): value is string {
+  return typeof value === "string" && value.trim() !== "";
+}
+
+/** Trimmed, without empty items. */
+function cleanList(items: string[]): string[] {
+  return items.map((item) => item.trim()).filter(Boolean);
+}
+
+function unique(ids: string[], what: string) {
+  const seen = new Set<string>();
+
+  for (const id of ids) {
+    if (seen.has(id)) {
+      throw invalid(`The ${what} id "${id}" is used twice.`);
+    }
+
+    seen.add(id);
+  }
+}
+
+function parseBullets(value: unknown): EntryRecord["bullets"] {
+  if (!Array.isArray(value)) {
+    throw invalid("Bullets must be a list.");
+  }
+
+  const bullets = value.map((item: Partial<{ id: unknown; text: unknown }> | null) => {
+    if (typeof item?.id !== "string" || !KEY.test(item.id) || !isText(item.text)) {
+      throw invalid("Every bullet needs an id and some text.");
+    }
+
+    return { id: item.id, text: item.text.trim() };
+  });
+
+  unique(
+    bullets.map((bullet) => bullet.id),
+    "bullet",
+  );
+
+  return bullets;
+}
+
+function parseLinks(value: unknown): TimelineLink[] {
+  if (!Array.isArray(value)) {
+    throw invalid("Links must be a list.");
+  }
+
+  return value.map((item: Partial<{ text: unknown; href: unknown }> | null) => {
+    if (!isText(item?.text) || !isText(item?.href)) {
+      throw invalid("Every link needs a text and an address.");
+    }
+
+    return { text: item.text.trim(), href: item.href.trim() };
+  });
+}
+
+function checkEntryFields(value: Partial<EntryRecord>) {
+  if (!SECTIONS.has(String(value.section))) {
+    throw invalid("Section must be experience or education.");
+  }
+
+  if (!isText(value.title) || !isText(value.organization)) {
+    throw invalid("An entry needs a title and an organization.");
+  }
+
+  if (!MONTH.test(String(value.from)) || !(value.to === "" || MONTH.test(String(value.to)))) {
+    throw invalid('Dates are months like "2023-10"; an empty end means ongoing.');
+  }
+
+  if (typeof value.location !== "string" || !isStringArray(value.tech)) {
+    throw invalid("Not a CV entry.");
+  }
+}
+
+/** Checks a timeline entry sent by the desk; the route's id wins. */
+function parseEntryBody(id: string, body: unknown): EntryRecord {
+  const value = (body ?? {}) as Partial<EntryRecord>;
+
+  if (!ENTRY_ID.test(id)) {
+    throw invalid(`"${id}" is no valid id: use lowercase letters, digits and hyphens.`);
+  }
+
+  checkEntryFields(value);
+
+  const entry = value as EntryRecord;
+  // A tab opened before names existed sends none: fall back to what identified it.
+  const name = isText(entry.name) ? entry.name : entry.organization;
+
+  if (entry.name !== undefined && !isText(entry.name)) {
+    throw invalid("An entry needs a name.");
+  }
+
+  return {
+    id,
+    section: entry.section,
+    name: name.trim(),
+    note: typeof entry.note === "string" ? entry.note.trim() : "",
+    title: entry.title.trim(),
+    organization: entry.organization.trim(),
+    location: entry.location.trim(),
+    from: entry.from,
+    to: entry.to,
+    tech: cleanList(entry.tech),
+    bullets: parseBullets(entry.bullets),
+    links: parseLinks(entry.links),
+  };
+}
+
+/** Checks the full, ordered list of skill groups sent by the desk. */
+function parseSkillGroupsBody(body: unknown): SkillGroupRecord[] {
+  if (!Array.isArray(body)) {
+    throw invalid("Skill groups must be a list.");
+  }
+
+  const groups = body.map((item: Partial<SkillGroupRecord> | null) => {
+    if (typeof item?.label !== "string" || !KEY.test(item.label) || !isText(item.title)) {
+      throw invalid("Every skill group needs an id and a title.");
+    }
+
+    if (item.name !== undefined && !isText(item.name)) {
+      throw invalid("Every skill group needs a name.");
+    }
+
+    if (!isStringArray(item.items)) {
+      throw invalid("Skills must be a list.");
+    }
+
+    return {
+      label: item.label,
+      name: (item.name ?? item.title).trim(),
+      note: typeof item.note === "string" ? item.note.trim() : "",
+      title: item.title.trim(),
+      items: cleanList(item.items),
+    };
+  });
+
+  unique(
+    groups.map((group) => group.label),
+    "skill group",
+  );
+
+  return groups;
+}
+
+function parseProfileLinks(value: unknown): ProfileLink[] {
+  if (!Array.isArray(value)) {
+    throw invalid("Links must be a list.");
+  }
+
+  return value.map((item: Partial<{ label: unknown; href: unknown }> | null) => {
+    if (!isText(item?.label) || !isText(item?.href)) {
+      throw invalid("Every link needs a label and an address.");
+    }
+
+    return { label: item.label.trim(), href: item.href.trim() };
+  });
+}
+
+/** Checks the profile sent by the desk. */
+function parseProfileBody(body: unknown): Profile {
+  const value = (body ?? {}) as Partial<Profile>;
+  const texts = [value.role, value.location, value.email, value.phone];
+
+  if (!isText(value.name)) {
+    throw invalid("The profile needs a name.");
+  }
+
+  if (!texts.every((text) => typeof text === "string")) {
+    throw invalid("Not a profile.");
+  }
+
+  const profile = value as Profile;
+
+  return {
+    name: profile.name.trim(),
+    role: profile.role.trim(),
+    location: profile.location.trim(),
+    email: profile.email.trim(),
+    phone: profile.phone.trim(),
+    links: parseProfileLinks(profile.links),
+  };
+}
+
+export { parseEntryBody, parseProfileBody, parseSkillGroupsBody };
