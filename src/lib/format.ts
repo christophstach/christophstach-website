@@ -24,8 +24,20 @@ function formatDay(isoDate: string, language: keyof typeof DAY_LOCALES): string 
  * A CV text split at its links, written as [text](https://…). CV texts are
  * plain text otherwise; the parts are rendered with text interpolation only.
  */
-function textParts(value: string): { text: string; href?: string }[] {
-  const parts: { text: string; href?: string }[] = [];
+interface TextPart {
+  text: string;
+  href?: string;
+}
+
+/** The text and address of a [text](https://…) match. */
+function linkPart(groups: Partial<Record<string, string>> | undefined): TextPart {
+  const { text = "", href } = groups ?? {};
+
+  return href === undefined ? { text } : { text, href };
+}
+
+function textParts(value: string): TextPart[] {
+  const parts: TextPart[] = [];
   let end = 0;
 
   for (const link of value.matchAll(/\[(?<text>[^\]]+)\]\((?<href>https?:\/\/[^)\s]+)\)/gu)) {
@@ -33,7 +45,7 @@ function textParts(value: string): { text: string; href?: string }[] {
       parts.push({ text: value.slice(end, link.index) });
     }
 
-    parts.push({ text: link.groups?.text ?? "", href: link.groups?.href });
+    parts.push(linkPart(link.groups));
     end = link.index + link[0].length;
   }
 
@@ -53,9 +65,8 @@ function stripScheme(url: string): string {
 function monthsBetween(from: string, to?: string): number {
   const [fromYear = 0, fromMonth = 1] = from.split("-").map(Number);
   const now = new Date();
-  const [toYear = now.getFullYear(), toMonth = now.getMonth() + 1] = to
-    ? to.split("-").map(Number)
-    : [];
+  const [toYear = now.getFullYear(), toMonth = now.getMonth() + 1] =
+    to !== undefined && to !== "" ? to.split("-").map(Number) : [];
 
   return (toYear - fromYear) * 12 + (toMonth - fromMonth);
 }

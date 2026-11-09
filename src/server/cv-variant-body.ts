@@ -1,104 +1,63 @@
 import "server-only";
-import type { CvVariant, EntryPick } from "../data/cv-variants";
+import { array, object, optional, string } from "zod/mini";
+import { parseInput, requireSlug, stringList, text, trimmed } from "./input";
+import type { CvVariant } from "../data/cv-variants";
 import { HttpError } from "./http";
-import { isLayoutStep } from "../data/cv-print-layout";
+import { cvLayoutSchema } from "../data/cv-print-layout";
 
 /**
  * A variant as the desk sends it. A tab opened before a deploy may lack the
  * newer fields: no note counts as empty, no core technologies or layout keeps
  * the stored ones.
  */
-type CvLayout = CvVariant["layout"];
-
 type VariantBody = Omit<CvVariant, "coreTechnologies" | "layout"> & {
-  coreTechnologies?: string[];
-  layout?: CvLayout;
+  coreTechnologies?: CvVariant["coreTechnologies"];
+  layout?: CvVariant["layout"];
 };
 
-// URL slug: lowercase words joined by single hyphens, e.g. "ai-platform".
-const VARIANT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 // Ids taken by desk pages under /desk/cv, e.g. /desk/cv/projects.
 const RESERVED_IDS = new Set(["education", "experience", "profile", "projects", "skills"]);
+const NOT_VARIANT = "Not a CV variant.";
 
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string");
-}
+const idsSchema = array(string(NOT_VARIANT), NOT_VARIANT);
+const pickSchema = object({ id: string(NOT_VARIANT), bullets: idsSchema }, NOT_VARIANT);
+const picksSchema = array(pickSchema, NOT_VARIANT);
 
-function isPicks(value: unknown): value is EntryPick[] {
-  return (
-    Array.isArray(value) &&
-    value.every(
-      (pick: Partial<EntryPick> | null) =>
-        typeof pick?.id === "string" && isStringArray(pick.bullets),
-    )
-  );
-}
-
-function isLayout(value: unknown): value is CvLayout {
-  const layout = value as Partial<Record<keyof CvLayout, unknown>> | null;
-
-  return (
-    typeof layout === "object" &&
-    layout !== null &&
-    isLayoutStep("spacing", layout.spacing) &&
-    isLayoutStep("textSize", layout.textSize) &&
-    isLayoutStep("margin", layout.margin)
-  );
-}
-
-function isVariant(value: Partial<CvVariant>): boolean {
-  return (
-    typeof value.label === "string" &&
-    value.label.trim() !== "" &&
-    (value.note === undefined || typeof value.note === "string") &&
-    typeof value.role === "string" &&
-    typeof value.summary === "string" &&
-    (value.coreTechnologies === undefined || isStringArray(value.coreTechnologies)) &&
-    isPicks(value.experience) &&
-    isPicks(value.education) &&
-    isStringArray(value.projects) &&
-    isStringArray(value.skills) &&
-    (value.layout === undefined || isLayout(value.layout))
-  );
-}
+const variantSchema = object(
+  {
+    label: text(NOT_VARIANT),
+    note: optional(trimmed(NOT_VARIANT)),
+    role: trimmed(NOT_VARIANT),
+    summary: trimmed(NOT_VARIANT),
+    coreTechnologies: optional(stringList(NOT_VARIANT)),
+    experience: picksSchema,
+    education: picksSchema,
+    projects: idsSchema,
+    skills: idsSchema,
+    layout: optional(cvLayoutSchema),
+  },
+  NOT_VARIANT,
+);
 
 /**
  * Checks the shape of a variant sent by the desk; the route's id wins over
- * any id in the body. Whether its ids exist in cv.ts is saveVariant's check.
+ * any id in the body. Whether its ids exist in the content is saveVariant's check.
  */
 function parseVariantBody(id: string, body: unknown): VariantBody {
-  const value = (body ?? {}) as Partial<CvVariant>;
-
-  if (!VARIANT_ID.test(id)) {
-    throw new HttpError(400, `"${id}" is no valid id: use lowercase letters, digits and hyphens.`);
-  }
+  requireSlug(id);
 
   if (RESERVED_IDS.has(id)) {
     throw new HttpError(400, `"${id}" is taken by a desk page.`);
   }
 
-  if (!isVariant(value)) {
-    throw new HttpError(400, "Not a CV variant.");
-  }
-
-  const variant = value as CvVariant;
+  const { note, coreTechnologies, layout, ...variant } = parseInput(variantSchema, body ?? {});
 
   return {
     id,
-    label: variant.label.trim(),
-    note: (variant.note ?? "").trim(),
-    role: variant.role.trim(),
-    summary: variant.summary.trim(),
-    coreTechnologies: variant.coreTechnologies?.map((item) => item.trim()).filter(Boolean),
-    experience: variant.experience,
-    education: variant.education,
-    projects: variant.projects,
-    skills: variant.skills,
-    layout: variant.layout && {
-      spacing: variant.layout.spacing,
-      textSize: variant.layout.textSize,
-      margin: variant.layout.margin,
-    },
+    ...variant,
+    note: note ?? "",
+    ...(coreTechnologies === undefined ? {} : { coreTechnologies }),
+    ...(layout === undefined ? {} : { layout }),
   };
 }
 

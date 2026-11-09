@@ -150,7 +150,7 @@ async function saveVariant(variant: VariantBody, { create }: { create: boolean }
       content,
     );
   } catch (error) {
-    throw new HttpError(400, (error as Error).message);
+    throw new HttpError(400, error instanceof Error ? error.message : String(error));
   }
 
   await useDb().transaction(async (tx) => {

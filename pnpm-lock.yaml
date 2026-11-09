@@ -175,9 +175,6 @@ importers:
       '@nuxtjs/color-mode':
         specifier: ^4.1.0
         version: 4.1.0(@nuxt/schema@4.6.4)(confbox@0.3.2)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(rolldown@1.2.18)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.18)(rollup@4.67.5)(vite@8.3.7(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))
-      '@remix-run/cookie':
-        specifier: 1.0.2
-        version: 1.0.2
       '@solidjs/meta':
         specifier: 1.0.0-next.2
         version: 1.0.0-next.2(@solidjs/web@2.0.0-rc.21(solid-js@2.0.0-rc.21))(solid-js@2.0.0-rc.21)
@@ -193,6 +190,9 @@ importers:
       drizzle-orm:
         specifier: ^0.45.4
         version: 0.45.4(postgres@4.0.0)
+      h3:
+        specifier: 2.0.8
+        version: 2.0.8(crossws@0.4.17(srvx@1.0.8))(ocache@0.3.1)
       nitro:
         specifier: 3.0.261103-rc
         version: 3.0.261103-rc
@@ -1620,12 +1620,6 @@ packages:
         optional: true
       yauzl:
         optional: true
-
-  '@remix-run/cookie@1.0.2':
-    resolution: {integrity: sha512-x8VHSWzF0f4Emzg+k4v1+UV0S+EkbhHLvW6WbHTOLMB1QOEqISn31VwZoFUvaHoHtpiUjjkdAbspzKPYhM1/fw==}
-
-  '@remix-run/headers@1.1.0':
-    resolution: {integrity: sha512-Rmzn+WesET0EfVukEHYYKT6RV9HYQb9WGdda3oWedQJXCoHnrXgaQc39DdwZ2rztI05izBAOF1HEHmEpGtjKHQ==}
 
   '@rolldown/binding-android-arm-eabi@1.2.18':
     resolution: {integrity: sha512-ubTG+4KlidvioxjOFdsdEa2F6JVGZb8m2ByJUqQ7fYzUeT1cEn194POcsQ10PKH4p//q0YQn4SB3YpSuzcA1Yg==}
@@ -5886,12 +5880,6 @@ snapshots:
     dependencies:
       modern-tar: 0.8.6
       yargs: 18.2.0
-
-  '@remix-run/cookie@1.0.2':
-    dependencies:
-      '@remix-run/headers': 1.1.0
-
-  '@remix-run/headers@1.1.0': {}
 
   '@rolldown/binding-android-arm-eabi@1.2.18':
     optional: true

@@ -13,6 +13,12 @@
     "isolatedModules": true,
     "noEmit": true,
     "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "useUnknownInCatchVariables": true,
     "skipLibCheck": true,
     "types": ["vite/client"]
   },

@@ -16,9 +16,16 @@ async function pageFill(pdf: Pdf, pageNumber: number, margin: number) {
   const { items } = await page.getTextContent();
 
   // PDF y runs bottom-up, so the lowest line of text has the smallest baseline.
-  const baselines = items.flatMap((item) =>
-    "str" in item && item.str.trim() ? [item.transform[5] as number] : [],
-  );
+  // pdf.js types the transform matrix as any[]: check each baseline is a number.
+  const baselines = items.flatMap((item) => {
+    if (!("str" in item) || item.str.trim() === "") {
+      return [];
+    }
+
+    const baseline: unknown = item.transform[5];
+
+    return typeof baseline === "number" ? [baseline] : [];
+  });
 
   if (baselines.length === 0) {
     return 0;

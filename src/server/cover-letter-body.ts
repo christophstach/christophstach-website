@@ -1,69 +1,37 @@
 import "server-only";
+import { emptyOrMatching, parseInput, requireSlug, text, trimmed } from "./input";
+import { literal, object } from "zod/mini";
 import { COVER_LETTER_LANGUAGES } from "../data/cover-letter-wording";
 import type { CoverLetter } from "../data/cover-letters";
-import { HttpError } from "./http";
 
-// URL slug: lowercase words joined by single hyphens, e.g. "acme-frontend".
-const LETTER_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
+const NOT_LETTER = "Not a cover letter.";
 
-const TEXT_FIELDS = [
-  "label",
-  "note",
-  "variantId",
-  "company",
-  "recipient",
-  "jobTitle",
-  "jobUrl",
-  "jobDescription",
-  "letterDate",
-  "subject",
-  "salutation",
-  "body",
-  "closing",
-] as const;
-
-function isLetter(value: Partial<CoverLetter>): boolean {
-  return (
-    TEXT_FIELDS.every((field) => typeof value[field] === "string") &&
-    value.label?.trim() !== "" &&
-    value.company?.trim() !== "" &&
-    (value.letterDate === "" || ISO_DATE.test(value.letterDate ?? "")) &&
-    COVER_LETTER_LANGUAGES.some((language) => language === value.language)
-  );
-}
+const coverLetterSchema = object(
+  {
+    label: text(NOT_LETTER),
+    note: trimmed(NOT_LETTER),
+    variantId: trimmed(NOT_LETTER),
+    company: text(NOT_LETTER),
+    recipient: trimmed(NOT_LETTER),
+    jobTitle: trimmed(NOT_LETTER),
+    jobUrl: trimmed(NOT_LETTER),
+    jobDescription: trimmed(NOT_LETTER),
+    language: literal(COVER_LETTER_LANGUAGES, NOT_LETTER),
+    letterDate: emptyOrMatching(ISO_DATE, NOT_LETTER),
+    subject: trimmed(NOT_LETTER),
+    salutation: trimmed(NOT_LETTER),
+    body: trimmed(NOT_LETTER),
+    closing: trimmed(NOT_LETTER),
+  },
+  NOT_LETTER,
+);
 
 /** Checks the shape of a cover letter sent by the desk; the route's id wins. */
 function parseCoverLetterBody(id: string, body: unknown): CoverLetter {
-  const value = (body ?? {}) as Partial<CoverLetter>;
+  requireSlug(id);
 
-  if (!LETTER_ID.test(id)) {
-    throw new HttpError(400, `"${id}" is no valid id: use lowercase letters, digits and hyphens.`);
-  }
-
-  if (!isLetter(value)) {
-    throw new HttpError(400, "Not a cover letter.");
-  }
-
-  const letter = value as CoverLetter;
-
-  return {
-    id,
-    label: letter.label.trim(),
-    note: letter.note.trim(),
-    variantId: letter.variantId.trim(),
-    company: letter.company.trim(),
-    recipient: letter.recipient.trim(),
-    jobTitle: letter.jobTitle.trim(),
-    jobUrl: letter.jobUrl.trim(),
-    jobDescription: letter.jobDescription.trim(),
-    language: letter.language,
-    letterDate: letter.letterDate,
-    subject: letter.subject.trim(),
-    salutation: letter.salutation.trim(),
-    body: letter.body.trim(),
-    closing: letter.closing.trim(),
-  };
+  return { id, ...parseInput(coverLetterSchema, body ?? {}) };
 }
 
 export { parseCoverLetterBody };

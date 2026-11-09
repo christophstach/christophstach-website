@@ -36,7 +36,7 @@ function printedLetter(
     body: letter.body,
     closing: letter.closing,
     profile,
-    role: variantRole || profile.role,
+    role: variantRole === undefined || variantRole === "" ? profile.role : variantRole,
   };
 }
 

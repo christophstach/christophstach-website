@@ -37,14 +37,14 @@ function connect(url: string) {
   return drizzle(client, { schema, casing: "snake_case" });
 }
 
-let database: ReturnType<typeof connect> | false = false;
+let database: ReturnType<typeof connect> | undefined;
 
 /** The database, connected on first use. Vercel's Neon integration sets DATABASE_URL. */
 function useDb() {
-  if (!database) {
+  if (database === undefined) {
     const url = env.DATABASE_URL;
 
-    if (!url) {
+    if (url === undefined || url === "") {
       throw new Error("No database configured: set DATABASE_URL (see .env.example).");
     }
 

@@ -1,4 +1,5 @@
 // Relative imports only: the server checks and stores layouts with this too.
+import { custom, object, safeParse, catch as withFallback } from "zod/mini";
 
 /**
  * How a variant's PDF uses its pages: fixed steps on the one design, so a
@@ -27,14 +28,29 @@ function isLayoutStep<Key extends keyof CvLayoutSteps>(
 }
 
 /** A stored or sent layout with every unknown or missing step back to normal. */
-function normalizeCvLayout(value: unknown): CvLayout {
-  const layout = (value ?? {}) as Record<string, unknown>;
+/** A schema for one layout step, e.g. "normal" or "airy" for the spacing. */
+function layoutStep<Key extends keyof CvLayoutSteps>(key: Key) {
+  return custom<CvLayout[Key]>((value) => isLayoutStep(key, value), `Unknown ${key} step.`);
+}
 
-  return {
-    spacing: isLayoutStep("spacing", layout.spacing) ? layout.spacing : "normal",
-    textSize: isLayoutStep("textSize", layout.textSize) ? layout.textSize : "normal",
-    margin: isLayoutStep("margin", layout.margin) ? layout.margin : "normal",
-  };
+/** A complete, valid layout. */
+const cvLayoutSchema = object({
+  spacing: layoutStep("spacing"),
+  textSize: layoutStep("textSize"),
+  margin: layoutStep("margin"),
+});
+
+/** Any stored value as a layout: unknown or missing steps become "normal". */
+const storedLayoutSchema = object({
+  spacing: withFallback(layoutStep("spacing"), "normal"),
+  textSize: withFallback(layoutStep("textSize"), "normal"),
+  margin: withFallback(layoutStep("margin"), "normal"),
+});
+
+function normalizeCvLayout(value: unknown): CvLayout {
+  const result = safeParse(storedLayoutSchema, value ?? {});
+
+  return result.success ? result.data : DEFAULT_CV_LAYOUT;
 }
 
 /**
@@ -64,6 +80,7 @@ export type { CvLayout };
 export {
   CV_LAYOUT_STEPS,
   DEFAULT_CV_LAYOUT,
+  cvLayoutSchema,
   isLayoutStep,
   layoutFromQuery,
   layoutQuery,

@@ -44,7 +44,7 @@ function pageStatus(fills: number[]): { tone: "ok" | "warn" | "none"; text: stri
 
   const [warning] = layoutWarnings(fills);
 
-  if (warning) {
+  if (warning !== undefined) {
     return { tone: "warn", text: warning.split(":")[0]?.replace(/\.$/u, "") ?? warning };
   }
 
