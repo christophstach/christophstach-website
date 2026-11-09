@@ -1,0 +1,116 @@
+.page {
+  padding-block: var(--space-16);
+}
+
+.page__kicker {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.page__kicker .terminal__prompt {
+  color: var(--color-accent);
+  font-weight: var(--font-bold);
+}
+
+.page__title {
+  margin-top: var(--space-2);
+  font-size: clamp(var(--text-4xl), 5vw, var(--text-5xl));
+  font-weight: var(--font-bold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.page__intro {
+  max-width: var(--content-max);
+  margin-top: var(--space-6);
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-soft);
+}
+
+.page__actions {
+  margin-top: var(--space-6);
+}
+
+.page__columns {
+  display: grid;
+  gap: var(--space-14);
+  margin-top: var(--space-14);
+}
+
+@media (min-width: 64rem) {
+  .page__columns {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-10);
+  }
+}
+
+.page__section-label {
+  display: block;
+  margin-bottom: var(--space-8);
+}
+
+.projects {
+  margin-top: var(--space-16);
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--color-rule);
+}
+
+.projects__grid {
+  display: grid;
+  gap: var(--space-5);
+  list-style: none;
+}
+
+@media (min-width: 48rem) {
+  .projects__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.projects__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+}
+
+.projects__title {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+}
+
+.projects__prompt {
+  color: var(--color-accent);
+}
+
+.projects__link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-underline-offset: 0.2em;
+}
+
+.projects__link:hover {
+  color: var(--color-accent);
+}
+
+.projects__description {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-soft);
+}
+
+.projects__tech {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1-5);
+  margin-top: auto;
+  padding-top: var(--space-1);
+  list-style: none;
+}

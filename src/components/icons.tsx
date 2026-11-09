@@ -80,4 +80,26 @@ export function IconDownload(props: IconProps): JSX.Element {
   );
 }
 
+export function IconBriefcase(props: IconProps): JSX.Element {
+  return (
+    <TablerIcon
+      {...props}
+      path="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zm5-2V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m-4 5v.01M3 13a20 20 0 0 0 18 0"
+    />
+  );
+}
+
+export function IconSchool(props: IconProps): JSX.Element {
+  return <TablerIcon {...props} path="M22 9L12 5L2 9l10 4zv6M6 10.6V16a6 3 0 0 0 12 0v-5.4" />;
+}
+
+export function IconFileTypePdf(props: IconProps): JSX.Element {
+  return (
+    <TablerIcon
+      {...props}
+      path="M14 3v4a1 1 0 0 0 1 1h4M5 12V5a2 2 0 0 1 2-2h7l5 5v4M5 18h1.5a1.5 1.5 0 0 0 0-3H5v6m12-3h2m1-3h-3v6m-6-6v6h1a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2z"
+    />
+  );
+}
+
 export type { IconProps };

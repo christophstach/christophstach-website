@@ -12,5 +12,41 @@ const cvHomeSchema = object({ experience: array(jobSchema), skills: array(skillG
 
 type CvHome = output<typeof cvHomeSchema>;
 
-export type { CvHome };
-export { cvHomeSchema, skillGroupSchema };
+const stringsSchema = array(string());
+const linkSchema = object({ text: string(), href: string() });
+const linksSchema = array(linkSchema);
+
+/** An entry as a variant prints it: only the picked bullets, in order. */
+const printedEntrySchema = object({
+  id: string(),
+  title: string(),
+  organization: string(),
+  location: optional(string()),
+  from: string(),
+  to: optional(string()),
+  tech: optional(stringsSchema),
+  bullets: stringsSchema,
+  links: optional(linksSchema),
+});
+
+const projectSchema = object({
+  id: string(),
+  title: string(),
+  description: string(),
+  tech: array(string()),
+  url: string(),
+});
+
+/** GET /api/cv-website: what /curriculum shows of the website variant. */
+const cvWebsiteSchema = object({
+  experience: array(printedEntrySchema),
+  education: array(printedEntrySchema),
+  projects: array(projectSchema),
+});
+
+type CvWebsite = output<typeof cvWebsiteSchema>;
+type CvWebsiteEntry = output<typeof printedEntrySchema>;
+type CvWebsiteProject = output<typeof projectSchema>;
+
+export type { CvHome, CvWebsite, CvWebsiteEntry, CvWebsiteProject };
+export { cvHomeSchema, cvWebsiteSchema, skillGroupSchema };

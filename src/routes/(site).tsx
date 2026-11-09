@@ -12,6 +12,7 @@ const PAGE_TITLES: Partial<Record<string, { title: string; ogTitle: string }>> =
     title: "Senior Software Engineer in Berlin",
     ogTitle: "Christoph Stach, Senior Software Engineer in Berlin",
   },
+  "/curriculum": { title: "Curriculum", ogTitle: "Curriculum · Christoph Stach" },
 };
 
 /** Public pages: the site chrome and head around each page. */
