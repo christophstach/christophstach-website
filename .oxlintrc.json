@@ -13,6 +13,9 @@
   },
   "rules": {
     "eqeqeq": "error",
+    // Solid props are read-only proxies typed as plain objects; marking every component
+    // parameter Readonly<> adds noise without catching anything.
+    "typescript/prefer-readonly-parameter-types": "off",
     "no-duplicate-imports": ["error", { "allowSeparateTypeImports": true }],
     "no-console": "error",
     "no-debugger": "error",

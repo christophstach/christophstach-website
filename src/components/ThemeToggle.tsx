@@ -2,7 +2,7 @@ import { COLOR_MODES, THEME_COLORS, colorModeCookie } from "../lib/color-mode";
 import { IconDeviceDesktop, IconMoon, IconSun } from "./icons";
 import { createSignal, onSettled } from "solid-js";
 import type { ColorMode } from "../lib/color-mode";
-import { Dynamic } from "@solidjs/web";
+import { dynamic } from "@solidjs/web";
 
 const ICONS = { system: IconDeviceDesktop, light: IconSun, dark: IconMoon };
 
@@ -44,8 +44,12 @@ export function ThemeToggle(props: { initial: ColorMode }) {
 
     media.addEventListener("change", follow);
 
-    return () => media.removeEventListener("change", follow);
+    return () => {
+      media.removeEventListener("change", follow);
+    };
   });
+
+  const Icon = dynamic(() => ICONS[mode()]);
 
   return (
     <button
@@ -55,7 +59,7 @@ export function ThemeToggle(props: { initial: ColorMode }) {
       title={`Color scheme: ${mode()}`}
       onClick={cycle}
     >
-      <Dynamic component={ICONS[mode()]} size={20} />
+      <Icon size={20} />
     </button>
   );
 }

@@ -8,6 +8,7 @@ export default defineConfig({
   out: "./server/db/migrations",
   casing: "snake_case",
   dbCredentials: {
-    url: process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || "",
+    // The first non-empty one: Vercel may set a variable to an empty string.
+    url: [process.env.DATABASE_URL_UNPOOLED, process.env.DATABASE_URL].find(Boolean) ?? "",
   },
 });

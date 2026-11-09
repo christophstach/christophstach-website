@@ -83,6 +83,23 @@ In the browser (dark OS setting, no cookie): no light flash on reload; clicking 
 
 - [ ] **Step 6:** Commit "Remember the color mode in a cookie".
 
+### Task 2b: TypeScript 7 and type-aware oxlint (added by Christoph, 2026-11-09)
+
+**Files:**
+- Modify: `package.json`, `pnpm-lock.yaml`, `.oxlintrc.json` (or the CLI flags in the `lint` script), `tsconfig.json` only if TS 7 requires it
+
+**Requirements:**
+- Upgrade `typescript` to exactly `7.0.2` (pinned, no `^`). `pnpm typecheck` keeps running `tsc --noEmit` (now the Go-native compiler) and passes.
+- Add `oxlint-tsgolint` pinned to exactly `7.0.2006`; bump `oxlint` to exactly `1.93.0`. Enable type-aware linting (`--type-aware`) in `pnpm lint` / `lint:fix`. Do NOT add `--type-check` (tsc stays the separate typecheck).
+- Type-aware lint covers only the new code (Nuxt sources stay ignored as in Task 1). Fix any new type-aware findings in the new code (`src/`, `env.ts`, `vite.config.ts`, `server/db`); rules may be disabled only with a one-line reason in `.oxlintrc.json`.
+- Nuxt's own `typecheck`/`vue-tsc` is no longer used (scripts already switched in Task 1); if `vue-tsc` or Nuxt break with TS 7 at install time, note it — they are removed in Task 13 — but `pnpm dev`, `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check` must all pass.
+
+- [ ] **Step 1:** Upgrade and configure as above.
+- [ ] **Step 2: Verify**
+Run: `pnpm exec tsc --version` → `Version 7.0.2`.
+Run: `pnpm typecheck && pnpm lint && pnpm format:check && pnpm build` → all exit 0; the lint output shows type-aware rules ran (e.g. state the tsgolint invocation/time in the report).
+- [ ] **Step 3:** Commit "Typecheck with TypeScript 7 and lint with types".
+
 ### Task 3: Server data layer
 
 **Files:**
