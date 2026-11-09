@@ -7,12 +7,13 @@ import { useLocation } from "@solidjs/router";
  * Titles of the public pages. Their pages are server components, whose head
  * tags don't reach the document head, so the layout renders them.
  */
-const PAGE_TITLES: Partial<Record<string, { title: string; ogTitle: string }>> = {
+const PAGE_TITLES: Partial<Record<string, { title: string; ogTitle?: string; robots?: string }>> = {
   "/": {
     title: "Senior Software Engineer in Berlin",
     ogTitle: "Christoph Stach, Senior Software Engineer in Berlin",
   },
   "/curriculum": { title: "Curriculum", ogTitle: "Curriculum · Christoph Stach" },
+  "/login": { title: "Sign in", robots: "noindex, nofollow" },
 };
 
 /** Public pages: the site chrome and head around each page. */
@@ -22,7 +23,12 @@ export default function Site(props: ParentProps) {
 
   return (
     <SiteLayout>
-      <SiteMeta path={location.pathname} title={page()?.title} ogTitle={page()?.ogTitle} />
+      <SiteMeta
+        path={location.pathname}
+        title={page()?.title}
+        ogTitle={page()?.ogTitle}
+        robots={page()?.robots}
+      />
       {props.children}
     </SiteLayout>
   );

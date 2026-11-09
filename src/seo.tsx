@@ -55,8 +55,8 @@ interface SiteMetaProps {
   title?: string | undefined;
   /** The title for link previews; defaults to the site name. */
   ogTitle?: string | undefined;
-  /** Keeps the page out of search results. */
-  noindex?: boolean;
+  /** A robots directive, e.g. "noindex, nofollow". */
+  robots?: string | undefined;
 }
 
 /**
@@ -86,7 +86,7 @@ export function SiteMeta(props: SiteMetaProps) {
       />
       <Meta name="twitter:card" content="summary_large_image" />
       <Meta name="twitter:image" content={OG_IMAGE} />
-      {props.noindex === true && <Meta name="robots" content="noindex" />}
+      {props.robots !== undefined && <Meta name="robots" content={props.robots} />}
       <Link rel="canonical" href={canonical()} />
       <Script type="application/ld+json" innerHTML={PERSON_JSON_LD} />
     </>

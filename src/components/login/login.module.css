@@ -1,0 +1,26 @@
+.login {
+  padding-block: var(--space-16);
+}
+
+.login__title {
+  font-size: clamp(var(--text-3xl), 5vw, var(--text-4xl));
+  font-weight: var(--font-bold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.login__intro {
+  max-width: var(--content-max);
+  margin-top: var(--space-4);
+  font-size: var(--text-lg);
+  color: var(--color-text-soft);
+}
+
+.login__error {
+  max-width: var(--content-max);
+  margin-top: var(--space-6);
+  color: var(--color-signal);
+}
+
+.login__action {
+  margin-top: var(--space-8);
+}
