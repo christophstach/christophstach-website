@@ -1,5 +1,15 @@
 {
   // docs/ holds plan documents whose code fences intentionally show partial,
   // in-context snippets; oxfmt reformats embedded HTML and breaks them.
-  "ignorePatterns": [".nuxt/**", ".output/**", "dist/**", "node_modules/**", "docs/**"]
+  // file-routes.d.ts and solid-env.d.ts are generated on every dev and build start.
+  "ignorePatterns": [
+    ".nuxt/**",
+    ".output/**",
+    ".vercel/**",
+    "dist/**",
+    "node_modules/**",
+    "docs/**",
+    "file-routes.d.ts",
+    "solid-env.d.ts"
+  ]
 }

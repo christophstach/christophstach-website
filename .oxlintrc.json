@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "import", "unicorn", "oxc", "vue", "promise", "node"],
+  "plugins": ["typescript", "import", "unicorn", "oxc", "promise", "node"],
   "env": {
     "browser": true
   },
@@ -15,6 +15,7 @@
     "eqeqeq": "error",
     "no-console": "error",
     "no-debugger": "error",
+    "no-underscore-dangle": ["error", { "allow": ["__BUILD_ID__"] }],
     "capitalized-comments": "off",
     "sort-keys": "off",
     "no-ternary": "off",
@@ -24,10 +25,28 @@
     "import/no-named-export": "off",
     "import/prefer-default-export": "off",
     "import/group-exports": "off",
+    "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
     "unicorn/filename-case": ["error", { "cases": { "kebabCase": true, "pascalCase": true } }]
   },
-  "ignorePatterns": [".nuxt", ".output", "dist", "node_modules"],
+  "ignorePatterns": [
+    ".nuxt",
+    ".output",
+    ".vercel",
+    "dist",
+    "node_modules",
+    "app",
+    "server/api",
+    "server/routes",
+    "server/utils",
+    "nuxt.config.ts",
+    "file-routes.d.ts",
+    "solid-env.d.ts"
+  ],
   "overrides": [
+    {
+      "files": ["src/server/**"],
+      "env": { "node": true, "browser": false }
+    },
     {
       "files": ["scripts/**"],
       "env": { "node": true, "browser": false },

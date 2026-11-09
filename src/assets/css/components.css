@@ -1,0 +1,524 @@
+/* Shared component classes used across pages — "Terminal" theme. */
+
+/* Buttons */
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2-5) var(--space-4);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  letter-spacing: var(--tracking-wide);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.button--primary {
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-weight: var(--font-semibold);
+}
+
+.button--primary:hover {
+  background-color: var(--color-accent-strong);
+  box-shadow: var(--glow-accent);
+}
+
+.button--outline {
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.button--outline::before {
+  content: "$";
+  color: var(--color-accent);
+}
+
+.button--outline:hover {
+  border-color: var(--color-accent);
+  color: var(--color-heading);
+}
+
+/* Icon-only variant, for links whose icon already names them. Drops the `$`
+   prefix, which reads as a prompt waiting for a command that never comes. */
+.button--icon {
+  padding-inline: var(--space-3);
+}
+
+.button--outline.button--icon::before {
+  content: none;
+}
+
+/* Chips / tags — rendered like bracketed tokens. */
+.chip {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-weight: var(--font-medium);
+}
+
+.chip--accent {
+  padding: 0.1rem var(--space-2);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-accent-subtle-bg);
+  color: var(--color-accent-subtle-text);
+  font-size: var(--text-xs);
+}
+
+/* Icon-only buttons and links (header, footer) */
+.icon-button {
+  display: inline-flex;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.icon-button:hover {
+  background-color: var(--color-hover);
+  color: var(--color-accent);
+}
+
+/* Section labels — comment-style markers. */
+.section-label {
+  display: inline-block;
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  letter-spacing: var(--tracking-wide);
+}
+
+.section-label::before {
+  content: "// ";
+  color: var(--color-text-muted);
+}
+
+/* Inline text links */
+.text-link {
+  color: var(--color-accent);
+  font-weight: var(--font-medium);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  transition: text-decoration-color var(--transition-fast);
+}
+
+.text-link:hover {
+  text-decoration-color: var(--color-accent);
+}
+
+/* Staggered page-load reveal. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal {
+  animation: rise-in 0.6s ease both;
+}
+
+/* Below the fold a load-time reveal has already finished by the time you scroll
+   to it, so tie those to the scroll position instead. Where scroll-driven
+   animations are unsupported the element is simply shown. */
+.reveal--scroll {
+  animation: rise-in 0.6s ease both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 12rem;
+}
+
+@supports not (animation-timeline: view()) {
+  .reveal--scroll {
+    animation: none;
+  }
+}
+
+/* Scroll-driven animations ignore duration, so the global reduced-motion
+   override does not reach them. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal--scroll {
+    animation: none;
+  }
+}
+
+/* Skip link, visible only when focused, so keyboard users can bypass the
+   navigation. Shared by every layout. */
+.skip-link {
+  position: fixed;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: calc(var(--z-header) + 1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-heading);
+  transform: translateY(calc(-100% - var(--space-4)));
+  transition: transform var(--transition-fast);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+/* The paper of the printed CV and cover letters, matching the site: IBM Plex
+   Sans for text, JetBrains Mono for labels and metadata, and the site's green
+   as the one accent. It is always printed light, so it fixes its palette here
+   instead of following the site's theme tokens. Sizes are px because the page
+   is laid out for A4. */
+.cv-paper {
+  --cv-text: #1b2321;
+  --cv-soft: #45504d;
+  --cv-muted: #6b7672;
+  --cv-rule: #d6dcda;
+  --cv-accent: #087a5e;
+  --cv-space: 1;
+  --cv-scale: 1;
+  /* The spacing step opens the lines a little too, so a looser page keeps
+     one rhythm instead of tight paragraphs between wide gaps. It never closes
+     them: lines this long need the 1.5 to stay readable. */
+  --cv-leading: calc(1.5 + max(var(--cv-space) - 1, 0) * 0.2);
+
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: calc(13px * var(--cv-scale));
+  line-height: var(--cv-leading);
+  color: var(--cv-text);
+}
+
+.cv-paper a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Form fields (desk): a mono label over a full-width control. */
+.field {
+  display: grid;
+  gap: var(--space-1-5);
+}
+
+.field__label {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.field__hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.input {
+  inline-size: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 1px;
+  border-color: var(--color-accent);
+}
+
+/* Textareas grow with their text, in height only: without the containment a
+   long line would also widen them, and every column around them, past the
+   screen on a phone. */
+textarea.input {
+  contain: inline-size;
+  field-sizing: content;
+  min-block-size: 2.75rem;
+  resize: vertical;
+}
+
+/* Small rounded tag for a variant's public role. */
+.role-tag {
+  display: inline-block;
+  padding: 0.1rem var(--space-2);
+  border-radius: var(--radius-full);
+  background-color: var(--color-accent-subtle-bg);
+  color: var(--color-accent-subtle-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+}
+
+/* Desk pages: the width and spacing shared by overviews and forms. */
+.desk-page {
+  display: grid;
+  align-content: start;
+  gap: var(--space-8);
+  max-inline-size: 72rem;
+  padding: var(--space-10) var(--space-6) var(--space-16);
+}
+
+@media (min-width: 48rem) {
+  .desk-page {
+    padding-inline: var(--space-12);
+    padding-block-start: var(--space-12);
+  }
+}
+
+/* A field across both columns of a form section card. */
+@media (min-width: 40rem) {
+  .field--wide {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Rows inside a form section card (bullets, links), divided by rules. */
+.form-rows {
+  display: grid;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.form-rows > li {
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.form-rows > li:first-child {
+  padding-top: 0;
+}
+
+.form-rows > li:last-child {
+  border-bottom: 0;
+}
+
+/* Page header of a desk page: path, title, a line below, actions on the right. */
+/* Divided from the page's content by a rule. */
+.desk-head {
+  display: flex;
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-rule);
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-6);
+}
+
+.desk-head__text {
+  display: grid;
+  flex: 1 1 14rem;
+  min-inline-size: 0;
+  gap: var(--space-2);
+}
+
+.desk-head__path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.desk-head__path a {
+  color: inherit;
+}
+
+.desk-head__path a:hover {
+  color: var(--color-accent);
+}
+
+.desk-head__title {
+  overflow-wrap: anywhere;
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  letter-spacing: var(--tracking-tight);
+}
+
+@media (max-width: 40rem) {
+  .desk-head__title {
+    font-size: var(--text-2xl);
+  }
+}
+
+.desk-head__sub {
+  color: var(--color-text-soft);
+}
+
+.desk-error {
+  font-size: var(--text-sm);
+  color: var(--color-signal);
+}
+
+/* A desk-only note in a list: what an entry, group, project or variant is for. */
+.desk-note {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* A label, an address and a remove button; the address wraps below on phones. */
+.link-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.link-row__href {
+  grid-row: 2;
+}
+
+@media (min-width: 40rem) {
+  .link-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  }
+
+  .link-row__href {
+    grid-row: auto;
+  }
+}
+
+/* A panel on the page: a head row with the title and a short note, then the
+   body. Desk forms and the variant editor are built from these. */
+/* One column that may shrink below its content, so a long line inside (a
+   nowrap label, a wide input) can't push the panel past a phone screen. */
+.panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+}
+
+.panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.panel__title {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-heading);
+}
+
+.panel__note {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* Pushed to the end of the head row, e.g. an "Edit …" link or a menu. */
+.panel__end {
+  margin-inline-start: auto;
+}
+
+.panel__body {
+  padding: var(--space-5);
+}
+
+/* A stack of panels. */
+.panels {
+  display: grid;
+  gap: var(--space-6);
+}
+
+/* What a panel says when it has nothing to list. */
+.panel__empty {
+  padding: var(--space-5);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* A list that fills a panel: rows divided by a rule, each one a link. */
+.panel__rows {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.panel__rows > li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.panel__rows > li:last-child > .panel-row {
+  border-end-start-radius: var(--radius-lg);
+  border-end-end-radius: var(--radius-lg);
+}
+
+.panel-row {
+  display: grid;
+  gap: var(--space-1-5);
+  padding: var(--space-4) var(--space-5);
+  color: var(--color-text);
+  transition: background-color var(--transition-fast);
+}
+
+.panel-row:hover {
+  background-color: var(--color-hover);
+}
+
+.panel-row:focus-visible {
+  outline-offset: -2px;
+}
+
+.panel-row__label {
+  font-weight: var(--font-semibold);
+  color: var(--color-heading);
+}
+
+.panel-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-5);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+/* A page check's result: a dot, and the text in the tone of the result. */
+.desk-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+}
+
+.desk-status::before {
+  content: "";
+  flex: none;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-border-strong);
+}
+
+.desk-status--ok::before {
+  background-color: var(--color-accent);
+}
+
+.desk-status--warn {
+  color: var(--color-signal);
+}
+
+.desk-status--warn::before {
+  background-color: var(--color-signal);
+}

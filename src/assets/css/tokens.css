@@ -1,0 +1,205 @@
+/*
+ * Design tokens — "Terminal" theme
+ *
+ * An engineering-console aesthetic: monospaced UI, phosphor-green accent,
+ * deep charcoal surfaces, hairline grid. Long-form prose uses IBM Plex Sans
+ * for readability; everything structural is JetBrains Mono.
+ *
+ * Two layers:
+ *   1. Primitives — raw scales (color palettes, type scale, spacing, radii, shadows).
+ *      Never reference these directly in components.
+ *   2. Semantic aliases — purpose-named tokens (--color-text, --color-accent, …).
+ *      Components consume only these; dark mode swaps them via the `.dark` class.
+ */
+
+:root {
+  /* ---------- Primitives ---------- */
+
+  /* Color palette: slate (cool charcoal) */
+  --slate-0: #ffffff;
+  --slate-50: #f5f7f7;
+  --slate-100: #e9eded;
+  --slate-200: #d4dadb;
+  --slate-300: #b0babb;
+  --slate-400: #7d8a8c;
+  --slate-500: #586466;
+  --slate-600: #3b4547;
+  --slate-700: #283133;
+  --slate-800: #18201f; /* slight green cast */
+  --slate-900: #0f1514;
+  --slate-950: #080b0a;
+
+  /* Color palette: phosphor (accent) */
+  --phosphor-100: #c7f9e6;
+  --phosphor-300: #6df2bd;
+  --phosphor-400: #34e6a3;
+  --phosphor-500: #14c98a;
+  --phosphor-600: #0aa372;
+  /* 700 is the light-mode accent and carries small text, so it is tuned to
+     clear 4.5:1 on both --color-bg and --color-surface. */
+  --phosphor-700: #087a5e;
+  --phosphor-800: #065f45;
+  --phosphor-900: #062b21;
+  --phosphor-950: #04130d;
+
+  /* Color palette: red (destructive actions) */
+  --red-300: #ff7b7b;
+  /* 700 is the light-mode danger color and carries small text, like --amber-700. */
+  --red-700: #b4232a;
+
+  /* Color palette: amber (secondary signal) */
+  --amber-400: #ffb454;
+  --amber-500: #f59e0b;
+  /* 700 is the light-mode signal and carries small text, so it is tuned to
+     clear 4.5:1 on both --color-bg and --color-surface. */
+  --amber-700: #a14a08;
+
+  /* Typography */
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", "Menlo", monospace;
+  --font-body: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.95rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.9rem;
+  --text-4xl: 2.4rem;
+  --text-5xl: 3rem;
+  --text-6xl: 3.75rem;
+
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-extrabold: 800;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.05em;
+  --tracking-widest: 0.16em;
+
+  /* Spacing scale (4px base) */
+  --space-1: 0.25rem;
+  --space-1-5: 0.375rem;
+  --space-2: 0.5rem;
+  --space-2-5: 0.625rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-14: 3.5rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+
+  /* Radii — terminal UI is crisp; almost no rounding. */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.1875rem;
+  --radius-lg: 0.25rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 10px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 16px 30px -10px rgb(0 0 0 / 0.5);
+  --shadow-xl: 0 24px 50px -12px rgb(0 0 0 / 0.6);
+
+  /* Layout */
+  --container-max: 68rem;
+  --content-max: 46rem;
+  --header-height: 3.5rem;
+
+  /* Motion */
+  --transition-fast: 130ms ease;
+
+  /* Z-index */
+  --z-header: 20;
+
+  /* Effects */
+  --glow-accent: 0 0 0.4em color-mix(in srgb, var(--color-accent) 55%, transparent);
+
+  /* ---------- Semantic aliases (light: "daylight terminal") ---------- */
+
+  color-scheme: light;
+
+  --color-bg: var(--slate-50);
+  --color-bg-translucent: rgb(245 247 247 / 0.82);
+  --color-surface: var(--slate-100);
+
+  --color-heading: var(--slate-900);
+  --color-text: var(--slate-700);
+  --color-text-soft: var(--slate-600);
+  --color-text-muted: var(--slate-500);
+
+  --color-border: var(--slate-200);
+  --color-border-strong: var(--slate-300);
+  --color-rule: var(--slate-400);
+  --color-grid: rgb(11 21 20 / 0.04);
+
+  --color-hover: var(--slate-100);
+  --color-hover-text: var(--slate-900);
+
+  --color-accent: var(--phosphor-700);
+  --color-accent-strong: var(--phosphor-800);
+  --color-accent-contrast: var(--slate-50);
+  --color-accent-subtle-bg: var(--phosphor-100);
+  --color-accent-subtle-text: var(--phosphor-700);
+  --color-ring: rgb(8 122 94 / 0.3);
+
+  --color-signal: var(--amber-700);
+  --color-danger: var(--red-700);
+
+  /* The CV sheet in the desk: paper in the PDF's own colors, in both themes. */
+  --color-paper: var(--slate-0);
+  --color-paper-text: #1b2321;
+  --color-paper-soft: #45504d;
+  --color-paper-muted: #6b7672;
+  --color-paper-rule: #d6dcda;
+  --color-paper-accent: var(--phosphor-700);
+  --color-paper-shadow: 0 1px 2px rgb(11 21 20 / 0.06), 0 12px 32px -12px rgb(11 21 20 / 0.18);
+}
+
+.dark {
+  /* ---------- Semantic aliases (dark: classic phosphor terminal) ---------- */
+
+  color-scheme: dark;
+
+  --color-bg: var(--slate-950);
+  --color-bg-translucent: rgb(8 11 10 / 0.82);
+  --color-surface: var(--slate-900);
+
+  --color-heading: var(--slate-50);
+  --color-text: var(--slate-200);
+  --color-text-soft: var(--slate-300);
+  --color-text-muted: var(--slate-400);
+
+  --color-border: var(--slate-800);
+  --color-border-strong: var(--slate-700);
+  --color-rule: var(--slate-500);
+  --color-grid: rgb(52 230 163 / 0.05);
+
+  --color-hover: var(--slate-800);
+  --color-hover-text: var(--slate-0);
+
+  --color-accent: var(--phosphor-400);
+  --color-accent-strong: var(--phosphor-300);
+  --color-accent-contrast: var(--slate-950);
+  --color-accent-subtle-bg: var(--phosphor-950);
+  --color-accent-subtle-text: var(--phosphor-300);
+  --color-ring: rgb(52 230 163 / 0.3);
+
+  --color-signal: var(--amber-400);
+  --color-danger: var(--red-300);
+
+  --color-paper: #e8ecea;
+  --color-paper-shadow: 0 0 0 1px rgb(255 255 255 / 0.04), 0 16px 40px -12px rgb(0 0 0 / 0.6);
+}
