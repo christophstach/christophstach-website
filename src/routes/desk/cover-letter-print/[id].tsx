@@ -18,7 +18,9 @@ export default function CoverLetterPrint() {
       <Title>{`${COVER_LETTER_WORDING[letter().language].title} - ${letter().profile.name}`}</Title>
       <Meta name="robots" content="noindex, nofollow" />
       <Style>{`@page { size: A4; margin: ${COVER_LETTER_MARGIN_MM}mm; }`}</Style>
-      <CoverLetterDocument letter={letter()} />
+      <main>
+        <CoverLetterDocument letter={letter()} />
+      </main>
     </>
   );
 }

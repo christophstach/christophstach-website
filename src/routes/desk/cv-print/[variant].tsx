@@ -35,7 +35,9 @@ export default function DeskCvPrint() {
       {/* Chrome writes the title into the PDF's Title metadata. */}
       <Title>CV - Christoph Stach</Title>
       <Meta name="robots" content="noindex, nofollow" />
-      <CvDocument cv={cv()} />
+      <main>
+        <CvDocument cv={cv()} />
+      </main>
     </>
   );
 }
