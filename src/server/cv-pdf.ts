@@ -1,4 +1,5 @@
 import "server-only";
+import { COLOR_MODE_COOKIE } from "../lib/color-mode";
 import chromium from "@sparticuz/chromium";
 import { env } from "virtual:solid-env/server";
 import { launch } from "puppeteer-core";
@@ -101,10 +102,11 @@ export function renderPdf(request: Request, path: string, withSession = false) {
   let rendering = inFlight.get(url);
 
   if (rendering === undefined) {
-    rendering = renderQueued(
-      { url, cookies: withSession ? requestCookies(request) : previewAccess(request) },
-      lastRender,
-    );
+    const cookies = withSession ? requestCookies(request) : previewAccess(request);
+
+    // Paper is printed light, whatever theme the requester browses in.
+    cookies.set(COLOR_MODE_COOKIE, "light");
+    rendering = renderQueued({ url, cookies }, lastRender);
     inFlight.set(url, rendering);
     lastRender = rendering;
   }
