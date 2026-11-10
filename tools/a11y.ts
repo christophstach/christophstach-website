@@ -55,6 +55,9 @@ async function check(mode: (typeof MODES)[number], path: string): Promise<AxeRes
   await context.setCookie({ name: "color-mode", value: mode, domain: new URL(BASE_URL).hostname });
   const page = await context.newPage();
 
+  // Reveal animations would be measured half-faded; reduced motion turns them off.
+  await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
+
   await page.goto(new URL(path, BASE_URL).href, { waitUntil: "networkidle0" });
   await page.addScriptTag({ content: axeSource });
 
