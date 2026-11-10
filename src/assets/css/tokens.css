@@ -160,7 +160,8 @@
   --color-signal: var(--amber-700);
   --color-danger: var(--red-700);
 
-  /* The CV sheet in the desk: paper in the PDF's own colors, in both themes. */
+  /* The CV sheet in the desk: paper in the PDF's own colors, in both themes. Its
+     muted text only clears 4.5:1 on white, so the paper stays white in dark mode. */
   --color-paper: var(--slate-0);
   --color-paper-text: #1b2321;
   --color-paper-soft: #45504d;
@@ -203,6 +204,5 @@
   --color-signal: var(--amber-400);
   --color-danger: var(--red-300);
 
-  --color-paper: #e8ecea;
   --color-paper-shadow: 0 0 0 1px rgb(255 255 255 / 0.04), 0 16px 40px -12px rgb(0 0 0 / 0.6);
 }
