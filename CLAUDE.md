@@ -60,6 +60,11 @@ from `virtual:solid-env/server`); `.env.example` lists them.
   `feat(desk): add a CV section` or `fix(cv): keep the PDF on two pages`.
 - Every commit is atomic: it does exactly one thing, and on its own it builds and passes
   `pnpm lint` and `pnpm typecheck`. Split unrelated changes into separate commits.
+- lefthook (`lefthook.yml`, installed by `pnpm install`) enforces this: pre-commit refuses
+  `.env` files and runs secretlint (`.secretlintrc.json`), oxlint and oxfmt on the staged
+  files; commit-msg checks the Conventional Commits header; pre-push runs `pnpm typecheck` and
+  `pnpm build`. Never bypass them with `--no-verify`; fix the finding instead. A new secret env
+  variable goes into the pattern rule in `.secretlintrc.json`.
 
 ## Architecture
 

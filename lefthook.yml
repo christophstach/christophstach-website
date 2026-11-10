@@ -1,0 +1,38 @@
+# Git hooks (https://lefthook.dev), installed by `pnpm install`.
+# Bypassing them (`--no-verify`) skips the secret scan too: don't.
+
+pre-commit:
+  parallel: true
+  commands:
+    # No env file except the example, even when forced past .gitignore.
+    no-env-files:
+      glob: "{.env,.env.*,**/.env,**/.env.*}"
+      exclude: "**/.env.example"
+      run: |
+        echo "Refusing to commit {staged_files}: env files hold secrets. Only .env.example belongs in git." >&2
+        exit 1
+    secrets:
+      run: pnpm exec secretlint --maskSecrets {staged_files}
+    lint:
+      glob: "*.{ts,tsx}"
+      run: pnpm exec oxlint --type-aware {staged_files}
+    format:
+      glob: "*.{ts,tsx,js,mjs,json,css,md,yml,yaml}"
+      run: pnpm exec oxfmt --check {staged_files}
+
+commit-msg:
+  commands:
+    # Conventional Commits: type(scope)!: summary (see CLAUDE.md).
+    conventional:
+      run: |
+        head -n 1 {1} | grep -qE '^(feat|fix|refactor|perf|style|test|docs|build|ci|chore|revert)(\([a-z0-9/-]+\))?!?: .+' || {
+          echo "Commit message must follow Conventional Commits, e.g. 'feat(desk): add a CV section'." >&2
+          exit 1
+        }
+
+pre-push:
+  commands:
+    typecheck:
+      run: pnpm typecheck
+    build:
+      run: pnpm build
