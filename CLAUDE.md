@@ -2,24 +2,21 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-<!-- intent-skills:start -->
+## Solid skills
 
-## Skill Loading
+Solid 2 is neither Solid 1.x nor React. Its agent skills ship inside the installed packages,
+versioned with them; read the matching one before changing code:
 
-Use the repository’s installed Intent. If it is unavailable, report the missing dependency instead of downloading a replacement.
-Before editing files for a substantial task:
-
-- Run `pnpm exec intent list` from the workspace root to see available local skills.
-- If a listed skill matches the task, run `pnpm exec intent load <package>#<skill>` before changing files.
-- Use the loaded `SKILL.md` guidance while making the change.
-- Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
-- Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
-
-<!-- intent-skills:end -->
-
-The Solid skills ship inside the installed packages (`solid-js`, `@solidjs/web`,
-`@solidjs/diagnostics`, enabled in `package.json#intent.skills`). Load
-`solid-js#solid-2.0` before writing Solid code: Solid 2 is neither Solid 1.x nor React.
+- `node_modules/solid-js/skills/solid-2.0/SKILL.md` — the primer; read it before writing any
+  Solid code.
+- `node_modules/solid-js/skills/solid-2.0-cheatsheet/SKILL.md` — exact signatures, and the 1.x
+  APIs that no longer exist.
+- `node_modules/solid-js/skills/reactivity-diagnostics/SKILL.md` — the repair for each `[CODE]`
+  diagnostic the dev server prints.
+- `node_modules/@solidjs/web/skills/server-components/SKILL.md` — server components and their
+  slots (the `"use server"` pages).
+- `node_modules/@solidjs/diagnostics/skills/agent-loops/SKILL.md` — checking reactive code with
+  evidence instead of reading it.
 
 ## What this is
 

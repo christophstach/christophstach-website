@@ -34,7 +34,6 @@
   "devDependencies": {
     "@solidjs/diagnostics": "2.0.0-rc.21",
     "@solidjs/vite-plugin": "3.0.0-next.57",
-    "@tanstack/intent": "^0.5.6",
     "@types/node": "24.19.2",
     "drizzle-kit": "^0.31.11",
     "filesystem-routing": "0.5.0",
@@ -47,11 +46,5 @@
   "engines": {
     "node": "24.x"
   },
-  "packageManager": "pnpm@12.16.1",
-  "intent": {
-    "skills": [
-      "solid-js",
-      "@solidjs/*"
-    ]
-  }
+  "packageManager": "pnpm@12.16.1"
 }
