@@ -110,20 +110,20 @@ function Bullets(props: BulletsProps) {
     >
       <Show when={props.form.bullets.length > 0}>
         <ol class="form-rows">
-          <For each={props.form.bullets}>
+          <For each={props.form.bullets} keyed={(bullet) => bullet.id}>
             {(bullet, index) => (
               <li
                 class={[
                   styles.bullet,
-                  { [styles["bullet--dragged"] ?? ""]: drag.dragged() === bullet.id },
+                  { [styles["bullet--dragged"] ?? ""]: drag.dragged() === bullet().id },
                 ]}
                 draggable="true"
                 onDragStart={(event) => {
-                  drag.start(bullet.id, event);
+                  drag.start(bullet().id, event);
                 }}
                 onDragOver={(event) => {
                   event.preventDefault();
-                  drag.over(bullet.id);
+                  drag.over(bullet().id);
                 }}
                 onDrop={(event) => {
                   event.preventDefault();
@@ -138,7 +138,7 @@ function Bullets(props: BulletsProps) {
                   aria-label="Move bullet: arrow up or down"
                   title="Drag, or use the arrow keys"
                   onKeyDown={(event) => {
-                    drag.key(bullet.id, event);
+                    drag.key(bullet().id, event);
                   }}
                 >
                   <IconGripVertical size={16} />
@@ -146,7 +146,7 @@ function Bullets(props: BulletsProps) {
 
                 <div class={styles.bullet__body}>
                   <textarea
-                    value={bullet.text}
+                    value={bullet().text}
                     onInput={(event) => {
                       const { value } = event.currentTarget;
 
@@ -161,11 +161,11 @@ function Bullets(props: BulletsProps) {
                     class={["input", styles.bullet__text]}
                     rows="2"
                     required
-                    aria-label={`Bullet ${bullet.id}`}
+                    aria-label={`Bullet ${bullet().id}`}
                   />
                   <span class={styles.bullet__meta}>
-                    {props.usedBy(bullet.id).length > 0
-                      ? `in ${props.usedBy(bullet.id).join(", ")}`
+                    {props.usedBy(bullet().id).length > 0
+                      ? `in ${props.usedBy(bullet().id).join(", ")}`
                       : "in no variant"}
                   </span>
                 </div>
@@ -176,7 +176,7 @@ function Bullets(props: BulletsProps) {
                   aria-label="Remove bullet"
                   title="Remove bullet"
                   onClick={() => {
-                    removeBullet(bullet.id);
+                    removeBullet(bullet().id);
                   }}
                 >
                   <IconTrash size={16} />
