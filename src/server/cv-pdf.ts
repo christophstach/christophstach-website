@@ -34,7 +34,13 @@ async function render({ url, cookies }: RenderJob): Promise<Uint8Array> {
     await browser.setCookie(
       ...[...cookies].map(([name, value]) => ({ name, value, domain: hostname })),
     );
-    await page.goto(url, { waitUntil: "networkidle0" });
+    const response = await page.goto(url, { waitUntil: "networkidle0" });
+
+    // ISR would cache whatever got printed, a login or error page included.
+    if (response === null || !response.ok()) {
+      throw new Error(`${url} answered ${response?.status() ?? "nothing"}.`);
+    }
+
     await page.evaluate("document.fonts.ready");
 
     // Paper size and margins come from the page's own @page rule.
@@ -79,6 +85,13 @@ function requestCookies(request: Request): Map<string, string> {
   return cookies;
 }
 
+/** Previews sit behind Vercel's deployment protection; its cookie lets Chrome in. */
+function previewAccess(request: Request): Map<string, string> {
+  const access = requestCookies(request).get("_vercel_jwt");
+
+  return new Map(access === undefined ? [] : [["_vercel_jwt", access]]);
+}
+
 /**
  * Prints a page of this site to PDF. Pass `withSession` for pages under /desk,
  * so Chrome gets past the desk guard with the requester's session.
@@ -89,7 +102,7 @@ export function renderPdf(request: Request, path: string, withSession = false) {
 
   if (rendering === undefined) {
     rendering = renderQueued(
-      { url, cookies: withSession ? requestCookies(request) : new Map<string, string>() },
+      { url, cookies: withSession ? requestCookies(request) : previewAccess(request) },
       lastRender,
     );
     inFlight.set(url, rendering);
