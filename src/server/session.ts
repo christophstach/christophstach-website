@@ -6,9 +6,9 @@ import { deskUserSchema } from "../data/desk-user";
 import { env } from "virtual:solid-env/server";
 import { safeParse } from "zod/mini";
 
-// The desk session: h3's sealed cookie (encrypted and signed), as Nuxt's
-// session was. SESSION_SECRET is comma-separated, newest first: the first
-// seals, every one unseals, so a secret can rotate without signing anyone out.
+// The desk session: h3's sealed cookie (encrypted and signed).
+// SESSION_SECRET is comma-separated, newest first: the first seals, every one
+// unseals, so a secret can rotate without signing anyone out.
 
 const SESSION_NAME = "desk-session";
 const MAX_AGE = 60 * 60 * 24 * 7;

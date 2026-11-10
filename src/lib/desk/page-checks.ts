@@ -7,7 +7,7 @@ interface Checkable {
   pageFills: number[];
 }
 
-// Shared by every desk page for the whole visit, like Nuxt's useState was.
+// Module state: shared by every desk page for the whole visit.
 const [running, setRunning] = createSignal<string[]>([]);
 const tried = new Set<string>();
 
