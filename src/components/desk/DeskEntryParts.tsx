@@ -2,6 +2,7 @@ import { For, Show } from "solid-js";
 import { IconGripVertical, IconPlus, IconTrash } from "../icons";
 import { DeskFormSection } from "./DeskFormSection";
 import type { EntryRecord } from "../../data/cv";
+import { setItems } from "../../lib/desk/picks";
 import styles from "./DeskEntryEditor.module.css";
 import { useDragReorder } from "../../lib/drag-reorder";
 
@@ -68,7 +69,10 @@ function Bullets(props: BulletsProps) {
     () => props.form.bullets.map((bullet) => bullet.id),
     (ids) => {
       props.setForm((draft) => {
-        draft.bullets = ids.flatMap((id) => draft.bullets.find((bullet) => bullet.id === id) ?? []);
+        setItems(
+          draft.bullets,
+          ids.flatMap((id) => draft.bullets.find((bullet) => bullet.id === id) ?? []),
+        );
       });
     },
   );
@@ -98,7 +102,10 @@ function Bullets(props: BulletsProps) {
     }
 
     props.setForm((draft) => {
-      draft.bullets = draft.bullets.filter((bullet) => bullet.id !== bulletId);
+      setItems(
+        draft.bullets,
+        draft.bullets.filter((bullet) => bullet.id !== bulletId),
+      );
     });
   }
 

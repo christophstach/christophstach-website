@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createSignal, untrack } from "solid-js";
 import { revalidate } from "@solidjs/router";
 
 interface Checkable {
@@ -25,7 +25,8 @@ async function checkMissing(variants: Checkable[], checkPages: CheckPages) {
     .filter((variant) => variant.pageFills.length === 0 && !tried.has(variant.id))
     .map((variant) => variant.id);
 
-  if (missing.length === 0 || running().length > 0) {
+  // Read untracked on purpose: this runs from an effect and must not re-run on its own writes.
+  if (missing.length === 0 || untrack(running).length > 0) {
     return;
   }
 

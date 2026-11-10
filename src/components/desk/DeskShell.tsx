@@ -1,8 +1,11 @@
 import { IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand } from "../icons";
-import { Show, createSignal } from "solid-js";
+import { Show, createEffect, createMemo, createSignal } from "solid-js";
 import { DeskNav } from "./DeskNav";
 import { DeskSession } from "./DeskSession";
 import type { ParentProps } from "solid-js";
+import { checkMissing } from "../../lib/desk/page-checks";
+import { checkVariantPages } from "../../lib/desk/variants";
+import { getDeskVariants } from "../../lib/desk/queries";
 import { pageCookie } from "../../lib/cookies";
 import { paths } from "../../router";
 import styles from "./DeskLayout.module.css";
@@ -13,6 +16,17 @@ const COLLAPSED_COOKIE = "desk-sidebar-collapsed";
 
 /** The desk's frame: the sidebar with its sections, the session, the page. */
 export function DeskShell(props: ParentProps) {
+  const variants = createMemo(() => getDeskVariants());
+
+  // After a deploy no variant has a page check on the new build; run them in
+  // the background (browser only) so the overview shows every page status.
+  createEffect(
+    () => variants().variants,
+    (list) => {
+      void checkMissing(list, (id) => checkVariantPages({ id }));
+    },
+  );
+
   const [collapsed, setCollapsed] = createSignal(pageCookie(COLLAPSED_COOKIE) === "true");
 
   function toggleCollapsed() {

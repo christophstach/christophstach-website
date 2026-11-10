@@ -28,7 +28,38 @@ export default defineConfig({
     fileRoutes({ httpMethods: true, types: true, serverComponents: true }),
     // Nitro serves the Solid handler and writes .vercel/output. serverDir
     // stays off (Nitro's default) so it never scans the Nuxt server/.
-    nitro({ preset: "vercel", serverDir: false }),
+    nitro({
+      preset: "vercel",
+      serverDir: false,
+      routeRules: {
+        // The public data and the CV PDF are cached (ISR) until the next
+        // deployment or until the desk changes them (on-demand revalidation
+        // with the bypass token). The pages that read the data render per
+        // request, so they can honour the color-mode cookie.
+        "/api/cv-home": { isr: true },
+        "/api/cv-website": { isr: true },
+        "/christoph-stach-cv.pdf": { isr: true },
+        "/about-me": { redirect: { to: "/", status: 301 } },
+        "/cv-print": { headers: { "X-Robots-Tag": "noindex, nofollow" } },
+        "/desk/**": { headers: { "X-Robots-Tag": "noindex, nofollow" } },
+        "/login": { headers: { "X-Robots-Tag": "noindex, nofollow" } },
+      },
+      vercel: {
+        // Read at build time: Vercel only revalidates ISR routes on demand for
+        // requests carrying this token (see revalidatePaths).
+        config: {
+          version: 3,
+          ...(process.env.ISR_BYPASS_TOKEN === undefined
+            ? {}
+            : { bypassToken: process.env.ISR_BYPASS_TOKEN }),
+        },
+        functions: {
+          // The CV PDF unpacks and starts Chromium on a cold start, which can
+          // outlast the default function timeout.
+          maxDuration: 60,
+        },
+      },
+    }),
   ],
   define: {
     __BUILD_ID__: JSON.stringify(buildId),

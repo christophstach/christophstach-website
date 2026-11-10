@@ -2,7 +2,13 @@
 // route's preload and its render, revalidated after desk writes. Each body
 // runs on the server; the server-only module is imported inside it, so the
 // client build never resolves it.
+import type { deskVariants } from "../../server/desk-read";
 import { query } from "@solidjs/router";
+
+// What the reads answer, for components that pass their rows around (a
+// type-only import of the server module: no runtime edge).
+type DeskVariants = Awaited<ReturnType<typeof deskVariants>>;
+type DeskVariant = DeskVariants["variants"][number];
 
 export const getDeskVariants = query(async () => {
   "use server";
@@ -51,3 +57,5 @@ export const getDeskUser = query(async () => {
 
   return desk.requireUser();
 }, "desk-user");
+
+export type { DeskVariant, DeskVariants };

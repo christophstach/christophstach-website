@@ -9,6 +9,7 @@ import type { RouteDefinition } from "@solidjs/router";
 import { forgetPageChecks } from "../../../../lib/desk/page-checks";
 import { paths } from "../../../../router";
 import { saveDeskSkillGroups } from "../../../../lib/desk/content";
+import { setItems } from "../../../../lib/desk/picks";
 import styles from "../../../../components/desk/page-cv-skills.module.css";
 import { useDeskRequest } from "../../../../lib/desk/request";
 import { useDraft } from "../../../../lib/desk/draft";
@@ -42,8 +43,9 @@ export default function SkillsPage() {
     () => form.groups.map((group) => group.label),
     (labels) => {
       setForm((draft) => {
-        draft.groups = labels.flatMap(
-          (label) => draft.groups.find((group) => group.label === label) ?? [],
+        setItems(
+          draft.groups,
+          labels.flatMap((label) => draft.groups.find((group) => group.label === label) ?? []),
         );
       });
     },

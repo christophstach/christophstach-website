@@ -12,3 +12,8 @@ export const CV_HOME_API_PATH = "/api/cv-home";
 
 /** What /curriculum shows of the website variant (ISR-cached JSON). */
 export const CV_WEBSITE_API_PATH = "/api/cv-website";
+
+/** A private CV variant as a PDF, for the desk. */
+export function deskVariantPdfPath(id: string): string {
+  return `/api/desk/cv/${encodeURIComponent(id)}`;
+}
