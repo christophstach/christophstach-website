@@ -31,7 +31,7 @@ edited in the desk. Styling is a hand-rolled pure-CSS design system.
 
 ## Commands
 
-Package manager is **pnpm**; the Node version is pinned in `.nvmrc`. See `package.json`
+Package manager is **pnpm**; the Node version is pinned in `.node-version`. See `package.json`
 for the script list.
 
 There is no test suite. `pnpm build` is the deploy build: Vite builds the client and the SSR
