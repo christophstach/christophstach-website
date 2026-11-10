@@ -52,6 +52,15 @@ with **zod/mini** schemas.
 Environment variables are declared and validated in `env.ts` (read at server start, imported
 from `virtual:solid-env/server`); `.env.example` lists them.
 
+## Branches and commits
+
+- Work happens on a branch off `main`, named by type: `feat/…`, `fix/…`, `refactor/…`,
+  `chore/…`, `docs/…` (e.g. `feat/cover-letter-export`).
+- Commit messages follow Conventional Commits: `type(scope): summary`, imperative, e.g.
+  `feat(desk): add a CV section` or `fix(cv): keep the PDF on two pages`.
+- Every commit is atomic: it does exactly one thing, and on its own it builds and passes
+  `pnpm lint` and `pnpm typecheck`. Split unrelated changes into separate commits.
+
 ## Architecture
 
 **Routing is file-based**: `src/routes/` (via `filesystem-routing` and
