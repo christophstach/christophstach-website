@@ -221,6 +221,9 @@ importers:
       '@types/node':
         specifier: 24.19.2
         version: 24.19.2
+      axe-core:
+        specifier: 4.14.0
+        version: 4.14.0
       drizzle-kit:
         specifier: ^0.31.11
         version: 0.31.11
@@ -1697,6 +1700,10 @@ packages:
   astral-regex@2.0.0:
     resolution: {integrity: sha512-Z7tMw1ytTXt5jqMcOP+OQteU1VuNK9Y02uuJtKQ1Sv69jXQKKg5cibLwGJow8yzZP+eAc18EmLGPal0bp36rvQ==}
     engines: {node: '>=8'}
+
+  axe-core@4.14.0:
+    resolution: {integrity: sha512-9WTZxEjsZ7b13TH8JPmbV2z8CHbl80/2hm3XPEG4JgNdQLK81IBRXmSxHfMAOkSqQeRxT/0dwNDz2GOm3zzpcQ==}
+    engines: {node: '>=4'}
 
   b4a@1.9.0:
     resolution: {integrity: sha512-dpfcF9fDNR6++cthXR67iyhgqWy9CBouAvIWhIntzBG6cvK/cnIPiZQjBwi/ZqjjBEDGfoNDtmB0kTjroOJ3pQ==}
@@ -3721,6 +3728,8 @@ snapshots:
   argparse@2.0.1: {}
 
   astral-regex@2.0.0: {}
+
+  axe-core@4.14.0: {}
 
   b4a@1.9.0: {}
 

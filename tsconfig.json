@@ -28,6 +28,7 @@
     "env.ts",
     "vite.config.ts",
     "drizzle.config.ts",
+    "tools",
     "solid-env.d.ts",
     "file-routes.d.ts"
   ]
