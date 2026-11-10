@@ -27,7 +27,7 @@ There are three surfaces, and each uses the direction differently:
 
 ## Color
 
-Components use only the semantic aliases in `app/assets/css/tokens.css`, so they theme
+Components use only the semantic aliases in `src/assets/css/tokens.css`, so they theme
 automatically. No hex values or primitives in components; the paper is the one exception.
 
 | Role                    | Alias                             | Light     | Dark      |
@@ -82,17 +82,17 @@ title, one line) sits directly on it.
 
 Reuse before inventing, and move a pattern to `components.css` once two components share it.
 
-| Need                   | Use                                                       |
-| ---------------------- | --------------------------------------------------------- |
-| Main action            | `.button--primary`, at most one per view                  |
-| Other actions          | `.button--outline` (its `$` is a prompt), `.button--icon` |
-| Icon-only control      | `.icon-button` with an `aria-label`                       |
-| Link in text           | `.text-link`                                              |
-| Public section heading | `.section-label` (its `//` is a code comment)             |
-| Technology tag         | `.chip--accent`                                           |
-| Role of a variant      | `.role-tag`                                               |
-| Form field             | `.field`, `.field__label`, `.input`                       |
-| Icons                  | Tabler through `@nuxt/icon`                               |
+| Need                   | Use                                                         |
+| ---------------------- | ----------------------------------------------------------- |
+| Main action            | `.button--primary`, at most one per view                    |
+| Other actions          | `.button--outline` (its `$` is a prompt), `.button--icon`   |
+| Icon-only control      | `.icon-button` with an `aria-label`                         |
+| Link in text           | `.text-link`                                                |
+| Public section heading | `.section-label` (its `//` is a code comment)               |
+| Technology tag         | `.chip--accent`                                             |
+| Role of a variant      | `.role-tag`                                                 |
+| Form field             | `.field`, `.field__label`, `.input`                         |
+| Icons                  | Tabler, inlined as components in `src/components/icons.tsx` |
 
 ## Wording
 
@@ -124,7 +124,7 @@ Words stay plain and specific. The terminal voice has fixed places:
 ## Paper
 
 The CV and cover letters print from `.cv-paper`, with their own fixed palette and px sizes,
-because they're laid out for A4. All CV variants render through `CvDocument.vue`, so a variant
+because they're laid out for A4. All CV variants render through `CvDocument.tsx`, so a variant
 changes content, never the design. A variant fills its pages with its layout steps; don't tune
 the CSS spacing to move a page break.
 

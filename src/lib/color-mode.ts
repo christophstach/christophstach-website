@@ -12,7 +12,7 @@ export const COLOR_MODE_COOKIE = "color-mode";
 // Readable by script (not HttpOnly): the toggle writes it.
 export const COLOR_MODE_COOKIE_ATTRIBUTES = "Path=/; Max-Age=31536000; SameSite=Lax";
 
-// The browser chrome color per resolved scheme, as in the Nuxt app.vue.
+// The browser chrome color per resolved scheme.
 export const THEME_COLORS = { light: "#f5f7f7", dark: "#080b0a" } as const;
 
 export function parseColorMode(value: string | null | undefined): ColorMode {

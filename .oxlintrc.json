@@ -39,16 +39,10 @@
     "unicorn/filename-case": ["error", { "cases": { "kebabCase": true, "pascalCase": true } }]
   },
   "ignorePatterns": [
-    ".nuxt",
     ".output",
     ".vercel",
     "dist",
     "node_modules",
-    "app",
-    "server/api",
-    "server/routes",
-    "server/utils",
-    "nuxt.config.ts",
     "file-routes.d.ts",
     "solid-env.d.ts"
   ],

@@ -27,7 +27,7 @@ export default defineConfig({
     // httpMethods: route modules may export GET/POST/... (API routes).
     fileRoutes({ httpMethods: true, types: true, serverComponents: true }),
     // Nitro serves the Solid handler and writes .vercel/output. serverDir
-    // stays off (Nitro's default) so it never scans the Nuxt server/.
+    // stays off (Nitro's default): server/ only holds the database schema.
     nitro({
       preset: "vercel",
       serverDir: false,

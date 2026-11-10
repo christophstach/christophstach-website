@@ -1,7 +1,4 @@
 {
-  // Covers the Solid app only. The Nuxt sources (app/, server/api,
-  // server/routes, server/utils, nuxt.config.ts) stay as reference until
-  // they're removed, and aren't checked.
   "compilerOptions": {
     "jsx": "preserve",
     "jsxImportSource": "@solidjs/web",
@@ -33,6 +30,5 @@
     "drizzle.config.ts",
     "solid-env.d.ts",
     "file-routes.d.ts"
-  ],
-  "exclude": ["app", "server/api", "server/routes", "server/utils", "nuxt.config.ts"]
+  ]
 }

@@ -1,9 +1,0 @@
-import { defineEventHandler } from "h3";
-import { listProjects } from "../../../utils/projects";
-
-// requireUserSession is a Nitro auto-import (see server/routes/auth/github.get.ts).
-export default defineEventHandler(async (event) => {
-  await requireUserSession(event);
-
-  return listProjects();
-});

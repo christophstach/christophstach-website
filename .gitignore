@@ -1,7 +1,5 @@
 # Build output
-.nuxt
 .output
-.data
 .vercel
 dist
 

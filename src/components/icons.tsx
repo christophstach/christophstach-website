@@ -1,6 +1,6 @@
 // Tabler icons (https://tabler.io/icons, MIT), their SVG paths inlined so no
-// icon runtime ships. To add one, copy its path data from the Tabler set
-// (e.g. @iconify-json/tabler icons.json, viewBox 24) into a TablerIcon.
+// icon runtime ships. To add one, copy its path data (viewBox 24, stroke
+// icons) into a TablerIcon; several paths join into one d attribute.
 import type { JSX } from "@solidjs/web";
 
 interface IconProps {

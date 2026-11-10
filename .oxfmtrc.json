@@ -3,7 +3,6 @@
   // in-context snippets; oxfmt reformats embedded HTML and breaks them.
   // file-routes.d.ts and solid-env.d.ts are generated on every dev and build start.
   "ignorePatterns": [
-    ".nuxt/**",
     ".output/**",
     ".vercel/**",
     "dist/**",
