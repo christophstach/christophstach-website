@@ -79,7 +79,6 @@ function letterColumns(letter: CoverLetter) {
   // A saved letter has to be measured again.
   return {
     ...letter,
-    // oxlint-disable-next-line unicorn/no-null -- the foreign key's "none"
     variantId: letter.variantId || null,
     pageFills: [],
     pageFillsBuild: "",

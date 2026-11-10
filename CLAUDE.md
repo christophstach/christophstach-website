@@ -45,7 +45,7 @@ custom migrations (`drizzle-kit generate --custom`).
 
 Tooling is **TypeScript 7** (`tsc`, strict plus `noUncheckedIndexedAccess`,
 `exactOptionalPropertyTypes`) and **oxlint (type-aware, via `oxlint-tsgolint`) + oxfmt**, not
-ESLint/Prettier — see `.oxlintrc.json`. No `any` and no unchecked `as` casts: input from
+ESLint/Prettier — see `oxlint.config.ts`. No `any` and no unchecked `as` casts: input from
 outside (request bodies, server function arguments, query strings, fetched JSON, env) is parsed
 with **zod/mini** schemas.
 

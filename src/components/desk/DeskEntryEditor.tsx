@@ -77,7 +77,6 @@ export function DeskEntryEditor(props: { section: Section; id: string }) {
     const note = users.length > 0 ? ` ${users.join(", ")} print it and will drop it.` : "";
     const label = saved().name === "" ? saved().title : saved().name;
 
-    // oxlint-disable-next-line no-alert -- a desk-only safety net before deleting
     if (!confirm(`Delete "${label}"?${note}`)) {
       return;
     }

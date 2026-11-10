@@ -10,7 +10,6 @@ function sameJson(one: unknown, other: unknown): boolean {
  * Not a function: what a store can be seeded with. Spelled exactly like
  * solid-js's own (unexported) NoFn, which a generic seed must match.
  */
-// oxlint-disable-next-line typescript/no-unsafe-function-type, typescript/ban-types -- mirrors solid-js NoFn
 type NoFn<Value> = Value extends Function ? never : Value;
 
 /**

@@ -10,7 +10,6 @@ function useUnsavedGuard(dirty: () => boolean) {
   let leaving = false;
 
   useBeforeLeave((event) => {
-    // oxlint-disable-next-line no-alert -- a desk-only safety net for unsaved work
     if (
       !event.defaultPrevented &&
       dirty() &&

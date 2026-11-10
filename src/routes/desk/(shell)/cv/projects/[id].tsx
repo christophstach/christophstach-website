@@ -93,7 +93,6 @@ export default function ProjectEditor() {
   async function remove() {
     const label = saved().name === "" ? saved().title : saved().name;
 
-    // oxlint-disable-next-line no-alert -- a desk-only safety net before deleting
     if (!confirm(`Delete the project "${label}"? Variants that show it drop it.`)) {
       return;
     }

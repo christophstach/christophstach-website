@@ -96,7 +96,6 @@ function Bullets(props: BulletsProps) {
   function removeBullet(bulletId: string) {
     const users = props.usedBy(bulletId);
 
-    // oxlint-disable-next-line no-alert -- a desk-only safety net before dropping printed text
     if (users.length > 0 && !confirm(`${users.join(", ")} print this bullet. Remove it anyway?`)) {
       return;
     }

@@ -65,7 +65,6 @@ export default function SkillsPage() {
     const group = form.groups[index];
     const users = group === undefined ? [] : usedBy(group.label);
 
-    // oxlint-disable-next-line no-alert -- a desk-only safety net before dropping printed skills
     if (users.length > 0 && !confirm(`${users.join(", ")} print this group. Remove it anyway?`)) {
       return;
     }

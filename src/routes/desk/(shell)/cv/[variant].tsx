@@ -156,7 +156,6 @@ export default function VariantEditor() {
   }
 
   async function remove() {
-    // oxlint-disable-next-line no-alert -- a desk-only safety net before deleting
     if (!confirm(`Delete the variant "${saved().label}"?`)) {
       return;
     }
