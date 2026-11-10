@@ -18,7 +18,19 @@ async function fetchPublic<Schema extends ZodMiniType>(
     throw new HttpError(500, `fetchPublic(${path}) needs a request.`);
   }
 
-  const response = await fetch(new URL(path, event.request.url));
+  // Previews sit behind Vercel's deployment protection: pass the visitor's
+  // access (its cookie, or the bypass header) on to the call to ourselves.
+  const headers = new Headers();
+
+  for (const name of ["cookie", "x-vercel-protection-bypass"]) {
+    const value = event.request.headers.get(name);
+
+    if (value !== null) {
+      headers.set(name, value);
+    }
+  }
+
+  const response = await fetch(new URL(path, event.request.url), { headers });
 
   if (!response.ok) {
     throw new HttpError(502, `${path} answered ${response.status} ${response.statusText}.`);
