@@ -1,7 +1,5 @@
 # Build output
-.output
 .vercel
-dist
 
 # Dependencies
 node_modules
