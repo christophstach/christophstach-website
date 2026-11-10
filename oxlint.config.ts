@@ -13,6 +13,8 @@ export default defineConfig({
     "no-underscore-dangle": ["error", { allow: ["__BUILD_ID__"] }],
     "import/no-unassigned-import": ["error", { allow: ["**/*.css", "server-only", "client-only"] }],
     "typescript/no-explicit-any": "error",
+    "typescript/no-non-null-assertion": "error",
+    "typescript/ban-ts-comment": "error",
     "typescript/no-unsafe-type-assertion": "error",
     "typescript/no-unsafe-argument": "error",
     "typescript/no-unsafe-assignment": "error",
