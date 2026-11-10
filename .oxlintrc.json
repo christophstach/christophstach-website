@@ -62,10 +62,14 @@
           "error",
           { "max": 160, "skipBlankLines": true, "skipComments": true }
         ],
-        // A desk editor composes many components and helpers, and keeps its
-        // handlers next to the state they write.
-        "import/max-dependencies": ["error", { "max": 20 }],
         "max-statements": ["error", 25]
+      }
+    },
+    {
+      // Desk editors and server modules compose many components and helpers.
+      "files": ["src/**"],
+      "rules": {
+        "import/max-dependencies": ["error", { "max": 20 }]
       }
     },
     {

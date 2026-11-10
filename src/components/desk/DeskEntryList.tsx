@@ -148,7 +148,7 @@ export function DeskEntryList(props: { section: Section }) {
         </div>
 
         <Show when={!creating()}>
-          <a href={paths.desk.cv[props.section]({ new: "" })} class="button button--primary">
+          <a href={paths.desk.cv[props.section]({ new: "1" })} class="button button--primary">
             <IconPlus size={16} />
             New entry
           </a>

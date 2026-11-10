@@ -194,7 +194,7 @@ export default function VariantEditor() {
       label: "Duplicate",
       icon: IconCopy,
       run: () => {
-        navigate(paths.desk.cv({ new: "", from: params.variant }));
+        navigate(paths.desk.cv({ new: "1", from: params.variant }));
       },
     },
     ...(isPrimary() || isWebsite()

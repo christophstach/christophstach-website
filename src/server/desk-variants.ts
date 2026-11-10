@@ -16,6 +16,7 @@ import type { CvLayout } from "../data/cv-print-layout";
 import { HttpError } from "./http";
 import { currentRequest } from "./desk-write";
 import { parseVariantBody } from "./cv-variant-body";
+import { paths } from "../router";
 import { publicPaths } from "./cv-public-paths";
 import { requireUser } from "./auth";
 
@@ -73,7 +74,7 @@ async function printForDesk(id: string, layout: CvLayout | undefined) {
  */
 async function variantPdf(request: Request, id: string, primaryId: string) {
   if (id !== primaryId) {
-    return renderPdf(request, `/desk/cv-print/${id}`, true);
+    return renderPdf(request, paths.desk["cv-print"](id)(), true);
   }
 
   const response = await fetch(new URL(CV_PDF_PATH, request.url));
@@ -89,7 +90,7 @@ async function variantPdf(request: Request, id: string, primaryId: string) {
 
 /** The pages of a variant printed with trial steps; never stored. */
 async function trialPages(request: Request, id: string, layout: CvLayout) {
-  const path = `/desk/cv-print/${id}?${new URLSearchParams(layoutQuery(layout))}`;
+  const path = paths.desk["cv-print"](id, layoutQuery(layout));
 
   return pageFills(
     await renderPdf(request, path, true),

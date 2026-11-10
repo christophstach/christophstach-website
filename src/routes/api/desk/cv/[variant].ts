@@ -1,5 +1,6 @@
 import type { APIHandler } from "filesystem-routing/api";
 import { HttpError } from "../../../../server/http";
+import { paths } from "../../../../router";
 import { renderPdf } from "../../../../server/cv-pdf";
 import { requireUser } from "../../../../server/auth";
 import { requireVariant } from "../../../../server/cv-variants";
@@ -11,7 +12,7 @@ export const GET: APIHandler = async (event) => {
     await requireUser(event.request);
 
     const { id } = await requireVariant(event.params?.variant ?? "");
-    const pdf = await renderPdf(event.request, `/desk/cv-print/${id}`, true);
+    const pdf = await renderPdf(event.request, paths.desk["cv-print"](id)(), true);
 
     // A copy on a plain ArrayBuffer, which a Response body needs.
     return new Response(new Uint8Array(pdf), {

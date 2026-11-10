@@ -23,7 +23,7 @@ export interface DeskLink {
 export const deskSections: DeskLink[] = [
   { to: paths.desk(), label: "overview", icon: IconLayoutDashboard },
   { to: paths.desk.cv(), label: "cv", icon: IconFileCv },
-  { to: "/desk/cover-letters", label: "cover-letters", icon: IconMail },
+  { to: paths.desk["cover-letters"](), label: "cover-letters", icon: IconMail },
 ];
 
 /** Under "cv": the content the variants pick from. */

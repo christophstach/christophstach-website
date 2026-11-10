@@ -17,3 +17,8 @@ export const CV_WEBSITE_API_PATH = "/api/cv-website";
 export function deskVariantPdfPath(id: string): string {
   return `/api/desk/cv/${encodeURIComponent(id)}`;
 }
+
+/** A cover letter as a PDF, for the desk. */
+export function deskLetterPdfPath(id: string): string {
+  return `/api/desk/cover-letters/${encodeURIComponent(id)}/pdf`;
+}

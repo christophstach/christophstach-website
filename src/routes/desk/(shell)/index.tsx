@@ -88,7 +88,7 @@ function VariantsPanel() {
         <h2 id="panel-variants" class="panel__title">
           cv variants
         </h2>
-        <a href={paths.desk.cv({ new: "" })} class={["text-link panel__end", styles["add-link"]]}>
+        <a href={paths.desk.cv({ new: "1" })} class={["text-link panel__end", styles["add-link"]]}>
           New variant
         </a>
       </header>
@@ -136,12 +136,15 @@ function LettersPanel() {
           cover letters
         </h2>
         <Show when={hasMore()}>
-          <a href="/desk/cover-letters" class={["text-link panel__end", styles["add-link"]]}>
+          <a
+            href={paths.desk["cover-letters"]()}
+            class={["text-link panel__end", styles["add-link"]]}
+          >
             All {letters().length} letters
           </a>
         </Show>
         <a
-          href="/desk/cover-letters?new"
+          href={paths.desk["cover-letters"]({ new: "1" })}
           class={["text-link", styles["add-link"], { panel__end: !hasMore() }]}
         >
           New letter
@@ -156,7 +159,7 @@ function LettersPanel() {
           <For each={latest()}>
             {(letter) => (
               <li>
-                <a href={`/desk/cover-letters/${letter.id}`} class={["panel-row", styles.row]}>
+                <a href={paths.desk["cover-letters"](letter.id)} class={["panel-row", styles.row]}>
                   <span class={styles.row__main}>
                     <span class="panel-row__label">{letter.label}</span>
                   </span>

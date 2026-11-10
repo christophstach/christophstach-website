@@ -123,7 +123,7 @@ export default function ProjectsPage() {
         </div>
 
         <Show when={!creating()}>
-          <a href={paths.desk.cv.projects({ new: "" })} class="button button--primary">
+          <a href={paths.desk.cv.projects({ new: "1" })} class="button button--primary">
             <IconPlus size={16} />
             New project
           </a>

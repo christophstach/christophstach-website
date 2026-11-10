@@ -151,7 +151,7 @@ export default function VariantList() {
         </div>
 
         <Show when={search.new === undefined}>
-          <a href={paths.desk.cv({ new: "" })} class="button button--primary">
+          <a href={paths.desk.cv({ new: "1" })} class="button button--primary">
             <IconPlus size={16} />
             New variant
           </a>

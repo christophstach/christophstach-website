@@ -40,10 +40,10 @@ export function CvHead(props: CvHeadProps) {
         </li>
       </ul>
       <ul class={[styles.cv__contact, styles["cv__contact--links"]]}>
-        <For each={props.profile.links}>
+        <For each={props.profile.links} keyed={(link) => link.href}>
           {(link) => (
             <li>
-              <a href={link.href}>{stripScheme(link.href)}</a>
+              <a href={link().href}>{stripScheme(link().href)}</a>
             </li>
           )}
         </For>
