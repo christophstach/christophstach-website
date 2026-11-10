@@ -31,6 +31,9 @@ export default defineConfig({
     nitro({
       preset: "vercel",
       serverDir: false,
+      // Chromium unpacks its binary from the package's bin/ folder at runtime,
+      // which import tracing alone doesn't copy: ship the whole package.
+      traceDeps: ["@sparticuz/chromium*"],
       routeRules: {
         // The public data and the CV PDF are cached (ISR) until the next
         // deployment or until the desk changes them (on-demand revalidation
