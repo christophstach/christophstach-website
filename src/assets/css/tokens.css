@@ -142,6 +142,8 @@
 
   --color-border: var(--slate-200);
   --color-border-strong: var(--slate-300);
+  /* Outlines that make a control visible (inputs, outline buttons): 3:1 on bg and surface. */
+  --color-border-control: var(--slate-400);
   --color-rule: var(--slate-400);
   --color-grid: rgb(11 21 20 / 0.04);
 
@@ -184,6 +186,7 @@
 
   --color-border: var(--slate-800);
   --color-border-strong: var(--slate-700);
+  --color-border-control: var(--slate-500);
   --color-rule: var(--slate-500);
   --color-grid: rgb(52 230 163 / 0.05);
 

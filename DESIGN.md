@@ -62,7 +62,8 @@ automatically. No hex values or primitives in components; the paper is the one e
 - Space comes from the `--space-*` scale. Corners stay crisp (`--radius-sm` to `--radius-lg`);
   only small tags and status dots are fully round.
 - Structure comes from hairline borders and rules (`--color-border`, `-strong`, `--color-rule`),
-  not shadows. Shadows are for what floats above the page (menus, the save bar, a dragged row,
+  not shadows. A control that only its outline shows (an input, an outline button, a step
+  strip) takes `--color-border-control`, which keeps 3:1 against the page. Shadows are for what floats above the page (menus, the save bar, a dragged row,
   the hero terminal) and the paper sheet in the desk, never for ordinary panels.
 - Everything works from a phone upward; the shared breakpoints are 40rem and 48rem. Long text
   must not push a column past the screen (`minmax(0, 1fr)`, `overflow-wrap`).
