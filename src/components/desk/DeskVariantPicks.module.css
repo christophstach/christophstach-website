@@ -32,6 +32,11 @@
   color: var(--color-text-muted);
 }
 
+.picks__edit {
+  margin-inline-start: auto;
+  font-size: var(--text-sm);
+}
+
 .picks__fields {
   display: grid;
   gap: var(--space-5);
@@ -45,11 +50,30 @@
   }
 }
 
+.rows,
 .subrows {
   display: grid;
   padding: 0;
   margin: 0;
   list-style: none;
+}
+
+/* A row: grip, checkbox and text, an optional count on the right, and for
+   entries their bullets below. Rows are divided by hairlines. */
+.rows {
+  padding-inline: var(--space-3) var(--space-5);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-2);
+  padding-block: var(--space-3);
+}
+
+.row + .row {
+  border-top: 1px solid var(--color-border);
 }
 
 .row--off {
@@ -126,8 +150,19 @@ span.grip {
   overflow-wrap: anywhere;
 }
 
+.row__aside {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.rows .subrows {
+  padding-inline: 0;
+}
+
 .subrows {
-  margin-top: 0;
+  grid-column: 2 / -1;
+  margin-top: var(--space-2);
 }
 
 .subrow {
@@ -135,6 +170,7 @@ span.grip {
   grid-template-columns: 1.5rem minmax(0, 1fr);
   align-items: center;
   column-gap: var(--space-2);
+  margin-inline-start: -1.5rem;
   padding-block: var(--space-1-5);
 }
 

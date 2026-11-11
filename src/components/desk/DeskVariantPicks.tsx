@@ -1,9 +1,8 @@
 import { Show, createMemo } from "solid-js";
 import { getDeskContent, getDeskProjects } from "../../lib/desk/queries";
 import { inOrder, setItems, toggled } from "../../lib/desk/picks";
-import type { DeskTableColumn, DeskTableDetail } from "./DeskTable";
-import { DeskTable } from "./DeskTable";
 import { DeskVariantBullets } from "./DeskVariantBullets";
+import { DeskVariantRows } from "./DeskVariantRows";
 import type { EntryRecord } from "../../data/cv";
 import type { VariantInput } from "../../lib/desk/variants";
 import { formatMonth } from "../../lib/format";
@@ -78,182 +77,93 @@ function Heading(props: PicksProps) {
   );
 }
 
-/** A row's text: what it's called, a detail line, the desk note. */
-interface RowText {
-  name: string;
-  meta: string;
-  note: string;
-}
-
-interface PickTableProps<Item> {
+function SectionHead(props: {
+  id: string;
   title: string;
-  noun: readonly [one: string, other: string];
-  /** Under the title, e.g. "3 of 5 printed". */
-  note: string;
+  count: string;
   edit: string;
   editText: string;
-  /** Every item that can be picked. */
-  items: Item[];
-  /** The picked ids, in print order. */
-  picked: string[];
-  idOf: (item: Item) => string;
-  textOf: (item: Item) => RowText;
-  onToggle: (id: string, on: boolean) => void;
-  /** The picked ids in a new order. */
-  onReorder: (ids: string[]) => void;
-  /** More columns after the name, e.g. how many bullets print. */
-  columns?: DeskTableColumn<Item>[] | undefined;
-  detail?: DeskTableDetail<Item> | undefined;
-}
-
-/**
- * One kind of pick as a table: the picked items first, in print order and
- * draggable, then the ones left out, faded. The checkbox picks and unpicks.
- */
-function PickTable<Item>(props: PickTableProps<Item>) {
-  const isPicked = (item: Item) => props.picked.includes(props.idOf(item));
-  const rows = () => [
-    ...inOrder(props.picked, props.items, props.idOf),
-    ...props.items.filter((item) => !isPicked(item)),
-  ];
-
+}) {
   return (
-    <DeskTable
-      title={props.title}
-      noun={props.noun}
-      note={props.note}
-      actions={
-        <a href={props.edit} class="text-link">
-          {props.editText}
-        </a>
-      }
-      rows={rows()}
-      rowKey={props.idOf}
-      select={{
-        checked: isPicked,
-        onToggle: props.onToggle,
-        label: (item) => `Print ${props.textOf(item).name}`,
-      }}
-      reorder={{
-        movable: isPicked,
-        label: (item) => props.textOf(item).name,
-        onReorder: props.onReorder,
-      }}
-      detail={props.detail}
-      columns={[
-        {
-          id: "name",
-          header: props.noun[0],
-          primary: true,
-          cell: (item) => {
-            const text = props.textOf(item);
-
-            return (
-              <span class={styles.row__text}>
-                <span class={styles.row__name}>{text.name}</span>
-                <span class={styles.row__meta}>{text.meta}</span>
-                <Show when={text.note !== ""}>
-                  <span class={styles.row__note}>{text.note}</span>
-                </Show>
-              </span>
-            );
-          },
-          search: (item) => {
-            const text = props.textOf(item);
-
-            return `${text.name} ${text.meta} ${text.note}`;
-          },
-        },
-        ...(props.columns ?? []),
-      ]}
-      filters={[
-        {
-          id: "printed",
-          label: "printed",
-          options: [
-            { value: "yes", label: "yes" },
-            { value: "no", label: "no" },
-          ],
-          value: (item) => (isPicked(item) ? "yes" : "no"),
-        },
-      ]}
-    />
+    <header class={styles.picks__head}>
+      <h2 id={`picks-${props.id}`} class={styles.picks__title}>
+        {props.title}
+      </h2>
+      <p class={styles.picks__count}>{props.count}</p>
+      <a href={props.edit} class={["text-link", styles.picks__edit]}>
+        {props.editText}
+      </a>
+    </header>
   );
 }
 
-function Entries(props: PicksProps & { section: Section }) {
+function Entries(props: PicksProps & { section: Section; title: string }) {
   const content = createMemo(() => getDeskContent());
   const entries = () => content().entries.filter((entry) => entry.section === props.section);
   const ids = () => props.form[props.section].map((pick) => pick.id);
-  const isPicked = (entry: EntryRecord) => ids().includes(entry.id);
+  const picked = () => inOrder(ids(), entries(), (entry) => entry.id);
 
   return (
-    <PickTable
-      title={props.section}
-      noun={["entry", "entries"]}
-      note={`${ids().length} of ${entries().length} printed`}
-      edit={paths.desk.cv[props.section]()}
-      editText={`Edit ${props.section}`}
-      items={entries()}
-      picked={ids()}
-      idOf={(entry) => entry.id}
-      textOf={(entry) => ({
-        name: entry.name === "" ? entry.title : entry.name,
-        meta: `${entry.title} at ${entry.organization}, ${period(entry)}`,
-        note: entry.note,
-      })}
-      onToggle={(id, on) => {
-        const entry = entries().find((candidate) => candidate.id === id);
+    <section class={styles.picks__section} aria-labelledby={`picks-${props.section}`}>
+      <SectionHead
+        id={props.section}
+        title={props.title}
+        count={`${ids().length} of ${entries().length} printed`}
+        edit={paths.desk.cv[props.section]()}
+        editText={`Edit ${props.section}`}
+      />
+      <DeskVariantRows
+        picked={picked()}
+        leftOut={entries().filter((entry) => !ids().includes(entry.id))}
+        idOf={(entry) => entry.id}
+        textOf={(entry) => ({
+          name: entry.name === "" ? entry.title : entry.name,
+          meta: `${entry.title} at ${entry.organization}, ${period(entry)}`,
+          note: entry.note,
+        })}
+        onToggle={(id, on) => {
+          const entry = entries().find((candidate) => candidate.id === id);
 
-        props.setForm((draft) => {
-          if (on) {
-            draft[props.section].push({
-              id,
-              bullets: entry?.bullets.map((bullet) => bullet.id) ?? [],
-            });
-          } else {
+          props.setForm((draft) => {
+            if (on) {
+              draft[props.section].push({
+                id,
+                bullets: entry?.bullets.map((bullet) => bullet.id) ?? [],
+              });
+            } else {
+              setItems(
+                draft[props.section],
+                draft[props.section].filter((pick) => pick.id !== id),
+              );
+            }
+          });
+        }}
+        onReorder={(order) => {
+          props.setForm((draft) => {
             setItems(
               draft[props.section],
-              draft[props.section].filter((pick) => pick.id !== id),
+              inOrder(order, draft[props.section], (pick) => pick.id),
             );
-          }
-        });
-      }}
-      onReorder={(order) => {
-        props.setForm((draft) => {
-          setItems(
-            draft[props.section],
-            inOrder(order, draft[props.section], (pick) => pick.id),
-          );
-        });
-      }}
-      columns={[
-        {
-          id: "bullets",
-          header: "bullets",
-          align: "end",
-          cell: (entry) => {
-            const printed =
-              props.form[props.section].find((pick) => pick.id === entry.id)?.bullets.length ?? 0;
+          });
+        }}
+        aside={(entry) => {
+          const printed =
+            props.form[props.section].find((pick) => pick.id === entry.id)?.bullets.length ?? 0;
 
-            return isPicked(entry) && entry.bullets.length > 0
-              ? `${printed}/${entry.bullets.length}`
-              : String(entry.bullets.length);
-          },
-        },
-      ]}
-      detail={{
-        when: (entry) => isPicked(entry) && entry.bullets.length > 0,
-        content: (entry) => (
-          <DeskVariantBullets
-            form={props.form}
-            setForm={props.setForm}
-            section={props.section}
-            entry={entry}
-          />
-        ),
-      }}
-    />
+          return entry.bullets.length > 0 ? `${printed}/${entry.bullets.length}` : undefined;
+        }}
+        below={(entry) => (
+          <Show when={entry.bullets.length > 0}>
+            <DeskVariantBullets
+              form={props.form}
+              setForm={props.setForm}
+              section={props.section}
+              entry={entry}
+            />
+          </Show>
+        )}
+      />
+    </section>
   );
 }
 
@@ -262,31 +172,35 @@ function Skills(props: PicksProps) {
   const groups = () => content().skills;
 
   return (
-    <PickTable
-      title="skills"
-      noun={["group", "groups"]}
-      note={`${props.form.skills.length} of ${groups().length} printed`}
-      edit={paths.desk.cv.skills()}
-      editText="Edit skills"
-      items={groups()}
-      picked={props.form.skills}
-      idOf={(group) => group.label}
-      textOf={(group) => ({
-        name: group.name === "" ? group.title : group.name,
-        meta: group.items.join(", "),
-        note: group.note,
-      })}
-      onToggle={(label, on) => {
-        props.setForm((draft) => {
-          setItems(draft.skills, toggled(draft.skills, label, on));
-        });
-      }}
-      onReorder={(order) => {
-        props.setForm((draft) => {
-          setItems(draft.skills, order);
-        });
-      }}
-    />
+    <section class={styles.picks__section} aria-labelledby="picks-skills">
+      <SectionHead
+        id="skills"
+        title="Skills"
+        count={`${props.form.skills.length} of ${groups().length} printed`}
+        edit={paths.desk.cv.skills()}
+        editText="Edit skills"
+      />
+      <DeskVariantRows
+        picked={inOrder(props.form.skills, groups(), (group) => group.label)}
+        leftOut={groups().filter((group) => !props.form.skills.includes(group.label))}
+        idOf={(group) => group.label}
+        textOf={(group) => ({
+          name: group.name === "" ? group.title : group.name,
+          meta: group.items.join(", "),
+          note: group.note,
+        })}
+        onToggle={(label, on) => {
+          props.setForm((draft) => {
+            setItems(draft.skills, toggled(draft.skills, label, on));
+          });
+        }}
+        onReorder={(order) => {
+          props.setForm((draft) => {
+            setItems(draft.skills, order);
+          });
+        }}
+      />
+    </section>
   );
 }
 
@@ -294,31 +208,35 @@ function Projects(props: PicksProps) {
   const projects = createMemo(() => getDeskProjects());
 
   return (
-    <PickTable
-      title="projects"
-      noun={["project", "projects"]}
-      note="Printed after the education; the website variant's show on /curriculum"
-      edit={paths.desk.cv.projects()}
-      editText="Edit projects"
-      items={projects()}
-      picked={props.form.projects}
-      idOf={(project) => project.id}
-      textOf={(project) => ({
-        name: project.name === "" ? project.title : project.name,
-        meta: project.tech.join(", "),
-        note: project.note,
-      })}
-      onToggle={(id, on) => {
-        props.setForm((draft) => {
-          setItems(draft.projects, toggled(draft.projects, id, on));
-        });
-      }}
-      onReorder={(order) => {
-        props.setForm((draft) => {
-          setItems(draft.projects, order);
-        });
-      }}
-    />
+    <section class={styles.picks__section} aria-labelledby="picks-projects">
+      <SectionHead
+        id="projects"
+        title="Projects"
+        count="Printed after the education; the website variant's show on /curriculum"
+        edit={paths.desk.cv.projects()}
+        editText="Edit projects"
+      />
+      <DeskVariantRows
+        picked={inOrder(props.form.projects, projects(), (project) => project.id)}
+        leftOut={projects().filter((project) => !props.form.projects.includes(project.id))}
+        idOf={(project) => project.id}
+        textOf={(project) => ({
+          name: project.name === "" ? project.title : project.name,
+          meta: project.tech.join(", "),
+          note: project.note,
+        })}
+        onToggle={(id, on) => {
+          props.setForm((draft) => {
+            setItems(draft.projects, toggled(draft.projects, id, on));
+          });
+        }}
+        onReorder={(order) => {
+          props.setForm((draft) => {
+            setItems(draft.projects, order);
+          });
+        }}
+      />
+    </section>
   );
 }
 
@@ -328,8 +246,8 @@ export function DeskVariantPicks(props: PicksProps) {
     <div class={styles.picks}>
       <Heading form={props.form} setForm={props.setForm} />
       <Skills form={props.form} setForm={props.setForm} />
-      <Entries form={props.form} setForm={props.setForm} section="experience" />
-      <Entries form={props.form} setForm={props.setForm} section="education" />
+      <Entries form={props.form} setForm={props.setForm} section="experience" title="Experience" />
+      <Entries form={props.form} setForm={props.setForm} section="education" title="Education" />
       <Projects form={props.form} setForm={props.setForm} />
     </div>
   );
