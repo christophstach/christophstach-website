@@ -98,7 +98,10 @@ async function trialPages(request: Request, id: string, layout: CvLayout) {
   );
 }
 
-/** The pages of a variant with its stored steps; the result is stored with it. */
+/**
+ * The pages of a variant with its stored steps; the result is stored with it.
+ * Checks no session: the caller does, and `request` carries the one Chrome uses.
+ */
 async function storedPages(
   request: Request,
   variant: { id: string; layout: CvLayout },
@@ -138,4 +141,4 @@ async function checkPages(id: string, trial: CvLayout | undefined) {
   return { pages: await storedPages(request, variant, primaryId), trial: false };
 }
 
-export { checkPages, deleteVariant, markRole, printForDesk, saveVariant };
+export { checkPages, deleteVariant, markRole, printForDesk, saveVariant, storedPages };

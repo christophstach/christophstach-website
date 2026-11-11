@@ -43,6 +43,9 @@ const schema = {
     CV_PDF_CHROME_PATH: optionalSetting(string().check(minLength(1))),
     // Renews ISR-cached responses on demand (Vercel). Optional locally.
     ISR_BYPASS_TOKEN: optionalSetting(string().check(minLength(32))),
+    // Vercel Cron sends it to the scheduled page check (/api/desk/page-checks).
+    // Unset, that endpoint answers 404.
+    CRON_SECRET: optionalSetting(string().check(minLength(16))),
     // Postgres (Neon). Optional at boot; the database code throws when it's
     // missing at use. Migrations prefer the unpooled URL.
     DATABASE_URL: optionalSetting(string().check(minLength(1))),

@@ -1,6 +1,7 @@
 /// <reference types="node" />
 import { defineConfig } from "vite";
 import { fileRoutes } from "filesystem-routing/vite";
+import { PAGE_CHECKS_API_PATH } from "./src/data/endpoints";
 import { nitro } from "nitro/vite";
 import solid from "@solidjs/vite-plugin";
 
@@ -55,6 +56,11 @@ export default defineConfig({
           ...(process.env.ISR_BYPASS_TOKEN === undefined
             ? {}
             : { bypassToken: process.env.ISR_BYPASS_TOKEN }),
+          // Measures the pages of every CV variant and cover letter without a
+          // page check on this build, so nobody has to open the desk for it.
+          // Daily, the shortest interval every Vercel plan allows; Vercel calls
+          // it with CRON_SECRET.
+          crons: [{ path: PAGE_CHECKS_API_PATH, schedule: "0 4 * * *" }],
         },
         functions: {
           // The CV PDF unpacks and starts Chromium on a cold start, which can

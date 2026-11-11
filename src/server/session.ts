@@ -63,6 +63,22 @@ async function signInCookies(request: Request, user: DeskUser): Promise<string[]
   return event.res.headers.getSetCookie();
 }
 
+/**
+ * A desk session cookie, `name=value`, for the server's own Chrome to print
+ * desk pages when no visitor's session is at hand (the scheduled page check).
+ * Never send it to a client.
+ */
+async function serverSessionCookie(request: Request, user: DeskUser): Promise<string> {
+  const [cookie] = await signInCookies(request, user);
+  const pair = cookie?.split(";")[0];
+
+  if (pair === undefined || pair === "") {
+    throw new Error("Sealing the session made no cookie.");
+  }
+
+  return pair;
+}
+
 /** The Set-Cookie headers that sign out. */
 async function signOutCookies(request: Request): Promise<string[]> {
   const event = new H3Event(request);
@@ -72,4 +88,4 @@ async function signOutCookies(request: Request): Promise<string[]> {
   return event.res.headers.getSetCookie();
 }
 
-export { readDeskUser, signInCookies, signOutCookies };
+export { readDeskUser, serverSessionCookie, signInCookies, signOutCookies };

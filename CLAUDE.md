@@ -93,7 +93,10 @@ which is a cycle that hangs the build): it gets the typed paths from `routePaths
 leave an unset field out of an object argument instead of passing `undefined`. The router
 refetches every query after any server function call, so anything that runs Chrome (page
 checks) is a plain server function, not a query. Every desk server function and desk endpoint
-calls `requireUser()` first (`src/server/auth.ts`); the page guard doesn't cover them.
+calls `requireUser()` first (`src/server/auth.ts`); the page guard doesn't cover them. The one
+exception is the scheduled page check (`/api/desk/page-checks`, `src/server/page-check-job.ts`):
+Vercel Cron calls it daily with `CRON_SECRET`, and it seals a session only for its own Chrome
+to measure every variant and letter without a page check on this build.
 
 **Content is data, not markup.** CV content lives in the database, typed by the interfaces in
 `src/data/cv.ts` (`TimelineEntry`, `EntryRecord`, `SkillGroup`, `Profile`, `CvContent`). The

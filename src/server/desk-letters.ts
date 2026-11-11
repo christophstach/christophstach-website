@@ -38,16 +38,13 @@ async function printLetter(id: string) {
   return printCoverLetter(id);
 }
 
-/** How full each page of the letter's PDF is; stored with the letter. */
-async function checkLetterPages(id: string) {
-  await requireUser();
-
+/**
+ * How full each page of the letter's PDF is; stored with the letter. Checks no
+ * session: the caller does, and `request` carries the one Chrome uses.
+ */
+async function letterPages(request: Request, id: string) {
   const letter = await requireCoverLetter(id);
-  const pdf = await renderPdf(
-    currentRequest(),
-    paths.desk["cover-letter-print"](letter.id)(),
-    true,
-  );
+  const pdf = await renderPdf(request, paths.desk["cover-letter-print"](letter.id)(), true);
   const pages = await pageFills(pdf, points(COVER_LETTER_MARGIN_MM));
 
   await storeCoverLetterFills(
@@ -55,7 +52,14 @@ async function checkLetterPages(id: string) {
     pages.map((page) => page.fill),
   );
 
-  return { pages };
+  return pages;
 }
 
-export { checkLetterPages, deleteLetter, printLetter, saveLetter };
+/** How full each page of the letter's PDF is; stored with the letter. */
+async function checkLetterPages(id: string) {
+  await requireUser();
+
+  return { pages: await letterPages(currentRequest(), id) };
+}
+
+export { checkLetterPages, deleteLetter, letterPages, printLetter, saveLetter };

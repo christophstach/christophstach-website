@@ -25,6 +25,7 @@ declare module 'virtual:solid-env/server' {
     readonly "DESK_GITHUB_USER_ID": __Out<__Schema["server"]["DESK_GITHUB_USER_ID"]>;
     readonly "CV_PDF_CHROME_PATH": __Out<__Schema["server"]["CV_PDF_CHROME_PATH"]>;
     readonly "ISR_BYPASS_TOKEN": __Out<__Schema["server"]["ISR_BYPASS_TOKEN"]>;
+    readonly "CRON_SECRET": __Out<__Schema["server"]["CRON_SECRET"]>;
     readonly "DATABASE_URL": __Out<__Schema["server"]["DATABASE_URL"]>;
     readonly "DATABASE_URL_UNPOOLED": __Out<__Schema["server"]["DATABASE_URL_UNPOOLED"]>;
   };

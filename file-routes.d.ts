@@ -95,6 +95,13 @@ declare module "virtual:file-routes" {
       $$route?: undefined;
     },
     {
+      path: "/api/desk/page-checks";
+      page: false;
+      $GET: FileRouteLazyRef<Pick<typeof import("./src/routes/api/desk/page-checks"), Extract<"GET", keyof typeof import("./src/routes/api/desk/page-checks")>>>;
+      $HEAD: FileRouteLazyRef<Pick<typeof import("./src/routes/api/desk/page-checks"), Extract<"GET", keyof typeof import("./src/routes/api/desk/page-checks")>>>;
+      $$route?: undefined;
+    },
+    {
       path: "/auth/dev";
       page: false;
       $GET: FileRouteLazyRef<Pick<typeof import("./src/routes/auth/dev"), Extract<"GET", keyof typeof import("./src/routes/auth/dev")>>>;
