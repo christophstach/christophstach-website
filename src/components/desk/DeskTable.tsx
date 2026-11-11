@@ -195,6 +195,13 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
     setPicked({});
   }
 
+  /** The arrow a header shows: its direction when sorted, else the first click's. */
+  const arrow = (column: DeskTableColumn<T>): SortDirection => {
+    const current = sort();
+
+    return current?.column === column.id ? current.direction : (column.firstDirection ?? "asc");
+  };
+
   const ariaSort = (column: DeskTableColumn<T>) => {
     const current = sort();
 
@@ -332,20 +339,13 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
                       >
                         {column().header}
                         <span class={styles["table__sort-icon"]}>
+                          {/* A condition in `when`, not in a Show callback: the callback
+                              runs once, so it would keep the first direction. */}
                           <Show
-                            when={
-                              sort()?.column === column().id
-                                ? sort()?.direction
-                                : (column().firstDirection ?? "asc")
-                            }
+                            when={arrow(column()) === "asc"}
+                            fallback={<IconChevronDown size={14} />}
                           >
-                            {(direction) =>
-                              direction() === "asc" ? (
-                                <IconChevronUp size={14} />
-                              ) : (
-                                <IconChevronDown size={14} />
-                              )
-                            }
+                            <IconChevronUp size={14} />
                           </Show>
                         </span>
                       </button>
