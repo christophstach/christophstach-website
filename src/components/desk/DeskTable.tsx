@@ -52,37 +52,13 @@ interface DeskTableProps<T> {
   noun: readonly [one: string, other: string];
   /** Rows can be moved by hand when the table shows their stored order. */
   reorder?: DeskTableReorder<T> | undefined;
-  /** A checkbox on each row, e.g. whether a variant prints it; unchecked rows fade. */
-  select?: DeskTableSelect<T> | undefined;
-  /** Shown under a row across the whole table, e.g. an entry's bullets. */
-  detail?: DeskTableDetail<T> | undefined;
-  /** A short line beside the title, e.g. "3 of 5 printed". */
-  note?: string | undefined;
-  /** At the end of the head, before the search, e.g. a link to edit the rows. */
-  actions?: JSX.Element | undefined;
 }
 
 /** Moving rows by hand: drag a row's handle, or press the arrow keys on it. */
 interface DeskTableReorder<T> {
-  /** Gets the ids of the movable rows in their new order. */
+  /** Gets every row id in the new order; the page stores it and passes the rows back. */
   onReorder: (ids: string[]) => void;
   /** Names the row on its handle, e.g. "Move Backend". */
-  label: (row: T) => string;
-  /** Only these rows move, e.g. the picked ones; the rest have no handle. All by default. */
-  movable?: ((row: T) => boolean) | undefined;
-}
-
-/** A row of its own under some rows, e.g. an entry's bullets. */
-interface DeskTableDetail<T> {
-  when: (row: T) => boolean;
-  content: (row: T) => JSX.Element;
-}
-
-/** Checking rows on and off. */
-interface DeskTableSelect<T> {
-  checked: (row: T) => boolean;
-  onToggle: (id: string, checked: boolean) => void;
-  /** Names the row on its checkbox, e.g. "Print Backend". */
   label: (row: T) => string;
 }
 
@@ -230,28 +206,17 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
     setPicked({});
   }
 
-  const movable = (row: T) => props.reorder?.movable?.(row) ?? true;
-  // Rows move only in their stored order with every movable row shown: in a sorted
-  // view a drop would fight the sort, and with rows hidden it is unclear where it lands.
-  const reorderable = () =>
-    props.reorder !== undefined &&
-    sort() === undefined &&
-    shown().filter(movable).length === props.rows.filter(movable).length;
+  // Rows move only in their stored order with all of them shown: in a sorted view
+  // a drop would fight the sort, and with rows hidden it is unclear where it lands.
+  const reorderable = () => props.reorder !== undefined && sort() === undefined && !narrowed();
   const drag = useDragReorder(
-    () => shown().flatMap((row) => (movable(row) ? [props.rowKey(row)] : [])),
+    () => shown().map((row) => props.rowKey(row)),
     (ids) => {
       if (reorderable()) {
         props.reorder?.onReorder(ids);
       }
     },
   );
-
-  const checkId = (row: T) => `${id}-check-${props.rowKey(row)}`;
-
-  const columnCount = () =>
-    props.columns.length +
-    (props.reorder === undefined ? 0 : 1) +
-    (props.select === undefined ? 0 : 1);
 
   function showStoredOrder() {
     setSort(undefined);
@@ -285,14 +250,9 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
         <h2 id={`${id}-title`} class="panel__title">
           {props.title}
         </h2>
-        <Show when={props.note}>{(note) => <p class="panel__note">{note()}</p>}</Show>
-
-        <Show when={props.actions}>
-          <div class={["panel__end", styles.table__actions]}>{props.actions}</div>
-        </Show>
 
         <Show when={searchable().length > 0}>
-          <div class={[styles.table__search, { panel__end: props.actions === undefined }]}>
+          <div class={["panel__end", styles.table__search]}>
             <input
               type="search"
               class="input"
@@ -402,9 +362,6 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
               <Show when={props.reorder !== undefined}>
                 <th scope="col" class={styles.table__head} aria-label="move" />
               </Show>
-              <Show when={props.select !== undefined}>
-                <th scope="col" class={styles.table__head} aria-label="checked" />
-              </Show>
               <For each={props.columns} keyed={(column) => column.id}>
                 {(column) => (
                   <th
@@ -447,130 +404,88 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
           <tbody>
             <For each={shown()} keyed={(row) => props.rowKey(row)}>
               {(row) => (
-                <>
-                  <tr
-                    class={[
-                      styles.table__row,
-                      {
-                        [styles["table__row--link"] ?? ""]: props.rowHref !== undefined,
-                        [styles["table__row--dragged"] ?? ""]:
-                          drag.dragged() === props.rowKey(row()),
-                        [styles["table__row--off"] ?? ""]:
-                          props.select !== undefined && !props.select.checked(row()),
-                      },
-                    ]}
-                    draggable={reorderable() && movable(row()) ? "true" : undefined}
-                    onDragStart={(event) => {
-                      if (reorderable() && movable(row())) {
-                        drag.start(props.rowKey(row()), event);
-                      }
-                    }}
-                    onDragOver={(event) => {
-                      if (drag.dragged() !== "") {
-                        event.preventDefault();
-                        drag.over(props.rowKey(row()));
-                      }
-                    }}
-                    onDrop={(event) => {
+                <tr
+                  class={[
+                    styles.table__row,
+                    {
+                      [styles["table__row--link"] ?? ""]: props.rowHref !== undefined,
+                      [styles["table__row--dragged"] ?? ""]: drag.dragged() === props.rowKey(row()),
+                    },
+                  ]}
+                  draggable={reorderable() ? "true" : undefined}
+                  onDragStart={(event) => {
+                    if (reorderable()) {
+                      drag.start(props.rowKey(row()), event);
+                    }
+                  }}
+                  onDragOver={(event) => {
+                    if (drag.dragged() !== "") {
                       event.preventDefault();
-                    }}
-                    onDragEnd={() => {
-                      drag.end();
-                    }}
-                  >
-                    <Show when={props.reorder}>
-                      {(reorder) => (
-                        <td class={[styles.table__cell, styles["table__cell--grip"]]}>
-                          <Show when={movable(row())}>
-                            <button
-                              type="button"
-                              class={styles.table__grip}
-                              disabled={!reorderable()}
-                              aria-label={`Move ${reorder().label(row())}: arrow up or down`}
-                              title={
-                                reorderable()
-                                  ? "Drag, or use the arrow keys"
-                                  : "Show stored order to move"
-                              }
-                              onKeyDown={(event) => {
-                                if (reorderable()) {
-                                  drag.key(props.rowKey(row()), event);
-                                }
-                              }}
-                            >
-                              <IconGripVertical size={16} />
-                            </button>
-                          </Show>
-                        </td>
-                      )}
-                    </Show>
-                    <Show when={props.select}>
-                      {(select) => (
-                        <td class={[styles.table__cell, styles["table__cell--check"]]}>
-                          <input
-                            type="checkbox"
-                            id={checkId(row())}
-                            class={styles.table__check}
-                            checked={select().checked(row())}
-                            aria-label={select().label(row())}
-                            onChange={(event) => {
-                              select().onToggle(props.rowKey(row()), event.currentTarget.checked);
-                            }}
-                          />
-                        </td>
-                      )}
-                    </Show>
-                    <For each={props.columns} keyed={(column) => column.id}>
-                      {(column) => (
-                        <td
-                          data-label={column().primary === true ? undefined : column().header}
-                          class={[
-                            styles.table__cell,
-                            {
-                              [styles["table__cell--primary"] ?? ""]: column().primary === true,
-                              [styles["table__cell--end"] ?? ""]: column().align === "end",
-                            },
-                          ]}
-                        >
-                          <Show
-                            when={column().primary === true ? props.rowHref?.(row()) : undefined}
-                            fallback={
-                              <Show
-                                when={column().primary === true && props.select !== undefined}
-                                fallback={column().cell(row())}
-                              >
-                                {/* Without a link, the row's name checks it, as a label does. */}
-                                <label for={checkId(row())} class={styles.table__label}>
-                                  {column().cell(row())}
-                                </label>
-                              </Show>
+                      drag.over(props.rowKey(row()));
+                    }
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                  }}
+                  onDragEnd={() => {
+                    drag.end();
+                  }}
+                >
+                  <Show when={props.reorder}>
+                    {(reorder) => (
+                      <td class={[styles.table__cell, styles["table__cell--grip"]]}>
+                        <button
+                          type="button"
+                          class={styles.table__grip}
+                          disabled={!reorderable()}
+                          aria-label={`Move ${reorder().label(row())}: arrow up or down`}
+                          title={
+                            reorderable()
+                              ? "Drag, or use the arrow keys"
+                              : "Show stored order to move"
+                          }
+                          onKeyDown={(event) => {
+                            if (reorderable()) {
+                              drag.key(props.rowKey(row()), event);
                             }
-                          >
-                            {(href) => (
-                              <a
-                                href={href()}
-                                class={styles.table__link}
-                                // A drag anywhere on the row moves the row, not the link.
-                                draggable={props.reorder === undefined ? undefined : "false"}
-                              >
-                                {column().cell(row())}
-                              </a>
-                            )}
-                          </Show>
-                        </td>
-                      )}
-                    </For>
-                  </tr>
-                  <Show when={props.detail?.when(row()) === true ? props.detail : undefined}>
-                    {(detail) => (
-                      <tr class={styles.table__detail}>
-                        <td colspan={columnCount()} class={styles["table__detail-cell"]}>
-                          {detail().content(row())}
-                        </td>
-                      </tr>
+                          }}
+                        >
+                          <IconGripVertical size={16} />
+                        </button>
+                      </td>
                     )}
                   </Show>
-                </>
+                  <For each={props.columns} keyed={(column) => column.id}>
+                    {(column) => (
+                      <td
+                        data-label={column().primary === true ? undefined : column().header}
+                        class={[
+                          styles.table__cell,
+                          {
+                            [styles["table__cell--primary"] ?? ""]: column().primary === true,
+                            [styles["table__cell--end"] ?? ""]: column().align === "end",
+                          },
+                        ]}
+                      >
+                        <Show
+                          when={column().primary === true ? props.rowHref?.(row()) : undefined}
+                          fallback={column().cell(row())}
+                        >
+                          {(href) => (
+                            <a
+                              href={href()}
+                              class={styles.table__link}
+                              // A drag anywhere on the row moves the row, not the link.
+                              draggable={props.reorder === undefined ? undefined : "false"}
+                            >
+                              {column().cell(row())}
+                            </a>
+                          )}
+                        </Show>
+                      </td>
+                    )}
+                  </For>
+                </tr>
               )}
             </For>
           </tbody>
@@ -605,11 +520,4 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
 }
 
 export { DeskTable };
-export type {
-  DeskTableColumn,
-  DeskTableDetail,
-  DeskTableFilter,
-  DeskTableReorder,
-  DeskTableSelect,
-  DeskTableSort,
-};
+export type { DeskTableColumn, DeskTableFilter, DeskTableReorder, DeskTableSort };
