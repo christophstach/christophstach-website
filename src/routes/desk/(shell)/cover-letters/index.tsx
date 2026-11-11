@@ -11,11 +11,19 @@ import { IconPlus } from "../../../../components/icons";
 import type { RouteDefinition } from "@solidjs/router";
 import { formatDay } from "../../../../lib/format";
 import { getDeskCoverLetters } from "../../../../lib/desk/queries";
+import { letterChecks } from "../../../../lib/desk/page-checks";
 import { letterStatus } from "../../../../lib/cv-layout";
 import { paths } from "../../../../router";
 import { saveDeskLetter } from "../../../../lib/desk/letters";
 import styles from "../../../../components/desk/page-cover-letters-index.module.css";
 import { useDeskRequest } from "../../../../lib/desk/request";
+
+/** A letter's page status: a running check first, then the stored result. */
+function status(letter: { id: string; pageFills: number[] }) {
+  return letterChecks.running().includes(letter.id)
+    ? { tone: "none" as const, text: "checking pages…" }
+    : letterStatus(letter.pageFills);
+}
 
 interface CreateForm {
   id: string;
@@ -227,10 +235,8 @@ export default function CoverLetters() {
                       <span class="desk-note">{letter().note}</span>
                     </Show>
                     <span class="panel-row__meta">
-                      <span
-                        class={`desk-status desk-status--${letterStatus(letter().pageFills).tone}`}
-                      >
-                        {letterStatus(letter().pageFills).text}
+                      <span class={`desk-status desk-status--${status(letter()).tone}`}>
+                        {status(letter()).text}
                       </span>
                       <Show when={letter().letterDate !== ""}>
                         <span>{formatDay(letter().letterDate, "en")}</span>

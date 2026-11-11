@@ -10,15 +10,21 @@ import { DeskMeta } from "../../../components/desk/DeskMeta";
 import type { RouteDefinition } from "@solidjs/router";
 import { formatRelative } from "../../../lib/format";
 import { paths } from "../../../router";
-import { running } from "../../../lib/desk/page-checks";
+import { letterChecks, variantChecks } from "../../../lib/desk/page-checks";
 import styles from "../../../components/desk/page-index.module.css";
 
 const LATEST_LETTERS = 5;
 
 function variantStatus(variant: { id: string; pageFills: number[] }) {
-  return running().includes(variant.id)
+  return variantChecks.running().includes(variant.id)
     ? { tone: "none" as const, text: "checking pages…" }
     : pageStatus(variant.pageFills);
+}
+
+function letterRowStatus(letter: { id: string; pageFills: number[] }) {
+  return letterChecks.running().includes(letter.id)
+    ? { tone: "none" as const, text: "checking pages…" }
+    : letterStatus(letter.pageFills);
 }
 
 function ContentPanel() {
@@ -164,8 +170,8 @@ function LettersPanel() {
                     <span class="panel-row__label">{letter.label}</span>
                   </span>
                   <span class="panel-row__meta">
-                    <span class={`desk-status desk-status--${letterStatus(letter.pageFills).tone}`}>
-                      {letterStatus(letter.pageFills).text}
+                    <span class={`desk-status desk-status--${letterRowStatus(letter).tone}`}>
+                      {letterRowStatus(letter).text}
                     </span>
                   </span>
                   <span class="panel-row__meta">

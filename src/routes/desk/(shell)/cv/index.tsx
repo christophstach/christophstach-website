@@ -9,14 +9,14 @@ import { formatRelative } from "../../../../lib/format";
 import { getDeskVariants } from "../../../../lib/desk/queries";
 import { pageStatus } from "../../../../lib/cv-layout";
 import { paths } from "../../../../router";
-import { running } from "../../../../lib/desk/page-checks";
+import { variantChecks } from "../../../../lib/desk/page-checks";
 import { saveDeskVariant } from "../../../../lib/desk/variants";
 import styles from "../../../../components/desk/page-cv-index.module.css";
 import { useDeskRequest } from "../../../../lib/desk/request";
 
 /** A variant's page status: a running check first, then the stored result. */
 function status(variant: DeskVariant) {
-  return running().includes(variant.id)
+  return variantChecks.running().includes(variant.id)
     ? { tone: "none" as const, text: "checking pages…" }
     : pageStatus(variant.pageFills);
 }
