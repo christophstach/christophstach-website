@@ -11,6 +11,7 @@ const COVER_LETTER_WORDING: Record<
     name: string;
     salutation: string;
     closing: string;
+    /** Names the job, or stands alone while the application has no job title. */
     subject: (jobTitle: string) => string;
     /** The PDF's document title. */
     title: string;
@@ -20,14 +21,14 @@ const COVER_LETTER_WORDING: Record<
     name: "English",
     salutation: "Dear Hiring Team,",
     closing: "Kind regards,",
-    subject: (jobTitle) => `Application for ${jobTitle}`,
+    subject: (jobTitle) => (jobTitle === "" ? "Application" : `Application for ${jobTitle}`),
     title: "Cover letter",
   },
   de: {
     name: "Deutsch",
     salutation: "Sehr geehrte Damen und Herren,",
     closing: "Mit freundlichen Grüßen",
-    subject: (jobTitle) => `Bewerbung als ${jobTitle}`,
+    subject: (jobTitle) => (jobTitle === "" ? "Bewerbung" : `Bewerbung als ${jobTitle}`),
     title: "Anschreiben",
   },
 };
