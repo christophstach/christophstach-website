@@ -14,17 +14,20 @@ function errorStatus(error: unknown): number {
   return 500;
 }
 
+/** The error page's message prop: a thrown Error's message, or none. */
+function errorMessage(error: unknown): { message?: string } {
+  return error instanceof Error ? { message: error.message } : {};
+}
+
 // @solidjs/meta 1.0 needs no provider: its head registry is ambient.
 export default function App() {
   return (
     <Router>
       {(props) => (
         <Errored
+          // `error` is an accessor (Solid 2), not the thrown value.
           fallback={(error) => (
-            <ErrorPage
-              status={errorStatus(error)}
-              {...(error instanceof Error ? { message: error.message } : {})}
-            />
+            <ErrorPage status={errorStatus(error())} {...errorMessage(error())} />
           )}
         >
           <Loading>{props.children}</Loading>
