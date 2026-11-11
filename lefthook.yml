@@ -7,7 +7,10 @@ pre-commit:
     # No env file except the example, even when forced past .gitignore.
     no-env-files:
       glob: "{.env,.env.*,**/.env,**/.env.*}"
-      exclude: "**/.env.example"
+      # Both spellings: "**/" doesn't match a file at the repository root.
+      exclude:
+        - ".env.example"
+        - "**/.env.example"
       run: |
         echo "Refusing to commit {staged_files}: env files hold secrets. Only .env.example belongs in git." >&2
         exit 1
