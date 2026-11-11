@@ -266,6 +266,11 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
                   event.preventDefault();
                   setQuery("");
                 }
+
+                // The search is live; in a form, Enter would submit it.
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                }
               }}
             />
           </div>
