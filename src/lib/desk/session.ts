@@ -5,13 +5,7 @@
 export async function signOut(): Promise<void> {
   "use server";
 
-  const { getRequestEvent } = await import("@solidjs/web");
-  const { signOutCookies } = await import("../../server/session");
-  const event = getRequestEvent();
+  const desk = await import("../../server/sign-out");
 
-  if (event !== undefined) {
-    for (const cookie of await signOutCookies(event.request)) {
-      event.response.headers.append("Set-Cookie", cookie);
-    }
-  }
+  await desk.signOut();
 }
