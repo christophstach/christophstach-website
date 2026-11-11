@@ -1,73 +1,64 @@
 import { For, Show, createMemo, createSignal, snapshot } from "solid-js";
-import { deleteDeskProject, saveDeskProject } from "../../../../../lib/desk/content";
-import { getDeskProjects, getDeskCvs } from "../../../../../lib/desk/queries";
+import { getDeskContent, getDeskCvs } from "../../../../../lib/desk/queries";
 import { useNavigate, useParams } from "@solidjs/router";
 import { DeskFormSection } from "../../../../../components/desk/DeskFormSection";
 import { DeskMenu } from "../../../../../components/desk/DeskMenu";
 import { DeskMeta } from "../../../../../components/desk/DeskMeta";
 import { DeskSaveBar } from "../../../../../components/desk/DeskSaveBar";
 import { IconTrash } from "../../../../../components/icons";
-import type { ProjectRecord } from "../../../../../data/projects";
 import type { RouteDefinition } from "@solidjs/router";
+import type { SkillGroupRecord } from "../../../../../data/cv";
 import { forgetPageChecks } from "../../../../../lib/desk/page-checks";
 import { paths } from "../../../../../router";
-import styles from "../../../../../components/desk/page-cv-projects-id.module.css";
+import { saveDeskSkillGroups } from "../../../../../lib/desk/content";
+import styles from "../../../../../components/desk/page-cv-skills-id.module.css";
 import { useDeskRequest } from "../../../../../lib/desk/request";
 import { useDraft } from "../../../../../lib/desk/draft";
 
-/** The form's state: tech as one comma-separated line. */
-function toForm(project: ProjectRecord) {
-  return {
-    name: project.name,
-    note: project.note,
-    title: project.title,
-    description: project.description,
-    tech: project.tech.join(", "),
-    url: project.url,
-  };
+/** The form's state: the skills as one comma-separated line. */
+function toForm(group: SkillGroupRecord) {
+  return { name: group.name, note: group.note, title: group.title, items: group.items.join(", ") };
 }
 
-type ProjectForm = ReturnType<typeof toForm>;
+type GroupForm = ReturnType<typeof toForm>;
 
-const EMPTY_FORM: ProjectForm = {
-  name: "",
-  note: "",
-  title: "",
-  description: "",
-  tech: "",
-  url: "",
-};
+const EMPTY_FORM: GroupForm = { name: "", note: "", title: "", items: "" };
 
-export default function ProjectEditor() {
+/**
+ * One skill group's fields. The groups are saved as one list (that is how
+ * their order is kept), so a save or delete here writes the whole list with
+ * this group changed or left out.
+ */
+export default function SkillGroupEditor() {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const projects = createMemo(() => getDeskProjects());
+  const content = createMemo(() => getDeskContent());
   const cvs = createMemo(() => getDeskCvs());
   const [removing, setRemoving] = createSignal(false);
-  // While deleting, the refetched list no longer has the project: keep
-  // showing the last one until the page has navigated away.
-  const stored = createMemo((previous?: ProjectRecord) => {
-    const project = projects().find((candidate) => candidate.id === params.id);
+  // While deleting, the refetched list no longer has the group: keep showing
+  // the last one until the page has navigated away.
+  const stored = createMemo((previous?: SkillGroupRecord) => {
+    const group = content().skills.find((candidate) => candidate.label === params.id);
 
-    if (project !== undefined) {
-      return project;
+    if (group !== undefined) {
+      return group;
     }
 
     if (removing() && previous !== undefined) {
       return previous;
     }
 
-    throw Object.assign(new Error(`No project "${params.id}".`), { status: 404 });
+    throw Object.assign(new Error(`No skill group "${params.id}".`), { status: 404 });
   });
   const { form, setForm, saved, dirty, reset, leave } = useDraft(
     () => toForm(stored()),
     EMPTY_FORM,
   );
   const request = useDeskRequest();
-  const usedBy = () => cvs().cvs.filter((cv) => cv.projects.includes(params.id));
+  const usedBy = () => cvs().cvs.filter((cv) => cv.skills.includes(params.id));
   const heading = () => [form.name, form.title].find((text) => text !== "") ?? params.id;
 
-  const bind = (key: keyof ProjectForm) => ({
+  const bind = (key: keyof GroupForm) => ({
     value: form[key],
     onInput: (event: InputEvent & { currentTarget: HTMLInputElement | HTMLTextAreaElement }) => {
       const { value } = event.currentTarget;
@@ -82,26 +73,33 @@ export default function ProjectEditor() {
     event.preventDefault();
 
     const draft = snapshot(form);
-    const project = { ...draft, id: params.id, tech: draft.tech.split(",") };
+    const changed = { ...draft, label: params.id, items: draft.items.split(",") };
+    const groups = content().skills.map((group) => (group.label === params.id ? changed : group));
 
-    if (await request.run(() => saveDeskProject(project, { create: false }))) {
+    if (await request.run(() => saveDeskSkillGroups(groups))) {
       forgetPageChecks();
     }
   }
 
   async function remove() {
-    const label = saved().name === "" ? saved().title : saved().name;
+    const users = usedBy().map((cv) => cv.label);
+    const question =
+      users.length > 0
+        ? `${users.join(", ")} print "${saved().name}". Delete it anyway?`
+        : `Delete the skill group "${saved().name}"?`;
 
-    if (!confirm(`Delete the project "${label}"? Cvs that show it drop it.`)) {
+    if (!confirm(question)) {
       return;
     }
 
     setRemoving(true);
 
-    if (await request.run(() => deleteDeskProject(params.id))) {
+    const groups = content().skills.filter((group) => group.label !== params.id);
+
+    if (await request.run(() => saveDeskSkillGroups(groups))) {
       forgetPageChecks();
       leave();
-      navigate(paths.desk.cv.projects());
+      navigate(paths.desk.content.skills());
     } else {
       setRemoving(false);
     }
@@ -109,21 +107,21 @@ export default function ProjectEditor() {
 
   return (
     <form class="desk-page" onSubmit={(event) => void save(event)}>
-      <DeskMeta title={`${heading()} · Projects · Desk`} />
+      <DeskMeta title={`${heading()} · Skills · Desk`} />
       <header class="desk-head">
         <div class="desk-head__text">
           <p class="desk-head__path">
-            <a href={paths.desk.cv()}>~/desk/cv</a> /{" "}
-            <a href={paths.desk.cv.projects()}>projects</a> / {params.id}
+            <a href={paths.desk.content()}>~/desk/content</a> /{" "}
+            <a href={paths.desk.content.skills()}>skills</a> / {params.id}
           </p>
           <h1 class="desk-head__title">{heading()}</h1>
           <p class="desk-head__sub">
-            Printed by the CVs that pick it; /curriculum shows the website CV's.
+            The home page shows every group; the CVs that pick it print it in the PDF.
           </p>
         </div>
 
         <DeskMenu
-          label="Project actions"
+          label="Skill group actions"
           actions={[{ label: "Delete", icon: IconTrash, run: () => void remove(), danger: true }]}
         />
       </header>
@@ -140,63 +138,51 @@ export default function ProjectEditor() {
             <span class="field__label">name</span>
             <input {...bind("name")} class="input" required />
           </label>
+          <div class="field">
+            <span class="field__label">id</span>
+            <span class={styles.group__id}>{params.id}</span>
+            <span class="field__hint">The home page shows it. It can't change.</span>
+          </div>
           <label class="field field--wide">
             <span class="field__label">note</span>
             <textarea
               {...bind("note")}
               class="input"
-              rows="2"
-              placeholder="What this project is for, e.g. which jobs it fits."
+              rows="1"
+              placeholder="What this group is for."
             />
           </label>
         </DeskFormSection>
 
-        <DeskFormSection title="basics" description="The title links to the url when there is one.">
+        <DeskFormSection title="on the cv" description="What the CV and the home page show." single>
           <label class="field">
             <span class="field__label">title</span>
             <input {...bind("title")} class="input" required />
+            <span class="field__hint">The heading the CV prints.</span>
           </label>
           <label class="field">
-            <span class="field__label">url</span>
-            <input {...bind("url")} class="input" type="url" placeholder="https://…" />
-            <span class="field__hint">Optional.</span>
-          </label>
-        </DeskFormSection>
-
-        <DeskFormSection title="description" description="A few sentences on what it is." single>
-          <label class="field">
-            <span class="field__label">text</span>
-            <textarea {...bind("description")} class="input" rows="5" />
-          </label>
-        </DeskFormSection>
-
-        <DeskFormSection title="tech" description="Shown as chips under the project." single>
-          <label class="field">
-            <span class="field__label">technologies</span>
-            <input {...bind("tech")} class="input" placeholder="Vue, Nuxt, TypeScript" />
+            <span class="field__label">skills</span>
+            <textarea {...bind("items")} class="input" rows="3" />
             <span class="field__hint">Comma-separated, in display order.</span>
           </label>
         </DeskFormSection>
 
         <DeskFormSection
-          title="shown by"
-          description="Pick projects in a CV's projects table."
+          title="printed by"
+          description="Pick skill groups in a CV's skills table."
           single
         >
           <Show
             when={usedBy().length > 0}
-            fallback={<p class={styles.project__none}>No CV shows this project.</p>}
+            fallback={<p class={styles.group__none}>No CV prints this group.</p>}
           >
             <ul class="form-rows">
               <For each={usedBy()}>
                 {(cv) => (
-                  <li class={styles.project__cv}>
-                    <a href={paths.desk.cv(cv.id)} class="text-link">
+                  <li>
+                    <a href={paths.desk.cvs(cv.id)} class="text-link">
                       {cv.label}
                     </a>
-                    <Show when={cv.id === cvs().websiteId}>
-                      <span class="role-tag">/curriculum</span>
-                    </Show>
                   </li>
                 )}
               </For>
@@ -214,7 +200,7 @@ export default function ProjectEditor() {
 
 export const route = {
   preload: () => {
-    void getDeskProjects();
+    void getDeskContent();
     void getDeskCvs();
   },
 } satisfies RouteDefinition;

@@ -24,7 +24,7 @@ function CreateEntry(props: { section: Section }) {
   const navigate = useNavigate();
   const request = useDeskRequest();
   const [form, setForm] = createStore({ ...EMPTY_FORM });
-  const sectionPath = () => paths.desk.cv[props.section]();
+  const sectionPath = () => paths.desk.content[props.section]();
 
   async function create(event: SubmitEvent) {
     event.preventDefault();
@@ -48,7 +48,7 @@ function CreateEntry(props: { section: Section }) {
     if (await request.run(() => saveDeskEntry(entry, { create: true }))) {
       forgetPageChecks();
       setForm(() => ({ ...EMPTY_FORM }));
-      navigate(paths.desk.cv[props.section](id));
+      navigate(paths.desk.content[props.section](id));
     }
   }
 
@@ -138,7 +138,7 @@ export function DeskEntryList(props: { section: Section }) {
       <header class="desk-head">
         <div class="desk-head__text">
           <p class="desk-head__path">
-            <a href={paths.desk.cv()}>~/desk/cv</a> / {props.section}
+            <a href={paths.desk.content()}>~/desk/content</a> / {props.section}
           </p>
           <h1 class="desk-head__title">{heading()}</h1>
           <p class="desk-head__sub">
@@ -147,7 +147,7 @@ export function DeskEntryList(props: { section: Section }) {
         </div>
 
         <Show when={!creating()}>
-          <a href={paths.desk.cv[props.section]({ new: "1" })} class="button button--primary">
+          <a href={paths.desk.content[props.section]({ new: "1" })} class="button button--primary">
             <IconPlus size={16} />
             New entry
           </a>
@@ -167,7 +167,7 @@ export function DeskEntryList(props: { section: Section }) {
           noun={["entry", "entries"]}
           rows={entries()}
           rowKey={(entry) => entry.id}
-          rowHref={(entry) => paths.desk.cv[props.section](entry.id)()}
+          rowHref={(entry) => paths.desk.content[props.section](entry.id)()}
           columns={[
             {
               id: "entry",

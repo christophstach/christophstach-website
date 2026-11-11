@@ -53,7 +53,7 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
         </label>
         <label class="field">
           <span class="field__label">cv</span>
-          {/* `selected` on the options: see the CV select in /desk/cv. */}
+          {/* `selected` on the options: see the CV select in /desk/cvs. */}
           <select
             class="input"
             onChange={(event) => {

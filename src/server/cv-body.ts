@@ -2,7 +2,6 @@ import "server-only";
 import { array, object, optional, string } from "zod/mini";
 import { parseInput, requireSlug, stringList, text, trimmed } from "./input";
 import type { Cv } from "../data/cvs";
-import { HttpError } from "./http";
 import { cvLayoutSchema } from "../data/cv-print-layout";
 
 /**
@@ -15,8 +14,6 @@ type CvBody = Omit<Cv, "coreTechnologies" | "layout"> & {
   layout?: Cv["layout"];
 };
 
-// Ids taken by desk pages under /desk/cv, e.g. /desk/cv/projects.
-const RESERVED_IDS = new Set(["education", "experience", "profile", "projects", "skills"]);
 const NOT_CV = "Not a CV.";
 
 const idsSchema = array(string(NOT_CV), NOT_CV);
@@ -45,10 +42,6 @@ const cvSchema = object(
  */
 function parseCvBody(id: string, body: unknown): CvBody {
   requireSlug(id);
-
-  if (RESERVED_IDS.has(id)) {
-    throw new HttpError(400, `"${id}" is taken by a desk page.`);
-  }
 
   const { note, coreTechnologies, layout, ...cv } = parseInput(cvSchema, body ?? {});
 

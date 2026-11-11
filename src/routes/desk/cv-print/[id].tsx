@@ -7,7 +7,7 @@ import { cvLayoutSchema } from "../../../data/cv-print-layout";
 import { getDeskCvPrint } from "../../../lib/desk/cvs";
 import { safeParse } from "zod/mini";
 
-// A private CV, printed by /api/desk/cv/<CV> and by the desk's
+// A private CV, printed by /api/desk/cv/<id> and by the desk's
 // page check. It lives under /desk so the guard keeps it behind the GitHub
 // session, and has no frame because Chrome prints it as is. Layout steps in
 // the query are a trial of unsaved steps.

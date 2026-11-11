@@ -2,10 +2,11 @@ import { For, Show, createMemo } from "solid-js";
 import {
   getDeskContent,
   getDeskCoverLetters,
-  getDeskProjects,
   getDeskCvs,
+  getDeskProjects,
 } from "../../../lib/desk/queries";
 import { letterStatus, pageStatus } from "../../../lib/cv-layout";
+import { DeskContentPanel } from "../../../components/desk/DeskContentPanel";
 import { DeskMeta } from "../../../components/desk/DeskMeta";
 import type { RouteDefinition } from "@solidjs/router";
 import { formatRelative } from "../../../lib/format";
@@ -27,55 +28,6 @@ function letterRowStatus(letter: { id: string; pageFills: number[] }) {
     : letterStatus(letter.pageFills);
 }
 
-function ContentPanel() {
-  const content = createMemo(() => getDeskContent());
-  const projects = createMemo(() => getDeskProjects());
-
-  const stats = () => {
-    const { entries, skills } = content();
-    const inSection = (section: string) => entries.filter((entry) => entry.section === section);
-
-    return [
-      {
-        to: paths.desk.cv.experience(),
-        label: "experience",
-        count: inSection("experience").length,
-      },
-      { to: paths.desk.cv.education(), label: "education", count: inSection("education").length },
-      {
-        to: paths.desk.cv.experience(),
-        label: "bullets",
-        count: entries.reduce((sum, entry) => sum + entry.bullets.length, 0),
-      },
-      { to: paths.desk.cv.skills(), label: "skill groups", count: skills.length },
-      { to: paths.desk.cv.projects(), label: "projects", count: projects().length },
-    ];
-  };
-
-  return (
-    <section class="panel" aria-labelledby="panel-content">
-      <header class="panel__head">
-        <h2 id="panel-content" class="panel__title">
-          cv content
-        </h2>
-      </header>
-
-      <ul class={styles.stats}>
-        <For each={stats()}>
-          {(stat) => (
-            <li>
-              <a href={stat.to} class={styles.stat}>
-                <span class={styles.stat__count}>{stat.count}</span>
-                <span class={styles.stat__label}>{stat.label}</span>
-              </a>
-            </li>
-          )}
-        </For>
-      </ul>
-    </section>
-  );
-}
-
 function CvsPanel() {
   const data = createMemo(() => getDeskCvs());
   const isPublic = (id: string) => id === data().primaryId || id === data().websiteId;
@@ -94,7 +46,7 @@ function CvsPanel() {
         <h2 id="panel-cvs" class="panel__title">
           cvs
         </h2>
-        <a href={paths.desk.cv({ new: "1" })} class={["text-link panel__end", styles["add-link"]]}>
+        <a href={paths.desk.cvs({ new: "1" })} class={["text-link panel__end", styles["add-link"]]}>
           New CV
         </a>
       </header>
@@ -104,7 +56,7 @@ function CvsPanel() {
           <For each={cvs()}>
             {(cv) => (
               <li>
-                <a href={paths.desk.cv(cv.id)} class={["panel-row", styles.row]}>
+                <a href={paths.desk.cvs(cv.id)} class={["panel-row", styles.row]}>
                   <span class={styles.row__main}>
                     <span class="panel-row__label">{cv.label}</span>
                     <Show when={cv.id === data().primaryId}>
@@ -209,7 +161,7 @@ export default function DeskOverview() {
       </header>
 
       <div class="panels">
-        <ContentPanel />
+        <DeskContentPanel />
         <CvsPanel />
         <LettersPanel />
       </div>

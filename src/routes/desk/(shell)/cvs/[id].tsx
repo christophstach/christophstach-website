@@ -162,7 +162,7 @@ export default function CvEditor() {
 
     if (await request.run(() => deleteDeskCv(params.id))) {
       leave();
-      navigate(paths.desk.cv());
+      navigate(paths.desk.cvs());
     } else {
       setRemoving(false);
     }
@@ -191,7 +191,7 @@ export default function CvEditor() {
       label: "Duplicate",
       icon: IconCopy,
       run: () => {
-        navigate(paths.desk.cv({ new: "1", from: params.id }));
+        navigate(paths.desk.cvs({ new: "1", from: params.id }));
       },
     },
     ...(isPrimary() || isWebsite()
@@ -205,7 +205,7 @@ export default function CvEditor() {
       <header class="desk-head">
         <div class="desk-head__text">
           <p class="desk-head__path">
-            <a href={paths.desk.cv()}>~/desk/cv</a> / {params.id}
+            <a href={paths.desk.cvs()}>~/desk/cvs</a> / {params.id}
           </p>
           <h1 class="desk-head__title">{form.label === "" ? params.id : form.label}</h1>
           <p class={["desk-head__sub", styles.editor__role]}>

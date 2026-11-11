@@ -75,7 +75,7 @@ layout (header, footer, head tags); `src/routes/desk/(shell)/` holds the desk pa
 `/desk/cover-letter-print/<id>`) sit outside both. A route module with `GET` exports and no
 default export is an endpoint (`src/routes/api/…`, `/christoph-stach-cv.pdf`,
 `/auth/github`). Links use the router's typed `paths` (`src/router.ts`; a node ends in a
-string with a call, `paths.desk.cv(id)()`, and an empty query value is dropped, so flags are
+string with a call, `paths.desk.cvs(id)()`, and an empty query value is dropped, so flags are
 `{ new: "1" }`); URLs that aren't pages are constants in `src/data/endpoints.ts`. Never write a
 page path by hand.
 
@@ -101,14 +101,14 @@ to measure every CV and letter without a page check on this build.
 
 **Content is data, not markup.** CV content lives in the database, typed by the interfaces in
 `src/data/cv.ts` (`TimelineEntry`, `EntryRecord`, `SkillGroup`, `Profile`, `CvContent`). The
-profile (one row of `cv_profile`, at `/desk/cv/profile`), timeline entries (`cv_entries`,
+profile (one row of `cv_profile`, at `/desk/content/profile`), timeline entries (`cv_entries`,
 bullets as an ordered jsonb list), skill groups (`skill_groups`) and projects (`projects`) are
-edited in the desk under `/desk/cv/experience`, `education`, `skills` and `projects` (so those
-and `profile` can't be CV ids); `src/server/cv-content.ts` loads them (`loadCvContent`)
+edited in the desk under `/desk/content/experience`, `education`, `skills` and `projects`;
+`src/server/cv-content.ts` loads them (`loadCvContent`)
 and writes them, `projects.ts` does the projects. Entries, bullets and skill groups carry
 stable ids that can't change once created, and **CVs** pick them by id, in order.
 CVs are rows in `cvs`/`cv_entry_picks`, typed by `Cv` in
-`src/data/cvs.ts`, edited at `/desk/cv/<id>`; `src/server/cvs.ts` holds their
+`src/data/cvs.ts`, edited at `/desk/cvs/<id>`; `src/server/cvs.ts` holds their
 database access. Saving a CV checks every id against the content (`printCv` in
 `src/lib/cv.ts`); deleting an entry, bullet, skill group or project takes it out of
 every CV. Two CVs hold a public role and can't be deleted: the primary one is the

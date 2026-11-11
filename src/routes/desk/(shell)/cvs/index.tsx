@@ -55,7 +55,7 @@ function CreateCv(props: { cvs: DeskCv[]; from: string }) {
 
     if (await request.run(() => saveDeskCv(id, cv, { create: true }))) {
       setForm(() => ({ id: "", label: "", from: "" }));
-      navigate(paths.desk.cv(id));
+      navigate(paths.desk.cvs(id));
     }
   }
 
@@ -119,7 +119,7 @@ function CreateCv(props: { cvs: DeskCv[]; from: string }) {
         <button type="submit" class="button button--primary" disabled={request.busy()}>
           {request.busy() ? "Creating…" : "Create CV"}
         </button>
-        <a href={paths.desk.cv()} class="button button--outline">
+        <a href={paths.desk.cvs()} class="button button--outline">
           Cancel
         </a>
       </div>
@@ -211,7 +211,7 @@ export default function CvList() {
       <DeskMeta title="CVs · Desk" />
       <header class="desk-head">
         <div class="desk-head__text">
-          <p class="desk-head__path">~/desk/cv</p>
+          <p class="desk-head__path">~/desk/cvs</p>
           <h1 class="desk-head__title">CVs</h1>
           <p class="desk-head__sub">
             Each CV picks entries and bullets from the CV content. One is the PDF, one the website.
@@ -219,7 +219,7 @@ export default function CvList() {
         </div>
 
         <Show when={search.new === undefined}>
-          <a href={paths.desk.cv({ new: "1" })} class="button button--primary">
+          <a href={paths.desk.cvs({ new: "1" })} class="button button--primary">
             <IconPlus size={16} />
             New CV
           </a>
@@ -239,7 +239,7 @@ export default function CvList() {
           noun={["cv", "cvs"]}
           rows={rows()}
           rowKey={(cv) => cv.id}
-          rowHref={(cv) => paths.desk.cv(cv.id)()}
+          rowHref={(cv) => paths.desk.cvs(cv.id)()}
           columns={columns}
           filters={filters}
         />

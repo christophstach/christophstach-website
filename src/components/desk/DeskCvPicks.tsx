@@ -109,7 +109,7 @@ function Entries(props: PicksProps & { section: Section; title: string }) {
         id={props.section}
         title={props.title}
         count={`${ids().length} of ${entries().length} printed`}
-        edit={paths.desk.cv[props.section]()}
+        edit={paths.desk.content[props.section]()}
         editText={`Edit ${props.section}`}
       />
       <DeskCvRows
@@ -177,7 +177,7 @@ function Skills(props: PicksProps) {
         id="skills"
         title="Skills"
         count={`${props.form.skills.length} of ${groups().length} printed`}
-        edit={paths.desk.cv.skills()}
+        edit={paths.desk.content.skills()}
         editText="Edit skills"
       />
       <DeskCvRows
@@ -213,7 +213,7 @@ function Projects(props: PicksProps) {
         id="projects"
         title="Projects"
         count="Printed after the education; the website CV's show on /curriculum"
-        edit={paths.desk.cv.projects()}
+        edit={paths.desk.content.projects()}
         editText="Edit projects"
       />
       <DeskCvRows

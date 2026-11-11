@@ -6,6 +6,7 @@ import {
   IconLayoutDashboard,
   IconMail,
   IconSchool,
+  IconStack,
   IconTools,
 } from "../components/icons";
 import type { IconProps } from "../components/icons";
@@ -20,17 +21,48 @@ export interface DeskLink {
   icon: (props: IconProps) => JSX.Element;
 }
 
-export const deskSections: DeskLink[] = [
-  { to: paths.desk(), label: "overview", icon: IconLayoutDashboard },
-  { to: paths.desk.cv(), label: "cv", icon: IconFileCv },
-  { to: paths.desk["cover-letters"](), label: "cover-letters", icon: IconMail },
+/** A sidebar section; its pages show under it while the sidebar is open. */
+export interface DeskSection extends DeskLink {
+  pages?: DeskLink[];
+}
+
+/** Under "content": what every CV picks from, with what the content page says of each. */
+export const deskContentLinks: (DeskLink & { hint: string })[] = [
+  {
+    to: paths.desk.content.profile(),
+    label: "profile",
+    icon: IconId,
+    hint: "Name, contact and links: the header of every CV and letter.",
+  },
+  {
+    to: paths.desk.content.experience(),
+    label: "experience",
+    icon: IconBriefcase,
+    hint: "Jobs, with the bullets the CVs pick from.",
+  },
+  {
+    to: paths.desk.content.education(),
+    label: "education",
+    icon: IconSchool,
+    hint: "Degrees, with the bullets the CVs pick from.",
+  },
+  {
+    to: paths.desk.content.skills(),
+    label: "skills",
+    icon: IconTools,
+    hint: "Skill groups: the home page shows all, the CVs pick which they print.",
+  },
+  {
+    to: paths.desk.content.projects(),
+    label: "projects",
+    icon: IconFolders,
+    hint: "Projects for /curriculum, picked by the website CV.",
+  },
 ];
 
-/** Under "cv": the content the CVs pick from. */
-export const deskContentLinks: DeskLink[] = [
-  { to: paths.desk.cv.profile(), label: "profile", icon: IconId },
-  { to: paths.desk.cv.experience(), label: "experience", icon: IconBriefcase },
-  { to: paths.desk.cv.education(), label: "education", icon: IconSchool },
-  { to: paths.desk.cv.skills(), label: "skills", icon: IconTools },
-  { to: paths.desk.cv.projects(), label: "projects", icon: IconFolders },
+export const deskSections: DeskSection[] = [
+  { to: paths.desk(), label: "overview", icon: IconLayoutDashboard },
+  { to: paths.desk["cover-letters"](), label: "cover-letters", icon: IconMail },
+  { to: paths.desk.cvs(), label: "cvs", icon: IconFileCv },
+  { to: paths.desk.content(), label: "content", icon: IconStack, pages: deskContentLinks },
 ];

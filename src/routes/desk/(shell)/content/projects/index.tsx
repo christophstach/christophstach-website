@@ -45,7 +45,7 @@ function CreateProject() {
 
     if (await request.run(() => saveDeskProject(project, { create: true }))) {
       setForm(() => ({ ...EMPTY_FORM }));
-      navigate(paths.desk.cv.projects(id));
+      navigate(paths.desk.content.projects(id));
     }
   }
 
@@ -89,7 +89,7 @@ function CreateProject() {
         <button type="submit" class="button button--primary" disabled={request.busy()}>
           {request.busy() ? "Creating…" : "Create project"}
         </button>
-        <a href={paths.desk.cv.projects()} class="button button--outline">
+        <a href={paths.desk.content.projects()} class="button button--outline">
           Cancel
         </a>
       </div>
@@ -115,7 +115,7 @@ export default function ProjectsPage() {
       <header class="desk-head">
         <div class="desk-head__text">
           <p class="desk-head__path">
-            <a href={paths.desk.cv()}>~/desk/cv</a> / projects
+            <a href={paths.desk.content()}>~/desk/content</a> / projects
           </p>
           <h1 class="desk-head__title">Projects</h1>
           <p class="desk-head__sub">
@@ -124,7 +124,7 @@ export default function ProjectsPage() {
         </div>
 
         <Show when={!creating()}>
-          <a href={paths.desk.cv.projects({ new: "1" })} class="button button--primary">
+          <a href={paths.desk.content.projects({ new: "1" })} class="button button--primary">
             <IconPlus size={16} />
             New project
           </a>
@@ -144,7 +144,7 @@ export default function ProjectsPage() {
           noun={["project", "projects"]}
           rows={projects()}
           rowKey={(project) => project.id}
-          rowHref={(project) => paths.desk.cv.projects(project.id)()}
+          rowHref={(project) => paths.desk.content.projects(project.id)()}
           columns={[
             {
               id: "project",

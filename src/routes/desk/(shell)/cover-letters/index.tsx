@@ -190,7 +190,7 @@ function CreateLetter(props: { source: CoverLetter | undefined }) {
 
         <label class="field">
           <span class="field__label">language</span>
-          {/* `selected` on the options: see the CV select in /desk/cv. */}
+          {/* `selected` on the options: see the CV select in /desk/cvs. */}
           <select
             class="input"
             onChange={(event) => {

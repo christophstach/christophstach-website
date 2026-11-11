@@ -44,7 +44,7 @@ function CreateGroup(props: { groups: SkillGroupRecord[] }) {
     if (await request.run(() => saveDeskSkillGroups([...props.groups, group]))) {
       forgetPageChecks();
       setForm(() => ({ ...EMPTY_FORM }));
-      navigate(paths.desk.cv.skills(label));
+      navigate(paths.desk.content.skills(label));
     }
   }
 
@@ -88,7 +88,7 @@ function CreateGroup(props: { groups: SkillGroupRecord[] }) {
         <button type="submit" class="button button--primary" disabled={request.busy()}>
           {request.busy() ? "Creating…" : "Create group"}
         </button>
-        <a href={paths.desk.cv.skills()} class="button button--outline">
+        <a href={paths.desk.content.skills()} class="button button--outline">
           Cancel
         </a>
       </div>
@@ -129,7 +129,7 @@ export default function SkillsPage() {
       <header class="desk-head">
         <div class="desk-head__text">
           <p class="desk-head__path">
-            <a href={paths.desk.cv()}>~/desk/cv</a> / skills
+            <a href={paths.desk.content()}>~/desk/content</a> / skills
           </p>
           <h1 class="desk-head__title">Skills</h1>
           <p class="desk-head__sub">
@@ -138,7 +138,7 @@ export default function SkillsPage() {
         </div>
 
         <Show when={!creating()}>
-          <a href={paths.desk.cv.skills({ new: "1" })} class="button button--primary">
+          <a href={paths.desk.content.skills({ new: "1" })} class="button button--primary">
             <IconPlus size={16} />
             New group
           </a>
@@ -166,7 +166,7 @@ export default function SkillsPage() {
             noun={["group", "groups"]}
             rows={rows()}
             rowKey={(group) => group.label}
-            rowHref={(group) => paths.desk.cv.skills(group.label)()}
+            rowHref={(group) => paths.desk.content.skills(group.label)()}
             reorder={{
               label: (group) => group.name,
               onReorder: (labels) => {

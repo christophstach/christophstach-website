@@ -1,10 +1,10 @@
 import { For, Show } from "solid-js";
-import { deskContentLinks, deskSections } from "../../data/desk";
+import { deskSections } from "../../data/desk";
 import { paths } from "../../router";
 import styles from "./DeskLayout.module.css";
 import { useLocation } from "@solidjs/router";
 
-/** The desk sections, with the CV content under "cv" while the sidebar is open. */
+/** The desk sections, each with its pages under it while the sidebar is open. */
 export function DeskNav(props: { collapsed: boolean }) {
   const location = useLocation();
 
@@ -33,9 +33,9 @@ export function DeskNav(props: { collapsed: boolean }) {
                 <span class={styles.desk__label}>{section.label}</span>
               </a>
 
-              <Show when={section.to === paths.desk.cv() && !props.collapsed}>
-                <ul class={styles.desk__content} aria-label="CV content">
-                  <For each={deskContentLinks}>
+              <Show when={!props.collapsed && section.pages}>
+                <ul class={styles.desk__content} aria-label={section.label}>
+                  <For each={section.pages}>
                     {(link) => (
                       <li>
                         <a

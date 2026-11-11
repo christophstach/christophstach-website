@@ -59,7 +59,7 @@ export default function ProfilePage() {
       <header class="desk-head">
         <div class="desk-head__text">
           <p class="desk-head__path">
-            <a href={paths.desk.cv()}>~/desk/cv</a> / profile
+            <a href={paths.desk.content()}>~/desk/content</a> / profile
           </p>
           <h1 class="desk-head__title">Profile</h1>
           <p class="desk-head__sub">The header every CV's PDF prints.</p>
