@@ -181,7 +181,7 @@ export default function ProjectEditor() {
 
         <DeskFormSection
           title="shown by"
-          description="Pick projects in a variant's projects tab."
+          description="Pick projects in a variant's projects table."
           single
         >
           <Show

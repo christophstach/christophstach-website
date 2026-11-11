@@ -169,7 +169,7 @@ export default function SkillGroupEditor() {
 
         <DeskFormSection
           title="printed by"
-          description="Pick skill groups in a variant's skills tab."
+          description="Pick skill groups in a variant's skills table."
           single
         >
           <Show
