@@ -145,15 +145,19 @@ function PickTable<Item>(props: PickTableProps<Item>) {
           id: "name",
           header: props.noun[0],
           primary: true,
-          cell: (item) => (
-            <span class={styles.row__text}>
-              <span class={styles.row__name}>{props.textOf(item).name}</span>
-              <span class={styles.row__meta}>{props.textOf(item).meta}</span>
-              <Show when={props.textOf(item).note !== ""}>
-                <span class={styles.row__note}>{props.textOf(item).note}</span>
-              </Show>
-            </span>
-          ),
+          cell: (item) => {
+            const text = props.textOf(item);
+
+            return (
+              <span class={styles.row__text}>
+                <span class={styles.row__name}>{text.name}</span>
+                <span class={styles.row__meta}>{text.meta}</span>
+                <Show when={text.note !== ""}>
+                  <span class={styles.row__note}>{text.note}</span>
+                </Show>
+              </span>
+            );
+          },
           search: (item) => {
             const text = props.textOf(item);
 
@@ -232,7 +236,7 @@ function Entries(props: PicksProps & { section: Section }) {
             const printed =
               props.form[props.section].find((pick) => pick.id === entry.id)?.bullets.length ?? 0;
 
-            return isPicked(entry)
+            return isPicked(entry) && entry.bullets.length > 0
               ? `${printed}/${entry.bullets.length}`
               : String(entry.bullets.length);
           },
