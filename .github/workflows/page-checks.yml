@@ -1,0 +1,35 @@
+# Measures the pages of every CV variant and cover letter that has no page
+# check on the live build (src/server/page-check-job.ts), so nobody has to open
+# the desk for it. Vercel Hobby runs its own cron (vite.config.ts) only once a
+# day; this runs every 15 minutes and right after each production deploy.
+# Needs the repository secret CRON_SECRET, the same value as on Vercel.
+name: Page checks
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  deployment_status:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: page-checks
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: >-
+      github.event_name != 'deployment_status' ||
+      (github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Run the page check
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 90 \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            https://christophstach.de/api/desk/page-checks

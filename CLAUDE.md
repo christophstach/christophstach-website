@@ -95,7 +95,8 @@ refetches every query after any server function call, so anything that runs Chro
 checks) is a plain server function, not a query. Every desk server function and desk endpoint
 calls `requireUser()` first (`src/server/auth.ts`); the page guard doesn't cover them. The one
 exception is the scheduled page check (`/api/desk/page-checks`, `src/server/page-check-job.ts`):
-Vercel Cron calls it daily with `CRON_SECRET`, and it seals a session only for its own Chrome
+Vercel Cron calls it daily and a GitHub Action (`.github/workflows/page-checks.yml`) every 15
+minutes and after each production deploy, both with `CRON_SECRET`, and it seals a session only for its own Chrome
 to measure every variant and letter without a page check on this build.
 
 **Content is data, not markup.** CV content lives in the database, typed by the interfaces in
