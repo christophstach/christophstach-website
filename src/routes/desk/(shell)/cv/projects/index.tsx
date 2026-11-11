@@ -2,6 +2,7 @@ import { For, Show, createMemo, createStore } from "solid-js";
 import { getDeskProjects, getDeskVariants } from "../../../../../lib/desk/queries";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import { DeskMeta } from "../../../../../components/desk/DeskMeta";
+import { DeskTable } from "../../../../../components/desk/DeskTable";
 import { IconPlus } from "../../../../../components/icons";
 import type { RouteDefinition } from "@solidjs/router";
 import { paths } from "../../../../../router";
@@ -138,35 +139,61 @@ export default function ProjectsPage() {
         when={projects().length > 0}
         fallback={<p class="panel panel__empty">No projects yet.</p>}
       >
-        <ul class={styles.cards}>
-          <For each={projects()}>
-            {(project) => (
-              <li>
-                <a href={paths.desk.cv.projects(project.id)} class={styles.card}>
-                  <span class={styles.card__label}>
+        <DeskTable
+          title="projects"
+          noun={["project", "projects"]}
+          rows={projects()}
+          rowKey={(project) => project.id}
+          rowHref={(project) => paths.desk.cv.projects(project.id)()}
+          columns={[
+            {
+              id: "project",
+              header: "project",
+              primary: true,
+              cell: (project) => (
+                <span class={styles.project}>
+                  <span class={styles.project__label}>
                     {project.name === "" ? project.title : project.name}
                   </span>
                   <Show when={project.note !== ""}>
                     <span class="desk-note">{project.note}</span>
                   </Show>
-                  <span class={styles.card__description}>
+                  <span class={styles.project__description}>
                     {project.description === "" ? "No description yet." : project.description}
                   </span>
                   <Show when={project.tech.length > 0}>
-                    <span class={styles.card__tech}>
+                    <span class={styles.project__tech}>
                       <For each={project.tech}>{(tech) => <span class="chip">{tech}</span>}</For>
                     </span>
                   </Show>
-                  <span class={styles.card__meta}>
-                    {usedBy(project.id).length > 0
-                      ? `shown by ${usedBy(project.id).join(", ")}`
-                      : "not shown"}
-                  </span>
-                </a>
-              </li>
-            )}
-          </For>
-        </ul>
+                </span>
+              ),
+              sort: (project) => (project.name === "" ? project.title : project.name),
+              search: (project) =>
+                [project.name, project.title, project.note, project.description]
+                  .concat(project.tech)
+                  .join(" "),
+            },
+            {
+              id: "shown",
+              header: "shown by",
+              cell: (project) =>
+                usedBy(project.id).length > 0 ? usedBy(project.id).join(", ") : "no variant",
+              sort: (project) => usedBy(project.id).join(", "),
+            },
+          ]}
+          filters={[
+            {
+              id: "shown",
+              label: "shown",
+              options: [
+                { value: "yes", label: "by a variant" },
+                { value: "no", label: "by none" },
+              ],
+              value: (project) => (usedBy(project.id).length > 0 ? "yes" : "no"),
+            },
+          ]}
+        />
       </Show>
     </div>
   );
