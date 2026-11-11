@@ -35,58 +35,18 @@
   gap: var(--space-3);
 }
 
-.cards {
+/* An entry in the table: its desk name, what it says on the CV, its note. */
+.entry {
   display: grid;
-  gap: var(--space-3);
-  padding: 0;
-  margin: 0;
-  list-style: none;
+  gap: var(--space-1);
 }
 
-.card {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-4) var(--space-5);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-lg);
-  background-color: var(--color-surface);
-  color: var(--color-text);
-  transition:
-    border-color var(--transition-fast),
-    box-shadow var(--transition-fast);
-}
-
-.card:hover {
-  border-color: var(--color-accent);
-  box-shadow: var(--shadow-md);
-}
-
-.card__top {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-1) var(--space-4);
-}
-
-.card__label {
+.entry__label {
   font-weight: var(--font-semibold);
   color: var(--color-heading);
 }
 
-.card__period,
-.card__meta {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-
-.card__org {
+.entry__org {
+  font-size: var(--text-sm);
   color: var(--color-text-soft);
-}
-
-.card__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-5);
 }

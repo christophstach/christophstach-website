@@ -1,7 +1,8 @@
-import { For, Show, createMemo, createStore } from "solid-js";
+import { Show, createMemo, createStore } from "solid-js";
 import { getDeskContent, getDeskVariants } from "../../lib/desk/queries";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import type { EntryRecord } from "../../data/cv";
+import { DeskTable } from "./DeskTable";
 import { IconPlus } from "../icons";
 import { forgetPageChecks } from "../../lib/desk/page-checks";
 import { formatMonth } from "../../lib/format";
@@ -163,35 +164,73 @@ export function DeskEntryList(props: { section: Section }) {
         when={entries().length > 0}
         fallback={<p class="panel panel__empty">No entries yet.</p>}
       >
-        <ul class={styles.cards}>
-          <For each={entries()}>
-            {(entry) => (
-              <li>
-                <a href={paths.desk.cv[props.section](entry.id)} class={styles.card}>
-                  <span class={styles.card__top}>
-                    <span class={styles.card__label}>
-                      {entry.name === "" ? entry.title : entry.name}
-                    </span>
-                    <span class={styles.card__period}>{period(entry)}</span>
+        <DeskTable
+          title="entries"
+          noun={["entry", "entries"]}
+          rows={entries()}
+          rowKey={(entry) => entry.id}
+          rowHref={(entry) => paths.desk.cv[props.section](entry.id)()}
+          columns={[
+            {
+              id: "entry",
+              header: "entry",
+              primary: true,
+              cell: (entry) => (
+                <span class={styles.entry}>
+                  <span class={styles.entry__label}>
+                    {entry.name === "" ? entry.title : entry.name}
                   </span>
-                  <span class={styles.card__org}>
+                  <span class={styles.entry__org}>
                     {entry.title} at {entry.organization}
                     {entry.location === "" ? "" : `, ${entry.location}`}
                   </span>
                   <Show when={entry.note !== ""}>
                     <span class="desk-note">{entry.note}</span>
                   </Show>
-                  <span class={styles.card__meta}>
-                    <span>{entry.bullets.length} bullets</span>
-                    <span>
-                      {usedBy(entry.id) > 0 ? `in ${usedBy(entry.id)} variants` : "in no variant"}
-                    </span>
-                  </span>
-                </a>
-              </li>
-            )}
-          </For>
-        </ul>
+                </span>
+              ),
+              sort: (entry) => (entry.name === "" ? entry.title : entry.name),
+              search: (entry) =>
+                [entry.name, entry.title, entry.organization, entry.location, entry.note]
+                  .concat(entry.tech)
+                  .join(" "),
+            },
+            {
+              id: "period",
+              header: "period",
+              cell: period,
+              sort: (entry) => entry.from,
+              firstDirection: "desc",
+            },
+            {
+              id: "bullets",
+              header: "bullets",
+              align: "end",
+              cell: (entry) => entry.bullets.length,
+              sort: (entry) => entry.bullets.length,
+              firstDirection: "desc",
+            },
+            {
+              id: "variants",
+              header: "variants",
+              align: "end",
+              cell: (entry) => usedBy(entry.id),
+              sort: (entry) => usedBy(entry.id),
+              firstDirection: "desc",
+            },
+          ]}
+          filters={[
+            {
+              id: "used",
+              label: "picked",
+              options: [
+                { value: "yes", label: "by a variant" },
+                { value: "no", label: "by none" },
+              ],
+              value: (entry) => (usedBy(entry.id) > 0 ? "yes" : "no"),
+            },
+          ]}
+        />
       </Show>
     </div>
   );
