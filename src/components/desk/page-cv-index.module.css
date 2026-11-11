@@ -46,3 +46,14 @@
   color: var(--color-text-soft);
   font-size: var(--text-sm);
 }
+
+/* A variant in the table: its name and roles, its role on the CV, its note. */
+.variant {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.variant__label {
+  font-weight: var(--font-semibold);
+  color: var(--color-heading);
+}

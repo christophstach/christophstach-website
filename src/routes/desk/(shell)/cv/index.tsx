@@ -2,6 +2,8 @@ import { For, Show, createMemo, createStore } from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import { variantContent, variantCounts } from "../../../../lib/desk-variant";
 import { DeskMeta } from "../../../../components/desk/DeskMeta";
+import { DeskTable } from "../../../../components/desk/DeskTable";
+import type { DeskTableColumn, DeskTableFilter } from "../../../../components/desk/DeskTable";
 import type { DeskVariant } from "../../../../lib/desk/queries";
 import { IconPlus } from "../../../../components/icons";
 import type { RouteDefinition } from "@solidjs/router";
@@ -130,16 +132,79 @@ export default function VariantList() {
   const data = createMemo(() => getDeskVariants());
   const isPublic = (variant: DeskVariant) =>
     variant.id === data().primaryId || variant.id === data().websiteId;
-  const groups = () => [
+  // The public ones first, until a column sorts them.
+  const rows = createMemo(() => [
+    ...data().variants.filter((variant) => isPublic(variant)),
+    ...data().variants.filter((variant) => !isPublic(variant)),
+  ]);
+
+  const columns: DeskTableColumn<DeskVariant>[] = [
     {
-      id: "public",
-      heading: "public",
-      variants: data().variants.filter((variant) => isPublic(variant)),
+      id: "variant",
+      header: "variant",
+      primary: true,
+      cell: (variant) => (
+        <span class={styles.variant}>
+          <span class={styles.row__top}>
+            <span class={styles.variant__label}>{variant.label}</span>
+            <Show when={variant.id === data().primaryId}>
+              <span class="role-tag">PDF</span>
+            </Show>
+            <Show when={variant.id === data().websiteId}>
+              <span class="role-tag">/curriculum</span>
+            </Show>
+          </span>
+          <span class={styles.row__role}>{variant.role}</span>
+          <Show when={variant.note !== ""}>
+            <span class="desk-note">{variant.note}</span>
+          </Show>
+        </span>
+      ),
+      sort: (variant) => variant.label,
+      search: (variant) => `${variant.label} ${variant.id} ${variant.role} ${variant.note}`,
     },
     {
-      id: "private",
-      heading: "for applications",
-      variants: data().variants.filter((variant) => !isPublic(variant)),
+      id: "pages",
+      header: "pages",
+      cell: (variant) => (
+        <span class={`desk-status desk-status--${status(variant).tone}`}>
+          {status(variant).text}
+        </span>
+      ),
+    },
+    {
+      id: "contents",
+      header: "contents",
+      cell: (variant) => variantCounts(variant),
+    },
+    {
+      id: "changed",
+      header: "changed",
+      cell: (variant) => formatRelative(variant.updatedAt),
+      sort: (variant) => variant.updatedAt,
+      firstDirection: "desc",
+    },
+  ];
+
+  const filters: DeskTableFilter<DeskVariant>[] = [
+    {
+      id: "use",
+      label: "used for",
+      options: [
+        { value: "public", label: "public" },
+        { value: "private", label: "applications" },
+      ],
+      value: (variant) => (isPublic(variant) ? "public" : "private"),
+    },
+    {
+      id: "pages",
+      label: "pages",
+      options: [
+        { value: "ok", label: "fits" },
+        { value: "warn", label: "needs work" },
+        { value: "none", label: "not checked" },
+      ],
+      value: (variant) => status(variant).tone,
     },
   ];
   const fromQuery = () => (typeof search.from === "string" ? search.from : data().primaryId);
@@ -168,57 +233,19 @@ export default function VariantList() {
         <CreateVariant variants={data().variants} from={fromQuery()} />
       </Show>
 
-      <div class="panels">
-        <For each={groups()}>
-          {(group) => (
-            <Show when={group.variants.length > 0}>
-              <section class="panel" aria-labelledby={`group-${group.id}`}>
-                <header class="panel__head">
-                  <h2 id={`group-${group.id}`} class="panel__title">
-                    {group.heading}
-                  </h2>
-                </header>
-
-                <ul class="panel__rows">
-                  <For each={group.variants} keyed={(variant) => variant.id}>
-                    {(variant) => (
-                      <li>
-                        <a href={paths.desk.cv(variant().id)} class="panel-row">
-                          <span class={styles.row__top}>
-                            <span class="panel-row__label">{variant().label}</span>
-                            <Show when={variant().id === data().primaryId}>
-                              <span class="role-tag">PDF</span>
-                            </Show>
-                            <Show when={variant().id === data().websiteId}>
-                              <span class="role-tag">/curriculum</span>
-                            </Show>
-                          </span>
-
-                          <span class={styles.row__role}>{variant().role}</span>
-                          <Show when={variant().note !== ""}>
-                            <span class="desk-note">{variant().note}</span>
-                          </Show>
-
-                          <span class="panel-row__meta">
-                            <span class={`desk-status desk-status--${status(variant()).tone}`}>
-                              {status(variant()).text}
-                            </span>
-                            <span>{variantCounts(variant())}</span>
-                            <span>{formatRelative(variant().updatedAt)}</span>
-                          </span>
-                        </a>
-                      </li>
-                    )}
-                  </For>
-                </ul>
-              </section>
-            </Show>
-          )}
-        </For>
-      </div>
-
-      <Show when={data().variants.length === 0}>
-        <p class="panel panel__empty">No CV variants in the database.</p>
+      <Show
+        when={data().variants.length > 0}
+        fallback={<p class="panel panel__empty">No CV variants in the database.</p>}
+      >
+        <DeskTable
+          title="variants"
+          noun={["variant", "variants"]}
+          rows={rows()}
+          rowKey={(variant) => variant.id}
+          rowHref={(variant) => paths.desk.cv(variant.id)()}
+          columns={columns}
+          filters={filters}
+        />
       </Show>
     </div>
   );
