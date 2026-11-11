@@ -24,14 +24,19 @@ export default function App() {
   return (
     <Router>
       {(props) => (
-        <Errored
-          // `error` is an accessor (Solid 2), not the thrown value.
-          fallback={(error) => (
-            <ErrorPage status={errorStatus(error())} {...errorMessage(error())} />
-          )}
-        >
-          <Loading>{props.children}</Loading>
-        </Errored>
+        // Errored inside Loading: a render error then ends the boundary with
+        // the error page instead of failing the streamed fragment, which the
+        // client would have to rebuild without the route's code.
+        <Loading>
+          <Errored
+            // `error` is an accessor (Solid 2), not the thrown value.
+            fallback={(error) => (
+              <ErrorPage status={errorStatus(error())} {...errorMessage(error())} />
+            )}
+          >
+            {props.children}
+          </Errored>
+        </Loading>
       )}
     </Router>
   );
