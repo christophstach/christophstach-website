@@ -1,0 +1,315 @@
+/* A searchable, filterable, sortable list in a desk panel. On phones each row
+   stacks, every value under its column's name. */
+
+.table__search {
+  flex: 1 1 14rem;
+  max-inline-size: 20rem;
+}
+
+.table__search .input {
+  padding-block: var(--space-1-5);
+  font-size: var(--text-sm);
+}
+
+/* Filters and, on phones, the sort select. */
+.table__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3) var(--space-8);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.table__filter {
+  display: grid;
+  gap: var(--space-1-5);
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+}
+
+.table__legend {
+  padding: 0;
+  margin-block-end: var(--space-1-5);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* One strip of segments: the radios sit under their labels. Each segment draws
+   its own outline and overlaps its neighbours by the border's width, so a strip
+   that wraps on a phone still reads as one grid. */
+.table__options {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 1px 0 0 1px;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+}
+
+.table__option {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1-5);
+  margin: -1px 0 0 -1px;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-control);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-soft);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.table__option:first-child {
+  border-start-start-radius: var(--radius-md);
+  border-end-start-radius: var(--radius-md);
+}
+
+.table__option:last-child {
+  border-start-end-radius: var(--radius-md);
+  border-end-end-radius: var(--radius-md);
+}
+
+.table__option:hover {
+  background-color: var(--color-hover);
+  color: var(--color-hover-text);
+}
+
+.table__option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.table__option:has(input:checked) {
+  background-color: var(--color-accent-subtle-bg);
+  color: var(--color-accent-subtle-text);
+  font-weight: var(--font-semibold);
+}
+
+.table__option:has(input:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+/* How many rows a value leaves; a value that leaves none fades. */
+.table__count {
+  font-size: var(--text-xs);
+  font-weight: var(--font-regular);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.table__option:has(input:checked) .table__count {
+  color: inherit;
+}
+
+.table__option--none:not(:has(input:checked)) {
+  color: var(--color-text-muted);
+}
+
+/* Doubled up to win over the global .field. */
+.table__controls .table__sort-select {
+  display: none;
+}
+
+.table__scroll {
+  overflow-x: auto;
+}
+
+.table__grid {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+
+.table__head {
+  padding: var(--space-2-5) var(--space-5);
+  border-bottom: 1px solid var(--color-border-strong);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-muted);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.table__head--end {
+  text-align: end;
+}
+
+.table__head--sorted {
+  color: var(--color-accent);
+}
+
+/* The whole header is the button; padding moves onto it so the click area fills the cell. */
+.table__head:has(.table__sort) {
+  padding: 0;
+}
+
+.table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  inline-size: 100%;
+  padding: var(--space-2-5) var(--space-5);
+  font-weight: inherit;
+  color: inherit;
+  text-align: inherit;
+  transition: color var(--transition-fast);
+}
+
+.table__head--end .table__sort {
+  justify-content: flex-end;
+}
+
+.table__sort:hover {
+  color: var(--color-heading);
+}
+
+.table__head--sorted .table__sort:hover {
+  color: var(--color-accent-strong);
+}
+
+.table__sort:focus-visible {
+  outline-offset: -2px;
+}
+
+/* The arrow shows on the sorted column; elsewhere only on hover, as a hint of
+   the first click's direction. */
+.table__sort-icon {
+  display: inline-flex;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.table__head--sorted .table__sort-icon,
+.table__sort:hover .table__sort-icon,
+.table__sort:focus-visible .table__sort-icon {
+  opacity: 1;
+}
+
+.table__row + .table__row {
+  border-top: 1px solid var(--color-border);
+}
+
+.table__row--link {
+  position: relative;
+  transition: background-color var(--transition-fast);
+}
+
+.table__row--link:hover {
+  background-color: var(--color-hover);
+}
+
+.table__cell {
+  padding: var(--space-3) var(--space-5);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  vertical-align: top;
+}
+
+.table__cell--end {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The cell that names the row reads as text, not metadata. */
+.table__cell--primary {
+  min-inline-size: 14rem;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+/* The row's link covers the whole row, so any cell opens it. */
+/* The cell content styles itself; the link only carries the row. */
+.table__link {
+  color: inherit;
+}
+
+.table__link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.table__link:focus-visible {
+  outline: none;
+}
+
+.table__link:focus-visible::after {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+.table__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border-strong);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.table__foot .text-link {
+  font-size: var(--text-xs);
+}
+
+@media (max-width: 40rem) {
+  .table__controls .table__sort-select {
+    display: grid;
+  }
+
+  .table__grid thead {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .table__grid,
+  .table__grid tbody,
+  .table__row {
+    display: block;
+  }
+
+  .table__row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+    gap: var(--space-2) var(--space-4);
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .table__cell {
+    display: grid;
+    gap: var(--space-1);
+    padding: 0;
+    text-align: start;
+  }
+
+  .table__cell--primary {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .table__cell[data-label]::before {
+    content: attr(data-label);
+    color: var(--color-text-muted);
+    opacity: 0.8;
+  }
+}
