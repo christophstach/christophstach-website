@@ -1,7 +1,8 @@
 import { For, Show, createMemo, createSignal, createUniqueId, untrack } from "solid-js";
-import { IconChevronDown, IconChevronUp } from "../icons";
+import { IconChevronDown, IconChevronUp, IconGripVertical } from "../icons";
 import type { JSX } from "@solidjs/web";
 import styles from "./DeskTable.module.css";
+import { useDragReorder } from "../../lib/drag-reorder";
 
 /** A column: how a row shows in it, and whether it sorts and is searched. */
 interface DeskTableColumn<T> {
@@ -49,6 +50,16 @@ interface DeskTableProps<T> {
   initialSort?: DeskTableSort | undefined;
   /** What a row is, for the count and the search field, e.g. ["letter", "letters"]. */
   noun: readonly [one: string, other: string];
+  /** Rows can be moved by hand when the table shows their stored order. */
+  reorder?: DeskTableReorder<T> | undefined;
+}
+
+/** Moving rows by hand: drag a row's handle, or press the arrow keys on it. */
+interface DeskTableReorder<T> {
+  /** Gets every row id in the new order; the page stores it and passes the rows back. */
+  onReorder: (ids: string[]) => void;
+  /** Names the row on its handle, e.g. "Move Backend". */
+  label: (row: T) => string;
 }
 
 const collator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
@@ -195,6 +206,23 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
     setPicked({});
   }
 
+  // Rows move only in their stored order with all of them shown: in a sorted view
+  // a drop would fight the sort, and with rows hidden it is unclear where it lands.
+  const reorderable = () => props.reorder !== undefined && sort() === undefined && !narrowed();
+  const drag = useDragReorder(
+    () => shown().map((row) => props.rowKey(row)),
+    (ids) => {
+      if (reorderable()) {
+        props.reorder?.onReorder(ids);
+      }
+    },
+  );
+
+  function showStoredOrder() {
+    setSort(undefined);
+    clear();
+  }
+
   /** The arrow a header shows: its direction when sorted, else the first click's. */
   const arrow = (column: DeskTableColumn<T>): SortDirection => {
     const current = sort();
@@ -313,10 +341,22 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
         </div>
       </Show>
 
+      <Show when={props.reorder !== undefined && !reorderable() && shown().length > 0}>
+        <p class={styles.table__note}>
+          {"Rows move only in their stored order, with none hidden. "}
+          <button type="button" class="text-link" onClick={showStoredOrder}>
+            Show stored order
+          </button>
+        </p>
+      </Show>
+
       <div class={styles.table__scroll}>
         <table id={`${id}-grid`} class={styles.table__grid}>
           <thead>
             <tr>
+              <Show when={props.reorder !== undefined}>
+                <th scope="col" class={styles.table__head} aria-label="move" />
+              </Show>
               <For each={props.columns} keyed={(column) => column.id}>
                 {(column) => (
                   <th
@@ -362,9 +402,54 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
                 <tr
                   class={[
                     styles.table__row,
-                    { [styles["table__row--link"] ?? ""]: props.rowHref !== undefined },
+                    {
+                      [styles["table__row--link"] ?? ""]: props.rowHref !== undefined,
+                      [styles["table__row--dragged"] ?? ""]: drag.dragged() === props.rowKey(row()),
+                    },
                   ]}
+                  draggable={reorderable() ? "true" : undefined}
+                  onDragStart={(event) => {
+                    if (reorderable()) {
+                      drag.start(props.rowKey(row()), event);
+                    }
+                  }}
+                  onDragOver={(event) => {
+                    if (drag.dragged() !== "") {
+                      event.preventDefault();
+                      drag.over(props.rowKey(row()));
+                    }
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                  }}
+                  onDragEnd={() => {
+                    drag.end();
+                  }}
                 >
+                  <Show when={props.reorder}>
+                    {(reorder) => (
+                      <td class={[styles.table__cell, styles["table__cell--grip"]]}>
+                        <button
+                          type="button"
+                          class={styles.table__grip}
+                          disabled={!reorderable()}
+                          aria-label={`Move ${reorder().label(row())}: arrow up or down`}
+                          title={
+                            reorderable()
+                              ? "Drag, or use the arrow keys"
+                              : "Show stored order to move"
+                          }
+                          onKeyDown={(event) => {
+                            if (reorderable()) {
+                              drag.key(props.rowKey(row()), event);
+                            }
+                          }}
+                        >
+                          <IconGripVertical size={16} />
+                        </button>
+                      </td>
+                    )}
+                  </Show>
                   <For each={props.columns} keyed={(column) => column.id}>
                     {(column) => (
                       <td
@@ -382,7 +467,12 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
                           fallback={column().cell(row())}
                         >
                           {(href) => (
-                            <a href={href()} class={styles.table__link}>
+                            <a
+                              href={href()}
+                              class={styles.table__link}
+                              // A drag anywhere on the row moves the row, not the link.
+                              draggable={props.reorder === undefined ? undefined : "false"}
+                            >
                               {column().cell(row())}
                             </a>
                           )}
@@ -425,4 +515,4 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
 }
 
 export { DeskTable };
-export type { DeskTableColumn, DeskTableFilter, DeskTableSort };
+export type { DeskTableColumn, DeskTableFilter, DeskTableReorder, DeskTableSort };
