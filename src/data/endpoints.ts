@@ -7,6 +7,9 @@ export const CV_PDF_PATH = "/christoph-stach-cv.pdf";
 /** GitHub sign-in for the desk (a server handler, not a page). */
 export const GITHUB_SIGN_IN_PATH = "/auth/github";
 
+/** Desk sign-in without GitHub, on the local dev server only (404 elsewhere). */
+export const DEV_SIGN_IN_PATH = "/auth/dev";
+
 /** What the home page shows of the CV (ISR-cached JSON). */
 export const CV_HOME_API_PATH = "/api/cv-home";
 

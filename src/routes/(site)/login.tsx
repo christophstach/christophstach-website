@@ -1,4 +1,4 @@
-import { GITHUB_SIGN_IN_PATH } from "../../data/endpoints";
+import { DEV_SIGN_IN_PATH, GITHUB_SIGN_IN_PATH } from "../../data/endpoints";
 import { IconBrandGithub } from "../../components/icons";
 import { Show } from "solid-js";
 import styles from "../../components/login/login.module.css";
@@ -41,6 +41,15 @@ export default function Login() {
         <IconBrandGithub size={16} />
         Sign in with GitHub
       </a>
+
+      <Show when={import.meta.env.DEV}>
+        <p class={styles.login__intro}>
+          <a href={DEV_SIGN_IN_PATH} class="text-link" rel="external">
+            Sign in locally without GitHub
+          </a>{" "}
+          (dev server only)
+        </p>
+      </Show>
     </div>
   );
 }
