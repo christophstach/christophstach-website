@@ -9,6 +9,7 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
+import type { ApplicationContact, ApplicationEvent } from "../../src/data/applications";
 import type { CvLayout } from "../../src/data/cv-print-layout";
 
 // Column names are snake_case in the database: drizzle.config.ts and useDb()
@@ -173,6 +174,46 @@ const projects = pgTable("projects", {
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 
+/** One job applied for, or about to be, private to the desk. */
+const applications = pgTable("applications", {
+  /** URL slug, e.g. /desk/applications/acme-frontend. */
+  id: text().primaryKey(),
+  company: text().notNull(),
+  jobTitle: text().notNull().default(""),
+  jobUrl: text().notNull().default(""),
+  /** The ad, kept to write against, also after it goes offline. */
+  jobDescription: text().notNull().default(""),
+  /** Where the job is: a city, remote or hybrid. */
+  location: text().notNull().default(""),
+  source: text({ enum: ["portal", "linkedin", "recruiter", "referral", "direct", "other"] })
+    .notNull()
+    .default("other"),
+  status: text({
+    enum: ["saved", "applied", "interviewing", "offer", "accepted", "rejected", "withdrawn"],
+  })
+    .notNull()
+    .default("saved"),
+  /** The CV sent with it. */
+  cvId: text().references(() => cvs.id, { onDelete: "set null", onUpdate: "cascade" }),
+  /** ISO date; empty until it is sent. */
+  appliedOn: text().notNull().default(""),
+  /** What to do next, and by when (ISO date); both may be empty. */
+  nextStep: text().notNull().default(""),
+  nextStepOn: text().notNull().default(""),
+  contacts: jsonb()
+    .$type<ApplicationContact[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  /** The history, oldest first. */
+  events: jsonb()
+    .$type<ApplicationEvent[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  note: text().notNull().default(""),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
 /**
  * A cover letter for one application, private to the desk. Name and contact
  * details come from cv_profile.
@@ -180,6 +221,11 @@ const projects = pgTable("projects", {
 const coverLetters = pgTable("cover_letters", {
   /** URL slug, e.g. /desk/cover-letters/acme-frontend. */
   id: text().primaryKey(),
+  /** The application it belongs to; deleting that deletes the letter. */
+  applicationId: text().references(() => applications.id, {
+    onDelete: "cascade",
+    onUpdate: "cascade",
+  }),
   /** Desk only: how the desk lists it. Never printed. */
   label: text().notNull(),
   /** Desk only: what it is for. Never printed. */
@@ -224,6 +270,7 @@ const cvEntryPicksRelations = relations(cvEntryPicks, ({ one }) => ({
 }));
 
 export {
+  applications,
   coverLetters,
   cvEntries,
   cvProfile,

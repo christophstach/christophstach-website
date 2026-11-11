@@ -141,6 +141,20 @@
       "when": 1794437488306,
       "tag": "0019_rename_variants_to_cvs",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794437837918,
+      "tag": "0020_applications",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794437842471,
+      "tag": "0021_seed_applications",
+      "breakpoints": true
     }
   ]
 }
