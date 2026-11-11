@@ -25,7 +25,7 @@ candidate: `solid-js`, `@solidjs/web`, `@solidjs/router` pinned to exact `rc`/`n
 versions) in the SSR start mode of `@solidjs/vite-plugin`, with **Nitro 3** (`nitro/vite`)
 as the Vercel adapter. The public pages are server-rendered per request; their data and the CV
 PDF are cached with ISR. The private `/desk` area is server-rendered behind GitHub auth. CV
-content (entries, bullets, skills, projects) and the CV variants, which pick from it for
+content (entries, bullets, skills, projects) and the CVs, which pick from it for
 `/curriculum` and the printed CV, live in Postgres (Neon), accessed with Drizzle ORM and
 edited in the desk. Styling is a hand-rolled pure-CSS design system.
 
@@ -75,7 +75,7 @@ layout (header, footer, head tags); `src/routes/desk/(shell)/` holds the desk pa
 `/desk/cover-letter-print/<id>`) sit outside both. A route module with `GET` exports and no
 default export is an endpoint (`src/routes/api/…`, `/christoph-stach-cv.pdf`,
 `/auth/github`). Links use the router's typed `paths` (`src/router.ts`; a node ends in a
-string with a call, `paths.desk.cv(id)()`, and an empty query value is dropped, so flags are
+string with a call, `paths.desk.cvs(id)()`, and an empty query value is dropped, so flags are
 `{ new: "1" }`); URLs that aren't pages are constants in `src/data/endpoints.ts`. Never write a
 page path by hand.
 
@@ -97,25 +97,25 @@ calls `requireUser()` first (`src/server/auth.ts`); the page guard doesn't cover
 exception is the scheduled page check (`/api/desk/page-checks`, `src/server/page-check-job.ts`):
 Vercel Cron calls it daily and a GitHub Action (`.github/workflows/page-checks.yml`) every 15
 minutes and after each production deploy, both with `CRON_SECRET`, and it seals a session only for its own Chrome
-to measure every variant and letter without a page check on this build.
+to measure every CV and letter without a page check on this build.
 
 **Content is data, not markup.** CV content lives in the database, typed by the interfaces in
 `src/data/cv.ts` (`TimelineEntry`, `EntryRecord`, `SkillGroup`, `Profile`, `CvContent`). The
-profile (one row of `cv_profile`, at `/desk/cv/profile`), timeline entries (`cv_entries`,
+profile (one row of `cv_profile`, at `/desk/content/profile`), timeline entries (`cv_entries`,
 bullets as an ordered jsonb list), skill groups (`skill_groups`) and projects (`projects`) are
-edited in the desk under `/desk/cv/experience`, `education`, `skills` and `projects` (so those
-and `profile` can't be variant ids); `src/server/cv-content.ts` loads them (`loadCvContent`)
+edited in the desk under `/desk/content/experience`, `education`, `skills` and `projects`;
+`src/server/cv-content.ts` loads them (`loadCvContent`)
 and writes them, `projects.ts` does the projects. Entries, bullets and skill groups carry
-stable ids that can't change once created, and **variants** pick them by id, in order.
-Variants are rows in `cv_variants`/`cv_variant_entries`, typed by `CvVariant` in
-`src/data/cv-variants.ts`, edited at `/desk/cv/<id>`; `src/server/cv-variants.ts` holds their
-database access. Saving a variant checks every id against the content (`printVariant` in
-`src/lib/cv-variant.ts`); deleting an entry, bullet, skill group or project takes it out of
-every variant. Two variants hold a public role and can't be deleted: the primary one is the
+stable ids that can't change once created, and **CVs** pick them by id, in order.
+CVs are rows in `cvs`/`cv_entry_picks`, typed by `Cv` in
+`src/data/cvs.ts`, edited at `/desk/cvs/<id>`; `src/server/cvs.ts` holds their
+database access. Saving a CV checks every id against the content (`printCv` in
+`src/lib/cv.ts`); deleting an entry, bullet, skill group or project takes it out of
+every CV. Two CVs hold a public role and can't be deleted: the primary one is the
 printed CV (`/cv-print`, `/christoph-stach-cv.pdf`), the website one feeds `/curriculum`
 (`/api/cv-website`). The others are private, at `/desk/cv-print/<id>` and `/api/desk/cv/<id>`.
-All variants render through the one `CvDocument.tsx`, so a variant changes content, never the
-design. A variant picks layout steps (`CV_LAYOUT_STEPS` in `src/data/cv-print-layout.ts`) that
+All CVs render through the one `CvDocument.tsx`, so a CV changes content, never the
+design. A CV picks layout steps (`CV_LAYOUT_STEPS` in `src/data/cv-print-layout.ts`) that
 `CvDocument.tsx` turns into `--cv-space`, `--cv-scale` and its `@page` margin; "Check pages"
 prints unsaved steps through `?spacing=…&textSize=…&margin=…` on `/desk/cv-print/<id>`, shown,
 never stored. CV texts are plain except for links written as `[text](https://…)`, so render
@@ -164,17 +164,27 @@ session only for `DESK_GITHUB_USER_ID`. The session is h3's sealed cookie, from 
 (`src/server/session.ts`; `SESSION_SECRET` comma-separated, newest seals). `src/middleware.ts`
 redirects anonymous `/desk/**` requests to `/login`, before anything renders. Sidebar sections
 are data in `src/data/desk.ts`. Desk reads are queries in `src/lib/desk/queries.ts` (keys
-`desk-cv-variants`, `desk-cover-letters`, `desk-cv-content`, `desk-projects`, `desk-profile`,
+`desk-cvs`, `desk-applications`, `desk-cover-letters`, `desk-cv-content`, `desk-projects`, `desk-profile`,
 `desk-user`). Editors keep their form in `useDraft` (`src/lib/desk/draft.ts`): a store that
 follows the stored value, reconciled by id, compared by content so refetches don't reset
 typing; it asks before leaving with unsaved changes. Change store arrays in place (`setItems` in
 `src/lib/desk/picks.ts`) and key lists by a stable field. Shared desk components:
 `DeskTable` (overview lists: search, filters, sorting, opt-in reorder), `DeskFormSection`,
-`DeskSaveBar`, `DeskMenu`, `DeskLinkRows`, `DeskVariantRows` (a variant's picks).
+`DeskSaveBar`, `DeskMenu`, `DeskLinkRows`, `DeskCvRows` (a CV's picks).
 
-**Cover letters** are private to the desk, one per application (`cover_letters`,
+**Applications** are private to the desk (`applications`, `src/server/applications.ts`, edited
+at `/desk/applications/<id>`): the job, its status and next step, contacts and history (jsonb
+lists, ids unique within the application), and the CV sent with it. Status and source are the
+fixed lists in `src/data/applications.ts`; `src/lib/application.ts` says when a next step is due.
+Deleting an application deletes its cover letters. "Mark as sent" freezes the CV and letters
+as they print then into `applications.sent` (`src/server/sent-copies.ts`); it's read through
+the zod schema in `src/data/sent-copy.ts`, since the renderers may change after it was stored,
+and printed from `/desk/sent-print/<id>` and `/desk/sent-print/<id>/<letter>`.
+
+**Cover letters** are private to the desk, each belonging to an application (`cover_letters`,
 `src/server/cover-letters.ts`, edited at `/desk/cover-letters/<id>`). Name and contact come
-from the profile, the role under the name from the linked CV variant or else the profile.
+from the profile, the role under the name from the application's CV or else the profile; the
+job (the subject's default wording names it) is the application's too.
 `CoverLetterDocument.tsx` is printed from `/desk/cover-letter-print/<id>` and shown live in the
 editor; it shares `CvHead.tsx` and the `.cv-paper` palette with the CV. A letter has one fixed
 layout (`COVER_LETTER_MARGIN_MM`), and its page check flags more than one page. Language
@@ -201,10 +211,10 @@ layout (`COVER_LETTER_MARGIN_MM`), and its page check flags more than one page. 
   the `/cv-print` page through `src/server/cv-pdf.ts` (one Chrome at a time per instance) with
   `puppeteer-core` (`@sparticuz/chromium`, or the Chrome in `CV_PDF_CHROME_PATH` off Linux), and
   ISR caches it. Page breaks are CSS rules in `CvDocument.module.css`; don't tune the spacing to
-  move a break (a variant fills its pages with its layout steps). The variant editor shows how
-  full each page is (`src/server/desk-variants.ts`, `DeskCvPdf.tsx`, rules in
+  move a break (a CV fills its pages with its layout steps). The CV editor shows how
+  full each page is (`src/server/desk-cvs.ts`, `DeskCvPdf.tsx`, rules in
   `src/lib/cv-layout.ts`); the result is stored as `page_fills` with the `BUILD_ID` that made
-  it, and after a deploy the desk shell re-checks every variant in the background
+  it, and after a deploy the desk shell re-checks every CV in the background
   (`src/lib/desk/page-checks.ts`). The serverless Chromium has no system fonts, so the PDF must
   only use the site's own fonts.
 - `public/images/hero.png` is a crawler-facing copy of `public/images/hero.webp` for the

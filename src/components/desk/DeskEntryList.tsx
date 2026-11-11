@@ -1,5 +1,5 @@
 import { Show, createMemo, createStore } from "solid-js";
-import { getDeskContent, getDeskVariants } from "../../lib/desk/queries";
+import { getDeskContent, getDeskCvs } from "../../lib/desk/queries";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import type { EntryRecord } from "../../data/cv";
 import { DeskTable } from "./DeskTable";
@@ -24,7 +24,7 @@ function CreateEntry(props: { section: Section }) {
   const navigate = useNavigate();
   const request = useDeskRequest();
   const [form, setForm] = createStore({ ...EMPTY_FORM });
-  const sectionPath = () => paths.desk.cv[props.section]();
+  const sectionPath = () => paths.desk.content[props.section]();
 
   async function create(event: SubmitEvent) {
     event.preventDefault();
@@ -48,7 +48,7 @@ function CreateEntry(props: { section: Section }) {
     if (await request.run(() => saveDeskEntry(entry, { create: true }))) {
       forgetPageChecks();
       setForm(() => ({ ...EMPTY_FORM }));
-      navigate(paths.desk.cv[props.section](id));
+      navigate(paths.desk.content[props.section](id));
     }
   }
 
@@ -124,32 +124,30 @@ function CreateEntry(props: { section: Section }) {
 export function DeskEntryList(props: { section: Section }) {
   const [search] = useSearchParams();
   const content = createMemo(() => getDeskContent());
-  const variants = createMemo(() => getDeskVariants());
+  const cvs = createMemo(() => getDeskCvs());
   const entries = () => content().entries.filter((entry) => entry.section === props.section);
   const heading = () => (props.section === "experience" ? "Experience" : "Education");
   const creating = () => search.new !== undefined;
 
-  /** How many variants pick this entry. */
+  /** How many CVs pick this entry. */
   const usedBy = (id: string) =>
-    variants().variants.filter((variant) => variant[props.section].some((pick) => pick.id === id))
-      .length;
+    cvs().cvs.filter((cv) => cv[props.section].some((pick) => pick.id === id)).length;
 
   return (
     <div class="desk-page">
       <header class="desk-head">
         <div class="desk-head__text">
           <p class="desk-head__path">
-            <a href={paths.desk.cv()}>~/desk/cv</a> / {props.section}
+            <a href={paths.desk.content()}>~/desk/content</a> / {props.section}
           </p>
           <h1 class="desk-head__title">{heading()}</h1>
           <p class="desk-head__sub">
-            The entries and bullets variants pick from. A change here reaches every variant that
-            uses it.
+            The entries and bullets CVs pick from. A change here reaches every CV that uses it.
           </p>
         </div>
 
         <Show when={!creating()}>
-          <a href={paths.desk.cv[props.section]({ new: "1" })} class="button button--primary">
+          <a href={paths.desk.content[props.section]({ new: "1" })} class="button button--primary">
             <IconPlus size={16} />
             New entry
           </a>
@@ -169,7 +167,7 @@ export function DeskEntryList(props: { section: Section }) {
           noun={["entry", "entries"]}
           rows={entries()}
           rowKey={(entry) => entry.id}
-          rowHref={(entry) => paths.desk.cv[props.section](entry.id)()}
+          rowHref={(entry) => paths.desk.content[props.section](entry.id)()}
           columns={[
             {
               id: "entry",
@@ -211,8 +209,8 @@ export function DeskEntryList(props: { section: Section }) {
               firstDirection: "desc",
             },
             {
-              id: "variants",
-              header: "variants",
+              id: "cvs",
+              header: "cvs",
               align: "end",
               cell: (entry) => usedBy(entry.id),
               sort: (entry) => usedBy(entry.id),
@@ -224,7 +222,7 @@ export function DeskEntryList(props: { section: Section }) {
               id: "used",
               label: "picked",
               options: [
-                { value: "yes", label: "by a variant" },
+                { value: "yes", label: "by a CV" },
                 { value: "no", label: "by none" },
               ],
               value: (entry) => (usedBy(entry.id) > 0 ? "yes" : "no"),

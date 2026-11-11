@@ -11,12 +11,8 @@ const coverLetterSchema = object(
   {
     label: text(NOT_LETTER),
     note: trimmed(NOT_LETTER),
-    variantId: trimmed(NOT_LETTER),
-    company: text(NOT_LETTER),
+    applicationId: text("A cover letter needs an application."),
     recipient: trimmed(NOT_LETTER),
-    jobTitle: trimmed(NOT_LETTER),
-    jobUrl: trimmed(NOT_LETTER),
-    jobDescription: trimmed(NOT_LETTER),
     language: literal(COVER_LETTER_LANGUAGES, NOT_LETTER),
     letterDate: emptyOrMatching(ISO_DATE, NOT_LETTER),
     subject: trimmed(NOT_LETTER),

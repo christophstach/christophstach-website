@@ -134,6 +134,41 @@
       "when": 1793656110298,
       "tag": "0018_cover_letters",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794437488306,
+      "tag": "0019_rename_variants_to_cvs",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794437837918,
+      "tag": "0020_applications",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794437842471,
+      "tag": "0021_seed_applications",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794438652266,
+      "tag": "0022_letters_read_the_application",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794438932978,
+      "tag": "0023_application_sent_copy",
+      "breakpoints": true
     }
   ]
 }

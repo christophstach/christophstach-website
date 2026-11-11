@@ -9,13 +9,14 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
+import type { ApplicationContact, ApplicationEvent } from "../../src/data/applications";
 import type { CvLayout } from "../../src/data/cv-print-layout";
 
 // Column names are snake_case in the database: drizzle.config.ts and useDb()
 // both pass casing "snake_case", so the properties here stay camelCase.
 
-/** A printed CV variant, edited in the desk. Its entries are cvVariantEntries. */
-const cvVariants = pgTable("cv_variants", {
+/** A printed CV, edited in the desk. Its entries are cvEntryPicks. */
+const cvs = pgTable("cvs", {
   /** URL slug, e.g. /desk/cv-print/frontend. */
   id: text().primaryKey(),
   label: text().notNull(),
@@ -24,7 +25,7 @@ const cvVariants = pgTable("cv_variants", {
   role: text().notNull(),
   /** Empty prints no summary line. */
   summary: text().notNull().default(""),
-  /** Project ids, in display order; /curriculum shows the website variant's. */
+  /** Project ids, in display order; /curriculum shows the website CV's. */
   projects: text()
     .array()
     .notNull()
@@ -44,13 +45,13 @@ const cvVariants = pgTable("cv_variants", {
     .$type<CvLayout>()
     .notNull()
     .default(sql`'{"spacing":"normal","textSize":"normal","margin":"normal"}'::jsonb`),
-  /** The public variant behind /cv-print and /christoph-stach-cv.pdf; one at a time. */
+  /** The public CV behind /cv-print and /christoph-stach-cv.pdf; one at a time. */
   isPrimary: boolean().notNull().default(false),
-  /** The variant /curriculum shows, usually with every bullet; one at a time. */
+  /** The CV /curriculum shows, usually with every bullet; one at a time. */
   isWebsite: boolean().notNull().default(false),
   /**
    * How full each page of its PDF was at the last check in the desk, 0 to 1;
-   * empty until checked, and cleared when the variant is saved.
+   * empty until checked, and cleared when the CV is saved.
    */
   pageFills: real()
     .array()
@@ -65,13 +66,13 @@ const cvVariants = pgTable("cv_variants", {
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 
-/** One timeline entry of a variant, with the bullets it prints, in order. */
-const cvVariantEntries = pgTable(
-  "cv_variant_entries",
+/** One timeline entry of a CV, with the bullets it prints, in order. */
+const cvEntryPicks = pgTable(
+  "cv_entry_picks",
   {
-    variantId: text()
+    cvId: text()
       .notNull()
-      .references(() => cvVariants.id, { onDelete: "cascade", onUpdate: "cascade" }),
+      .references(() => cvs.id, { onDelete: "cascade", onUpdate: "cascade" }),
     section: text({ enum: ["experience", "education"] }).notNull(),
     position: integer().notNull(),
     /** A cv_entries id. */
@@ -79,12 +80,12 @@ const cvVariantEntries = pgTable(
     /** Bullet ids of that entry, in print order. */
     bullets: text().array().notNull(),
   },
-  (table) => [primaryKey({ columns: [table.variantId, table.section, table.position] })],
+  (table) => [primaryKey({ columns: [table.cvId, table.section, table.position] })],
 );
 
 /**
- * A timeline entry, a job or a degree, that variants pick from. Its id and
- * section are fixed once created: variants refer to the id.
+ * A timeline entry, a job or a degree, that CVs pick from. Its id and
+ * section are fixed once created: CVs refer to the id.
  */
 const cvEntries = pgTable("cv_entries", {
   /** Stable id, e.g. "mbition"; also the URL slug in the desk. */
@@ -106,7 +107,7 @@ const cvEntries = pgTable("cv_entries", {
     .array()
     .notNull()
     .default(sql`'{}'::text[]`),
-  /** In display order; variants pick them by id. */
+  /** In display order; CVs pick them by id. */
   bullets: jsonb()
     .$type<{ id: string; text: string }[]>()
     .notNull()
@@ -119,9 +120,9 @@ const cvEntries = pgTable("cv_entries", {
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 
-/** A group of skills; the home page shows all, variants pick which they print. */
+/** A group of skills; the home page shows all, CVs pick which they print. */
 const skillGroups = pgTable("skill_groups", {
-  /** Terminal-style label used on the site, e.g. "frontend"; variants refer to it. */
+  /** Terminal-style label used on the site, e.g. "frontend"; CVs refer to it. */
   id: text().primaryKey(),
   /** Desk only: how the desk lists it. Never printed or shown on the site. */
   name: text().notNull().default(""),
@@ -140,7 +141,7 @@ const skillGroups = pgTable("skill_groups", {
 const cvProfile = pgTable("cv_profile", {
   id: integer().primaryKey().default(1),
   name: text().notNull(),
-  /** Not printed: each variant has its own role line. */
+  /** Not printed: each CV has its own role line. */
   role: text().notNull().default(""),
   location: text().notNull().default(""),
   email: text().notNull().default(""),
@@ -152,7 +153,7 @@ const cvProfile = pgTable("cv_profile", {
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 
-/** A project shown on /curriculum when the website variant picks it. */
+/** A project shown on /curriculum when the website CV picks it. */
 const projects = pgTable("projects", {
   /** URL slug, e.g. /desk/projects/ai-agent-platform. */
   id: text().primaryKey(),
@@ -173,6 +174,51 @@ const projects = pgTable("projects", {
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 
+/** One job applied for, or about to be, private to the desk. */
+const applications = pgTable("applications", {
+  /** URL slug, e.g. /desk/applications/acme-frontend. */
+  id: text().primaryKey(),
+  company: text().notNull(),
+  jobTitle: text().notNull().default(""),
+  jobUrl: text().notNull().default(""),
+  /** The ad, kept to write against, also after it goes offline. */
+  jobDescription: text().notNull().default(""),
+  /** Where the job is: a city, remote or hybrid. */
+  location: text().notNull().default(""),
+  source: text({ enum: ["portal", "linkedin", "recruiter", "referral", "direct", "other"] })
+    .notNull()
+    .default("other"),
+  status: text({
+    enum: ["saved", "applied", "interviewing", "offer", "accepted", "rejected", "withdrawn"],
+  })
+    .notNull()
+    .default("saved"),
+  /** The CV sent with it. */
+  cvId: text().references(() => cvs.id, { onDelete: "set null", onUpdate: "cascade" }),
+  /** ISO date; empty until it is sent. */
+  appliedOn: text().notNull().default(""),
+  /** What to do next, and by when (ISO date); both may be empty. */
+  nextStep: text().notNull().default(""),
+  nextStepOn: text().notNull().default(""),
+  contacts: jsonb()
+    .$type<ApplicationContact[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  /** The history, oldest first. */
+  events: jsonb()
+    .$type<ApplicationEvent[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  note: text().notNull().default(""),
+  /**
+   * The CV and cover letters as they printed when it was marked as sent
+   * (SentCopy, src/data/sent-copy.ts); null until then. Parsed when read.
+   */
+  sent: jsonb(),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
 /**
  * A cover letter for one application, private to the desk. Name and contact
  * details come from cv_profile.
@@ -180,19 +226,19 @@ const projects = pgTable("projects", {
 const coverLetters = pgTable("cover_letters", {
   /** URL slug, e.g. /desk/cover-letters/acme-frontend. */
   id: text().primaryKey(),
+  /**
+   * The application it belongs to: its job and its CV, whose role prints under
+   * the name. Deleting the application deletes the letter.
+   */
+  applicationId: text()
+    .notNull()
+    .references(() => applications.id, { onDelete: "cascade", onUpdate: "cascade" }),
   /** Desk only: how the desk lists it. Never printed. */
   label: text().notNull(),
   /** Desk only: what it is for. Never printed. */
   note: text().notNull().default(""),
-  /** The CV variant sent with it; its role is printed under the name. */
-  variantId: text().references(() => cvVariants.id, { onDelete: "set null", onUpdate: "cascade" }),
-  company: text().notNull(),
   /** Printed above the date when set: a person, an address, one item per line. */
   recipient: text().notNull().default(""),
-  /** Desk only, like the url and the description of the job. */
-  jobTitle: text().notNull().default(""),
-  jobUrl: text().notNull().default(""),
-  jobDescription: text().notNull().default(""),
   /** Sets the date format and the default wording. */
   language: text({ enum: ["en", "de"] })
     .notNull()
@@ -215,22 +261,23 @@ const coverLetters = pgTable("cover_letters", {
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 
-const cvVariantsRelations = relations(cvVariants, ({ many }) => ({
-  entries: many(cvVariantEntries),
+const cvsRelations = relations(cvs, ({ many }) => ({
+  entries: many(cvEntryPicks),
 }));
 
-const cvVariantEntriesRelations = relations(cvVariantEntries, ({ one }) => ({
-  variant: one(cvVariants, { fields: [cvVariantEntries.variantId], references: [cvVariants.id] }),
+const cvEntryPicksRelations = relations(cvEntryPicks, ({ one }) => ({
+  cv: one(cvs, { fields: [cvEntryPicks.cvId], references: [cvs.id] }),
 }));
 
 export {
+  applications,
   coverLetters,
   cvEntries,
   cvProfile,
-  cvVariantEntries,
-  cvVariantEntriesRelations,
-  cvVariants,
-  cvVariantsRelations,
+  cvEntryPicks,
+  cvEntryPicksRelations,
+  cvs,
+  cvsRelations,
   projects,
   skillGroups,
 };

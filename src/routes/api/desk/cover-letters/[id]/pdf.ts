@@ -2,6 +2,7 @@ import type { APIHandler } from "filesystem-routing/api";
 import { HttpError } from "../../../../../server/http";
 import { paths } from "../../../../../router";
 import { renderPdf } from "../../../../../server/cv-pdf";
+import { findApplication } from "../../../../../server/applications";
 import { requireCoverLetter } from "../../../../../server/cover-letters";
 import { requireUser } from "../../../../../server/auth";
 import { slugify } from "../../../../../lib/cover-letter";
@@ -12,7 +13,9 @@ export const GET: APIHandler = async (event) => {
   try {
     await requireUser(event.request);
 
-    const { id, company } = await requireCoverLetter(event.params?.id ?? "");
+    const { id, applicationId } = await requireCoverLetter(event.params?.id ?? "");
+    // Named after the company, as the file goes out with the application.
+    const company = (await findApplication(applicationId))?.company ?? id;
     const pdf = await renderPdf(event.request, paths.desk["cover-letter-print"](id)(), true);
 
     // A copy on a plain ArrayBuffer, which a Response body needs.

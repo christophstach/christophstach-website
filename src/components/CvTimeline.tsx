@@ -8,7 +8,7 @@ import { formatMonth } from "../lib/format";
 import styles from "./CvTimeline.module.css";
 
 interface CvTimelineProps {
-  /** Entries as a variant picks them: /curriculum shows the website variant's. */
+  /** Entries as a CV picks them: /curriculum shows the website CV's. */
   entries: CvWebsiteEntry[];
   /** The marker icon on each entry, e.g. a briefcase. */
   icon: (props: IconProps) => JSX.Element;

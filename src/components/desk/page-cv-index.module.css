@@ -47,13 +47,13 @@
   font-size: var(--text-sm);
 }
 
-/* A variant in the table: its name and roles, its role on the CV, its note. */
-.variant {
+/* A CV in the table: its name and roles, its role on the CV, its note. */
+.cv {
   display: grid;
   gap: var(--space-1);
 }
 
-.variant__label {
+.cv__label {
   font-weight: var(--font-semibold);
   color: var(--color-heading);
 }

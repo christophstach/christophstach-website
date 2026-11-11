@@ -3,7 +3,7 @@ import { CvText } from "../CvText";
 import type { CvWebsiteProject } from "../../data/public-api";
 import styles from "./curriculum.module.css";
 
-/** The website variant's projects as cards. */
+/** The website CV's projects as cards. */
 export function CurriculumProjects(props: { projects: CvWebsiteProject[] }) {
   return (
     <section class={[styles.projects, "reveal--scroll"]}>

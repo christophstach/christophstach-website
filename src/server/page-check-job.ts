@@ -3,12 +3,12 @@ import { HttpError } from "./http";
 import { env } from "virtual:solid-env/server";
 import { letterPages } from "./desk-letters";
 import { listCoverLetters } from "./cover-letters";
-import { listVariants } from "./cv-variants";
+import { listCvs } from "./cvs";
 import { serverSessionCookie } from "./session";
-import { storedPages } from "./desk-variants";
+import { storedPages } from "./desk-cvs";
 import { timingSafeEqual } from "node:crypto";
 
-// The scheduled page check: measures every CV variant and cover letter that
+// The scheduled page check: measures every CV and cover letter that
 // has no page check on this build (all of them after a deploy, and any written
 // straight to the database), without anyone opening the desk. Vercel Cron
 // calls it with CRON_SECRET; it is the one desk endpoint without requireUser().
@@ -57,16 +57,13 @@ async function checkMissingPages(request: Request): Promise<PageCheckRun> {
     avatarUrl: "",
   });
   const chrome = new Request(request.url, { headers: { cookie } });
-  const [{ variants, primaryId }, letters] = await Promise.all([
-    listVariants(),
-    listCoverLetters(),
-  ]);
+  const [{ cvs, primaryId }, letters] = await Promise.all([listCvs(), listCoverLetters()]);
   const jobs: Job[] = [
-    ...variants
-      .filter((variant) => variant.pageFills.length === 0)
-      .map((variant) => ({
-        name: `cv/${variant.id}`,
-        run: () => storedPages(chrome, variant, primaryId),
+    ...cvs
+      .filter((cv) => cv.pageFills.length === 0)
+      .map((cv) => ({
+        name: `cv/${cv.id}`,
+        run: () => storedPages(chrome, cv, primaryId),
       })),
     ...letters
       .filter((letter) => letter.pageFills.length === 0)

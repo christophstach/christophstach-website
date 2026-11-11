@@ -1,9 +1,10 @@
 import "server-only";
 import type { CoverLetter, CoverLetterRecord, PrintedCoverLetter } from "../data/cover-letters";
+import { applications, coverLetters } from "../../server/db/schema";
 import { asc, desc, eq } from "drizzle-orm";
-import { coverLetters, cvVariants } from "../../server/db/schema";
-import { currentBuild, requireVariant } from "./cv-variants";
+import { currentBuild, requireCv } from "./cvs";
 import { HttpError } from "./http";
+import { findApplication } from "./applications";
 import { loadProfile } from "./cv-content";
 import { printedLetter } from "../lib/cover-letter";
 import { useDb } from "./db";
@@ -15,12 +16,8 @@ function toLetter(row: LetterRow): CoverLetter {
     id: row.id,
     label: row.label,
     note: row.note,
-    variantId: row.variantId ?? "",
-    company: row.company,
+    applicationId: row.applicationId,
     recipient: row.recipient,
-    jobTitle: row.jobTitle,
-    jobUrl: row.jobUrl,
-    jobDescription: row.jobDescription,
     language: row.language,
     letterDate: row.letterDate,
     subject: row.subject,
@@ -34,17 +31,23 @@ function notFound(id: string) {
   return new HttpError(404, `No cover letter "${id}".`);
 }
 
-/** All cover letters, newest first, each with its page check on this build. */
+/** All cover letters, newest first, each with its page check on this build and its job. */
 async function listCoverLetters(): Promise<CoverLetterRecord[]> {
   const build = currentBuild();
   const rows = await useDb()
-    .select()
+    .select({
+      letter: coverLetters,
+      company: applications.company,
+      jobTitle: applications.jobTitle,
+    })
     .from(coverLetters)
+    .innerJoin(applications, eq(coverLetters.applicationId, applications.id))
     .orderBy(desc(coverLetters.createdAt), asc(coverLetters.id));
 
-  return rows.map((row) =>
-    Object.assign(toLetter(row), {
-      pageFills: row.pageFillsBuild === build ? row.pageFills : [],
+  return rows.map(({ letter, company, jobTitle }) =>
+    Object.assign(toLetter(letter), {
+      pageFills: letter.pageFillsBuild === build ? letter.pageFills : [],
+      application: { company, jobTitle },
     }),
   );
 }
@@ -60,35 +63,16 @@ async function requireCoverLetter(id: string): Promise<CoverLetter> {
   return toLetter(row);
 }
 
-async function requireLinkedVariant(variantId: string) {
-  if (!variantId) {
-    return;
-  }
-
-  const [row] = await useDb()
-    .select({ id: cvVariants.id })
-    .from(cvVariants)
-    .where(eq(cvVariants.id, variantId));
-
-  if (!row) {
-    throw new HttpError(400, `No CV variant "${variantId}".`);
-  }
-}
-
 function letterColumns(letter: CoverLetter) {
   // A saved letter has to be measured again.
-  return {
-    ...letter,
-    variantId: letter.variantId || null,
-    pageFills: [],
-    pageFillsBuild: "",
-    updatedAt: new Date(),
-  };
+  return { ...letter, pageFills: [], pageFillsBuild: "", updatedAt: new Date() };
 }
 
 /** Creates a cover letter (409 if the id is taken) or updates one (404 if missing). */
 async function saveCoverLetter(letter: CoverLetter, { create }: { create: boolean }) {
-  await requireLinkedVariant(letter.variantId);
+  if ((await findApplication(letter.applicationId)) === undefined) {
+    throw new HttpError(400, `No application "${letter.applicationId}".`);
+  }
 
   const written = create
     ? await useDb()
@@ -126,15 +110,17 @@ async function storeCoverLetterFills(id: string, fills: number[]) {
     .where(eq(coverLetters.id, id));
 }
 
-/** What the print page shows. */
+/** What the print page shows; the role is that of the application's CV. */
 async function printCoverLetter(id: string): Promise<PrintedCoverLetter> {
   const letter = await requireCoverLetter(id);
-  const [profile, variant] = await Promise.all([
+  const [profile, application] = await Promise.all([
     loadProfile(),
-    letter.variantId ? requireVariant(letter.variantId) : undefined,
+    findApplication(letter.applicationId),
   ]);
+  const cvId = application?.cvId ?? "";
+  const cv = cvId === "" ? undefined : await requireCv(cvId);
 
-  return printedLetter(letter, profile, variant?.role);
+  return printedLetter(letter, profile, cv?.role);
 }
 
 export {

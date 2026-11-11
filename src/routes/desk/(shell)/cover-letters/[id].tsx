@@ -1,7 +1,12 @@
 import { IconCopy, IconTrash } from "../../../../components/icons";
 import { Show, createMemo, createSignal, snapshot } from "solid-js";
 import { deleteDeskLetter, saveDeskLetter } from "../../../../lib/desk/letters";
-import { getDeskCoverLetters, getDeskProfile, getDeskVariants } from "../../../../lib/desk/queries";
+import {
+  getDeskApplications,
+  getDeskCoverLetters,
+  getDeskCvs,
+  getDeskProfile,
+} from "../../../../lib/desk/queries";
 import { useNavigate, useParams } from "@solidjs/router";
 import { COVER_LETTER_MARGIN_MM } from "../../../../data/cover-letter-wording";
 import type { CoverLetter } from "../../../../data/cover-letters";
@@ -24,12 +29,8 @@ function toForm(letter: CoverLetter): CoverLetter {
     id: letter.id,
     label: letter.label,
     note: letter.note,
-    variantId: letter.variantId,
-    company: letter.company,
+    applicationId: letter.applicationId,
     recipient: letter.recipient,
-    jobTitle: letter.jobTitle,
-    jobUrl: letter.jobUrl,
-    jobDescription: letter.jobDescription,
     language: letter.language,
     letterDate: letter.letterDate,
     subject: letter.subject,
@@ -43,12 +44,8 @@ const EMPTY_FORM: CoverLetter = toForm({
   id: "",
   label: "",
   note: "",
-  variantId: "",
-  company: "",
+  applicationId: "",
   recipient: "",
-  jobTitle: "",
-  jobUrl: "",
-  jobDescription: "",
   language: "en",
   letterDate: "",
   subject: "",
@@ -61,7 +58,8 @@ export default function CoverLetterEditor() {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
   const letters = createMemo(() => getDeskCoverLetters());
-  const variants = createMemo(() => getDeskVariants());
+  const cvs = createMemo(() => getDeskCvs());
+  const applications = createMemo(() => getDeskApplications());
   const profile = createMemo(() => getDeskProfile());
   const [removing, setRemoving] = createSignal(false);
   // While deleting, the refetched list no longer has the letter: keep
@@ -86,8 +84,12 @@ export default function CoverLetterEditor() {
   const request = useDeskRequest();
   // Bumped after every save, so the page check runs again.
   const [revision, setRevision] = createSignal(0);
-  const linkedRole = () =>
-    variants().variants.find((variant) => variant.id === form.variantId)?.role;
+  // The role of the CV of the application the draft belongs to.
+  const linkedRole = () => {
+    const application = applications().find((candidate) => candidate.id === form.applicationId);
+
+    return cvs().cvs.find((cv) => cv.id === application?.cvId)?.role;
+  };
   // The sheet in the rail shows the draft, before it is saved.
   const preview = () => printedLetter(form, profile(), linkedRole());
 
@@ -150,7 +152,7 @@ export default function CoverLetterEditor() {
       </Show>
 
       <form class={styles.editor__body} onSubmit={(event) => void save(event)}>
-        <DeskLetterFields form={form} setForm={setForm} variants={variants().variants} />
+        <DeskLetterFields form={form} setForm={setForm} applications={applications()} />
 
         <aside class={styles.editor__rail}>
           <DeskCoverLetterPages id={params.id} revision={revision()} />
@@ -178,7 +180,8 @@ export default function CoverLetterEditor() {
 export const route = {
   preload: () => {
     void getDeskCoverLetters();
-    void getDeskVariants();
+    void getDeskApplications();
+    void getDeskCvs();
     void getDeskProfile();
   },
 } satisfies RouteDefinition;

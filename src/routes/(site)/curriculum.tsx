@@ -2,12 +2,12 @@ import { CV_PDF_PATH, CV_WEBSITE_API_PATH } from "../../data/endpoints";
 import { IconBriefcase, IconDownload, IconSchool } from "../../components/icons";
 import { CurriculumProjects } from "../../components/curriculum/CurriculumProjects";
 import { CvTimeline } from "../../components/CvTimeline";
-import { cvDownloadVisible } from "../../data/cv-variants";
+import { cvDownloadVisible } from "../../data/cvs";
 import { cvWebsiteSchema } from "../../data/public-api";
 import styles from "../../components/curriculum/curriculum.module.css";
 
 // A server page: experience, education and projects come from the website
-// variant through /api/cv-website, which the CDN caches (ISR) until the desk
+// CV through /api/cv-website, which the CDN caches (ISR) until the desk
 // changes them.
 export default async function Curriculum() {
   "use server";

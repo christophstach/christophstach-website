@@ -1,23 +1,24 @@
 import { COVER_LETTER_LANGUAGES, COVER_LETTER_WORDING } from "../../data/cover-letter-wording";
 import { For, Show } from "solid-js";
+import type { ApplicationRecord } from "../../data/applications";
 import type { CoverLetter } from "../../data/cover-letters";
 import { DeskFormSection } from "./DeskFormSection";
-import type { DeskVariant } from "../../lib/desk/queries";
-import { deskVariantPdfPath } from "../../data/endpoints";
+import { applicationName } from "../../lib/application";
+import { paths } from "../../router";
 import { rewordLetter } from "../../lib/cover-letter";
 
-type TextKey = Exclude<keyof CoverLetter, "id" | "language">;
+type TextKey = Exclude<keyof CoverLetter, "id" | "language" | "applicationId">;
 type SetForm = (write: (draft: CoverLetter) => void) => void;
 
 interface DeskLetterFieldsProps {
   form: CoverLetter;
   setForm: SetForm;
-  variants: DeskVariant[];
+  applications: ApplicationRecord[];
 }
 
 type FieldElement = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 
-/** The letter editor's fields: the desk-only ones, the job, the letter itself. */
+/** The letter editor's fields: the desk-only ones, then the letter itself. */
 export function DeskLetterFields(props: DeskLetterFieldsProps) {
   const bind = (key: TextKey) => ({
     value: props.form[key],
@@ -29,15 +30,22 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
       });
     },
   });
-  const linked = () => props.variants.find((variant) => variant.id === props.form.variantId);
+  const linked = () =>
+    props.applications.find((application) => application.id === props.form.applicationId);
+  const jobTitle = (applicationId: string) =>
+    props.applications.find((application) => application.id === applicationId)?.jobTitle ?? "";
 
-  /** A new language or job title rewords only the text that is still the default. */
-  function reword(language: CoverLetter["language"], jobTitle: string) {
-    const next = rewordLetter(props.form, language, jobTitle);
+  /** A new language or application rewords only the text that is still the default. */
+  function reword(language: CoverLetter["language"], applicationId: string) {
+    const next = rewordLetter(props.form, {
+      language,
+      jobTitle: jobTitle(applicationId),
+      previousJobTitle: jobTitle(props.form.applicationId),
+    });
 
     props.setForm((draft) => {
+      draft.applicationId = applicationId;
       draft.language = next.language;
-      draft.jobTitle = next.jobTitle;
       draft.subject = next.subject;
       draft.salutation = next.salutation;
       draft.closing = next.closing;
@@ -52,35 +60,31 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
           <input {...bind("label")} class="input" required />
         </label>
         <label class="field">
-          <span class="field__label">cv variant</span>
-          {/* `selected` on the options: see the variant select in /desk/cv. */}
+          <span class="field__label">application</span>
+          {/* `selected` on the options: see the CV select in /desk/cvs. */}
           <select
             class="input"
             onChange={(event) => {
-              const { value } = event.currentTarget;
-
-              props.setForm((draft) => {
-                draft.variantId = value;
-              });
+              reword(props.form.language, event.currentTarget.value);
             }}
           >
-            <option value="" selected={props.form.variantId === ""}>
-              None
-            </option>
-            <For each={props.variants}>
-              {(variant) => (
-                <option value={variant.id} selected={variant.id === props.form.variantId}>
-                  {variant.label}
+            <For each={props.applications}>
+              {(application) => (
+                <option
+                  value={application.id}
+                  selected={application.id === props.form.applicationId}
+                >
+                  {applicationName(application)}
                 </option>
               )}
             </For>
           </select>
           <span class="field__hint">
-            The CV you send with it; its role prints under your name.{" "}
+            Its job and its CV, whose role prints under your name.{" "}
             <Show when={linked()}>
-              {(variant) => (
-                <a href={deskVariantPdfPath(variant().id)} class="text-link" target="_blank">
-                  Open the CV
+              {(application) => (
+                <a href={paths.desk.applications(application().id)} class="text-link">
+                  Open the application
                 </a>
               )}
             </Show>
@@ -88,42 +92,7 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
         </label>
         <label class="field field--wide">
           <span class="field__label">note</span>
-          <textarea
-            {...bind("note")}
-            class="input"
-            rows="2"
-            placeholder="Where you applied, who you spoke to."
-          />
-        </label>
-      </DeskFormSection>
-
-      <DeskFormSection title="job" description="Only for you; none of it prints.">
-        <label class="field">
-          <span class="field__label">company</span>
-          <input {...bind("company")} class="input" required />
-        </label>
-        <label class="field">
-          <span class="field__label">job title</span>
-          <input
-            value={props.form.jobTitle}
-            class="input"
-            onInput={(event) => {
-              reword(props.form.language, event.currentTarget.value);
-            }}
-          />
-        </label>
-        <label class="field field--wide">
-          <span class="field__label">url</span>
-          <input {...bind("jobUrl")} class="input" type="url" placeholder="https://…" />
-        </label>
-        <label class="field field--wide">
-          <span class="field__label">description</span>
-          <textarea
-            {...bind("jobDescription")}
-            class="input"
-            rows="4"
-            placeholder="The ad, kept here to write against, also after it goes offline."
-          />
+          <textarea {...bind("note")} class="input" rows="2" />
         </label>
       </DeskFormSection>
 
@@ -138,7 +107,7 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
               );
 
               if (language !== undefined) {
-                reword(language, props.form.jobTitle);
+                reword(language, props.form.applicationId);
               }
             }}
           >

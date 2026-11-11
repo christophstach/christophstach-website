@@ -1,7 +1,7 @@
 import { Bullets, EMPTY_ENTRY_FORM, Links, bind, toForm } from "./DeskEntryParts";
 import { Show, createMemo, createSignal, snapshot } from "solid-js";
 import { deleteDeskEntry, saveDeskEntry } from "../../lib/desk/content";
-import { getDeskContent, getDeskVariants } from "../../lib/desk/queries";
+import { getDeskContent, getDeskCvs } from "../../lib/desk/queries";
 import { DeskFormSection } from "./DeskFormSection";
 import { DeskMenu } from "./DeskMenu";
 import { DeskMeta } from "./DeskMeta";
@@ -25,7 +25,7 @@ function notFound(message: string): Error {
 export function DeskEntryEditor(props: { section: Section; id: string }) {
   const navigate = useNavigate();
   const content = createMemo(() => getDeskContent());
-  const variants = createMemo(() => getDeskVariants());
+  const cvs = createMemo(() => getDeskCvs());
   const [removing, setRemoving] = createSignal(false);
   // While deleting, the refetched content no longer has the entry: keep
   // showing the last one until the page has navigated away.
@@ -50,16 +50,16 @@ export function DeskEntryEditor(props: { section: Section; id: string }) {
   );
   const request = useDeskRequest();
 
-  /** Names of the variants that print a bullet (or, without one, the entry). */
+  /** Names of the CVs that print a bullet (or, without one, the entry). */
   const usedBy = (bulletId?: string) =>
-    variants()
-      .variants.filter((variant) =>
-        variant[props.section].some(
+    cvs()
+      .cvs.filter((cv) =>
+        cv[props.section].some(
           (pick) =>
             pick.id === props.id && (bulletId === undefined || pick.bullets.includes(bulletId)),
         ),
       )
-      .map((variant) => variant.label);
+      .map((cv) => cv.label);
 
   async function save(event: SubmitEvent) {
     event.preventDefault();
@@ -86,7 +86,7 @@ export function DeskEntryEditor(props: { section: Section; id: string }) {
     if (await request.run(() => deleteDeskEntry(props.id))) {
       forgetPageChecks();
       leave();
-      navigate(paths.desk.cv[props.section]());
+      navigate(paths.desk.content[props.section]());
     } else {
       setRemoving(false);
     }
@@ -100,14 +100,14 @@ export function DeskEntryEditor(props: { section: Section; id: string }) {
       <header class="desk-head">
         <div class="desk-head__text">
           <p class="desk-head__path">
-            <a href={paths.desk.cv()}>~/desk/cv</a> /{" "}
-            <a href={paths.desk.cv[props.section]()}>{props.section}</a> / {props.id}
+            <a href={paths.desk.content()}>~/desk/content</a> /{" "}
+            <a href={paths.desk.content[props.section]()}>{props.section}</a> / {props.id}
           </p>
           <h1 class="desk-head__title">{heading()}</h1>
           <p class="desk-head__sub">
             {form.title} at {form.organization}{" "}
             <span class={styles.entry__used}>
-              {usedBy().length > 0 ? `in ${usedBy().join(", ")}` : "in no variant"}
+              {usedBy().length > 0 ? `in ${usedBy().join(", ")}` : "in no CV"}
             </span>
           </p>
         </div>

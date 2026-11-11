@@ -1,24 +1,28 @@
 import { For, Show, createMemo } from "solid-js";
+import { applicationName, isDue, isOpen, nextStepText, statusTone } from "../../../lib/application";
 import {
+  getDeskApplications,
   getDeskContent,
   getDeskCoverLetters,
+  getDeskCvs,
   getDeskProjects,
-  getDeskVariants,
 } from "../../../lib/desk/queries";
 import { letterStatus, pageStatus } from "../../../lib/cv-layout";
+import { DeskContentPanel } from "../../../components/desk/DeskContentPanel";
 import { DeskMeta } from "../../../components/desk/DeskMeta";
 import type { RouteDefinition } from "@solidjs/router";
 import { formatRelative } from "../../../lib/format";
 import { paths } from "../../../router";
-import { letterChecks, variantChecks } from "../../../lib/desk/page-checks";
+import { letterChecks, cvChecks } from "../../../lib/desk/page-checks";
 import styles from "../../../components/desk/page-index.module.css";
 
 const LATEST_LETTERS = 5;
+const LATEST_APPLICATIONS = 5;
 
-function variantStatus(variant: { id: string; pageFills: number[] }) {
-  return variantChecks.running().includes(variant.id)
+function cvStatus(cv: { id: string; pageFills: number[] }) {
+  return cvChecks.running().includes(cv.id)
     ? { tone: "none" as const, text: "checking pages…" }
-    : pageStatus(variant.pageFills);
+    : pageStatus(cv.pageFills);
 }
 
 function letterRowStatus(letter: { id: string; pageFills: number[] }) {
@@ -27,99 +31,119 @@ function letterRowStatus(letter: { id: string; pageFills: number[] }) {
     : letterStatus(letter.pageFills);
 }
 
-function ContentPanel() {
-  const content = createMemo(() => getDeskContent());
-  const projects = createMemo(() => getDeskProjects());
-
-  const stats = () => {
-    const { entries, skills } = content();
-    const inSection = (section: string) => entries.filter((entry) => entry.section === section);
-
-    return [
-      {
-        to: paths.desk.cv.experience(),
-        label: "experience",
-        count: inSection("experience").length,
-      },
-      { to: paths.desk.cv.education(), label: "education", count: inSection("education").length },
-      {
-        to: paths.desk.cv.experience(),
-        label: "bullets",
-        count: entries.reduce((sum, entry) => sum + entry.bullets.length, 0),
-      },
-      { to: paths.desk.cv.skills(), label: "skill groups", count: skills.length },
-      { to: paths.desk.cv.projects(), label: "projects", count: projects().length },
-    ];
-  };
-
-  return (
-    <section class="panel" aria-labelledby="panel-content">
-      <header class="panel__head">
-        <h2 id="panel-content" class="panel__title">
-          cv content
-        </h2>
-      </header>
-
-      <ul class={styles.stats}>
-        <For each={stats()}>
-          {(stat) => (
-            <li>
-              <a href={stat.to} class={styles.stat}>
-                <span class={styles.stat__count}>{stat.count}</span>
-                <span class={styles.stat__label}>{stat.label}</span>
-              </a>
-            </li>
-          )}
-        </For>
-      </ul>
-    </section>
-  );
-}
-
-function VariantsPanel() {
-  const data = createMemo(() => getDeskVariants());
+function CvsPanel() {
+  const data = createMemo(() => getDeskCvs());
   const isPublic = (id: string) => id === data().primaryId || id === data().websiteId;
 
-  // The public variants first, then the most recently edited.
-  const variants = () =>
-    data().variants.toSorted(
+  // The public CVs first, then the most recently edited.
+  const cvs = () =>
+    data().cvs.toSorted(
       (first, second) =>
         Number(isPublic(second.id)) - Number(isPublic(first.id)) ||
         second.updatedAt.localeCompare(first.updatedAt),
     );
 
   return (
-    <section class="panel" aria-labelledby="panel-variants">
+    <section class="panel" aria-labelledby="panel-cvs">
       <header class="panel__head">
-        <h2 id="panel-variants" class="panel__title">
-          cv variants
+        <h2 id="panel-cvs" class="panel__title">
+          cvs
         </h2>
-        <a href={paths.desk.cv({ new: "1" })} class={["text-link panel__end", styles["add-link"]]}>
-          New variant
+        <a href={paths.desk.cvs({ new: "1" })} class={["text-link panel__end", styles["add-link"]]}>
+          New CV
         </a>
       </header>
 
-      <Show when={variants().length > 0} fallback={<p class="panel__empty">No CV variants yet.</p>}>
+      <Show when={cvs().length > 0} fallback={<p class="panel__empty">No CVs yet.</p>}>
         <ul class="panel__rows">
-          <For each={variants()}>
-            {(variant) => (
+          <For each={cvs()}>
+            {(cv) => (
               <li>
-                <a href={paths.desk.cv(variant.id)} class={["panel-row", styles.row]}>
+                <a href={paths.desk.cvs(cv.id)} class={["panel-row", styles.row]}>
                   <span class={styles.row__main}>
-                    <span class="panel-row__label">{variant.label}</span>
-                    <Show when={variant.id === data().primaryId}>
+                    <span class="panel-row__label">{cv.label}</span>
+                    <Show when={cv.id === data().primaryId}>
                       <span class={"role-tag"}>PDF</span>
                     </Show>
-                    <Show when={variant.id === data().websiteId}>
+                    <Show when={cv.id === data().websiteId}>
                       <span class={"role-tag"}>/curriculum</span>
                     </Show>
                   </span>
                   <span class="panel-row__meta">
-                    <span class={`desk-status desk-status--${variantStatus(variant).tone}`}>
-                      {variantStatus(variant).text}
+                    <span class={`desk-status desk-status--${cvStatus(cv).tone}`}>
+                      {cvStatus(cv).text}
                     </span>
                   </span>
-                  <span class="panel-row__meta">{formatRelative(variant.updatedAt)}</span>
+                  <span class="panel-row__meta">{formatRelative(cv.updatedAt)}</span>
+                </a>
+              </li>
+            )}
+          </For>
+        </ul>
+      </Show>
+    </section>
+  );
+}
+
+function ApplicationsPanel() {
+  const applications = createMemo(() => getDeskApplications());
+  const open = () => applications().filter((application) => isOpen(application.status));
+
+  // Due first, then by the next step's date (undated last), then the newest.
+  const shown = () =>
+    open()
+      .toSorted(
+        (first, second) =>
+          Number(isDue(second)) - Number(isDue(first)) ||
+          (first.nextStepOn || "9999").localeCompare(second.nextStepOn || "9999") ||
+          second.updatedAt.localeCompare(first.updatedAt),
+      )
+      .slice(0, LATEST_APPLICATIONS);
+  const hasMore = () => applications().length > shown().length;
+
+  return (
+    <section class="panel" aria-labelledby="panel-applications">
+      <header class="panel__head">
+        <h2 id="panel-applications" class="panel__title">
+          applications
+        </h2>
+        <Show when={hasMore()}>
+          <a href={paths.desk.applications()} class={["text-link panel__end", styles["add-link"]]}>
+            All {applications().length} applications
+          </a>
+        </Show>
+        <a
+          href={paths.desk.applications({ new: "1" })}
+          class={["text-link", styles["add-link"], { panel__end: !hasMore() }]}
+        >
+          New application
+        </a>
+      </header>
+
+      <Show when={shown().length > 0} fallback={<p class="panel__empty">No open applications.</p>}>
+        <ul class="panel__rows">
+          <For each={shown()}>
+            {(application) => (
+              <li>
+                <a href={paths.desk.applications(application.id)} class={["panel-row", styles.row]}>
+                  <span class={styles.row__main}>
+                    <span class="panel-row__label">{applicationName(application)}</span>
+                  </span>
+                  <span class="panel-row__meta">
+                    <Show
+                      when={isDue(application)}
+                      fallback={
+                        <span
+                          class={`desk-status desk-status--${statusTone(application.status).tone}`}
+                        >
+                          {statusTone(application.status).text}
+                        </span>
+                      }
+                    >
+                      <span class="desk-status desk-status--warn">due</span>
+                    </Show>
+                  </span>
+                  <span class="panel-row__meta">{nextStepText(application)}</span>
                 </a>
               </li>
             )}
@@ -175,7 +199,7 @@ function LettersPanel() {
                     </span>
                   </span>
                   <span class="panel-row__meta">
-                    {letter.jobTitle === "" ? letter.company : letter.jobTitle}
+                    {letter.application.jobTitle || letter.application.company}
                   </span>
                 </a>
               </li>
@@ -189,7 +213,8 @@ function LettersPanel() {
 
 export const route = {
   preload: () => {
-    void getDeskVariants();
+    void getDeskApplications();
+    void getDeskCvs();
     void getDeskCoverLetters();
     void getDeskContent();
     void getDeskProjects();
@@ -204,13 +229,14 @@ export default function DeskOverview() {
         <div class="desk-head__text">
           <p class="desk-head__path">~/desk</p>
           <h1 class="desk-head__title">Overview</h1>
-          <p class="desk-head__sub">What the CVs are built from, and how they print.</p>
+          <p class="desk-head__sub">What's due, what the CVs are built from, and how they print.</p>
         </div>
       </header>
 
       <div class="panels">
-        <ContentPanel />
-        <VariantsPanel />
+        <ApplicationsPanel />
+        <DeskContentPanel />
+        <CvsPanel />
         <LettersPanel />
       </div>
     </div>

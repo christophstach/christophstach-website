@@ -16,7 +16,9 @@ import type { DeskTableColumn, DeskTableFilter } from "../../../../components/de
 import { IconPlus } from "../../../../components/icons";
 import type { RouteDefinition } from "@solidjs/router";
 import { formatDay } from "../../../../lib/format";
-import { getDeskCoverLetters } from "../../../../lib/desk/queries";
+import { applicationName, today } from "../../../../lib/application";
+import { getDeskApplications, getDeskCoverLetters } from "../../../../lib/desk/queries";
+import type { ApplicationRecord } from "../../../../data/applications";
 import { letterChecks } from "../../../../lib/desk/page-checks";
 import { letterStatus } from "../../../../lib/cv-layout";
 import { paths } from "../../../../router";
@@ -45,7 +47,8 @@ const LETTER_COLUMNS: DeskTableColumn<CoverLetterRecord>[] = [
       </span>
     ),
     sort: (letter) => letter.label,
-    search: (letter) => `${letter.label} ${letter.company} ${letter.jobTitle} ${letter.note}`,
+    search: (letter) =>
+      `${letter.label} ${letter.application.company} ${letter.application.jobTitle} ${letter.note}`,
   },
   {
     id: "pages",
@@ -93,12 +96,11 @@ const LETTER_FILTERS: DeskTableFilter<CoverLetterRecord>[] = [
 
 interface CreateForm {
   id: string;
-  company: string;
-  jobTitle: string;
+  applicationId: string;
   language: CoverLetterLanguage;
 }
 
-/** A new letter with the default wording in English, reworded for the form's values. */
+/** A new letter with the default wording in English, before it is reworded for the form. */
 function blank(): CoverLetter {
   const { salutation, closing, subject } = COVER_LETTER_WORDING.en;
 
@@ -106,12 +108,8 @@ function blank(): CoverLetter {
     id: "",
     label: "",
     note: "",
-    variantId: "",
-    company: "",
+    applicationId: "",
     recipient: "",
-    jobTitle: "",
-    jobUrl: "",
-    jobDescription: "",
     language: "en",
     letterDate: "",
     subject: subject(""),
@@ -121,32 +119,43 @@ function blank(): CoverLetter {
   };
 }
 
-/** The form for a new letter, opened by "?new"; "?new&from=<id>" duplicates that letter. */
-function CreateLetter(props: { source: CoverLetter | undefined }) {
+interface CreateLetterProps {
+  /** The letter to duplicate, from "?from=<id>". */
+  source: CoverLetter | undefined;
+  /** The application to write for, from "?application=<id>". */
+  applicationId: string | undefined;
+  applications: ApplicationRecord[];
+  letters: CoverLetterRecord[];
+}
+
+/**
+ * The form for a new letter, opened by "?new": for an application
+ * ("&application=<id>") or as a copy of a letter ("&from=<id>").
+ */
+function CreateLetter(props: CreateLetterProps) {
   const navigate = useNavigate();
   const request = useDeskRequest();
-  // Follows the letter to duplicate: its company, job title and language.
+  // Follows the letter to duplicate and the application asked for.
   const [form, setForm] = createStore<CreateForm>(
     () => ({
       id: "",
-      company: props.source?.company ?? "",
-      jobTitle: props.source?.jobTitle ?? "",
+      applicationId:
+        props.applicationId ?? props.source?.applicationId ?? props.applications[0]?.id ?? "",
       language: props.source?.language ?? "en",
     }),
-    { id: "", company: "", jobTitle: "", language: "en" },
+    { id: "", applicationId: "", language: "en" },
   );
-  const generatedId = () => slugify(`${form.company} ${form.jobTitle}`);
+  const application = () =>
+    props.applications.find((candidate) => candidate.id === form.applicationId);
+  const jobTitle = (applicationId: string) =>
+    props.applications.find((candidate) => candidate.id === applicationId)?.jobTitle ?? "";
+  // The application's id, or with the language when a letter has it already.
+  const generatedId = () => {
+    const taken = new Set(props.letters.map((letter) => letter.id));
+    const base = form.applicationId;
 
-  const bind = (key: "id" | "company" | "jobTitle") => ({
-    value: form[key],
-    onInput: (event: InputEvent & { currentTarget: HTMLInputElement }) => {
-      const { value } = event.currentTarget;
-
-      setForm((draft) => {
-        draft[key] = value;
-      });
-    },
-  });
+    return base === "" || !taken.has(base) ? base : slugify(`${base} ${form.language}`);
+  };
 
   async function create(event: SubmitEvent) {
     event.preventDefault();
@@ -154,16 +163,20 @@ function CreateLetter(props: { source: CoverLetter | undefined }) {
     const id = form.id.trim() === "" ? generatedId() : form.id.trim();
     const start = props.source ?? blank();
     const letter: CoverLetter = {
-      ...rewordLetter(start, form.language, form.jobTitle.trim()),
+      ...rewordLetter(start, {
+        language: form.language,
+        jobTitle: jobTitle(form.applicationId),
+        previousJobTitle: props.source === undefined ? "" : jobTitle(props.source.applicationId),
+      }),
       id,
-      label: [form.company.trim(), form.jobTitle.trim()].filter((part) => part !== "").join(", "),
-      company: form.company,
-      // A duplicate is for another application: only the text carries over.
+      label: applicationName(application() ?? { company: id, jobTitle: "" }),
+      applicationId: form.applicationId,
+      // A copy for another application keeps only the text.
       recipient:
-        props.source !== undefined && form.company !== props.source.company ? "" : start.recipient,
-      jobUrl: "",
-      jobDescription: "",
-      letterDate: new Date().toISOString().slice(0, 10),
+        props.source !== undefined && form.applicationId !== props.source.applicationId
+          ? ""
+          : start.recipient,
+      letterDate: today(),
     };
 
     if (await request.run(() => saveDeskLetter(letter, { create: true }))) {
@@ -177,73 +190,106 @@ function CreateLetter(props: { source: CoverLetter | undefined }) {
         {props.source === undefined ? "New letter" : `Duplicate ${props.source.label}`}
       </h2>
 
-      <div class={styles.create__fields}>
-        <label class="field">
-          <span class="field__label">company</span>
-          <input {...bind("company")} class="input" required placeholder="Acme" />
-        </label>
-
-        <label class="field">
-          <span class="field__label">job title</span>
-          <input {...bind("jobTitle")} class="input" placeholder="Senior Frontend Engineer" />
-        </label>
-
-        <label class="field">
-          <span class="field__label">language</span>
-          {/* `selected` on the options: see the variant select in /desk/cv. */}
-          <select
-            class="input"
-            onChange={(event) => {
-              const language = COVER_LETTER_LANGUAGES.find(
-                (option) => option === event.currentTarget.value,
-              );
-
-              if (language !== undefined) {
-                setForm((draft) => {
-                  draft.language = language;
-                });
-              }
-            }}
-          >
-            <For each={COVER_LETTER_LANGUAGES}>
-              {(language) => (
-                <option value={language} selected={language === form.language}>
-                  {COVER_LETTER_WORDING[language].name}
-                </option>
-              )}
-            </For>
-          </select>
-          <span class="field__hint">Sets the date format and the default wording.</span>
-        </label>
-
-        <label class="field">
-          <span class="field__label">id</span>
-          <input
-            {...bind("id")}
-            class="input"
-            pattern="[a-z0-9]+(-[a-z0-9]+)*"
-            placeholder={generatedId() === "" ? "acme-frontend" : generatedId()}
-          />
-          <span class="field__hint">The URL slug. Left empty, it is the one shown here.</span>
-        </label>
-      </div>
-
-      <Show when={request.error()}>
-        {(error) => (
-          <p class={styles.create__error} role="alert">
-            {error()}
+      <Show
+        when={props.applications.length > 0}
+        fallback={
+          <p>
+            A letter belongs to an application.{" "}
+            <a href={paths.desk.applications({ new: "1" })} class="text-link">
+              Create one first
+            </a>
+            .
           </p>
-        )}
-      </Show>
+        }
+      >
+        <div class={styles.create__fields}>
+          <label class="field">
+            <span class="field__label">application</span>
+            {/* `selected` on the options: see the CV select in /desk/cvs. */}
+            <select
+              class="input"
+              onChange={(event) => {
+                const { value } = event.currentTarget;
 
-      <div class={styles.create__actions}>
-        <button type="submit" class="button button--primary" disabled={request.busy()}>
-          {request.busy() ? "Creating…" : "Create letter"}
-        </button>
-        <a href={paths.desk["cover-letters"]()} class="button button--outline">
-          Cancel
-        </a>
-      </div>
+                setForm((draft) => {
+                  draft.applicationId = value;
+                });
+              }}
+            >
+              <For each={props.applications}>
+                {(candidate) => (
+                  <option value={candidate.id} selected={candidate.id === form.applicationId}>
+                    {applicationName(candidate)}
+                  </option>
+                )}
+              </For>
+            </select>
+            <span class="field__hint">Its job and CV: the subject names the job.</span>
+          </label>
+
+          <label class="field">
+            <span class="field__label">language</span>
+            <select
+              class="input"
+              onChange={(event) => {
+                const language = COVER_LETTER_LANGUAGES.find(
+                  (option) => option === event.currentTarget.value,
+                );
+
+                if (language !== undefined) {
+                  setForm((draft) => {
+                    draft.language = language;
+                  });
+                }
+              }}
+            >
+              <For each={COVER_LETTER_LANGUAGES}>
+                {(language) => (
+                  <option value={language} selected={language === form.language}>
+                    {COVER_LETTER_WORDING[language].name}
+                  </option>
+                )}
+              </For>
+            </select>
+            <span class="field__hint">Sets the date format and the default wording.</span>
+          </label>
+
+          <label class="field">
+            <span class="field__label">id</span>
+            <input
+              value={form.id}
+              onInput={(event) => {
+                const { value } = event.currentTarget;
+
+                setForm((draft) => {
+                  draft.id = value;
+                });
+              }}
+              class="input"
+              pattern="[a-z0-9]+(-[a-z0-9]+)*"
+              placeholder={generatedId() === "" ? "acme-frontend" : generatedId()}
+            />
+            <span class="field__hint">The URL slug. Left empty, it is the one shown here.</span>
+          </label>
+        </div>
+
+        <Show when={request.error()}>
+          {(error) => (
+            <p class={styles.create__error} role="alert">
+              {error()}
+            </p>
+          )}
+        </Show>
+
+        <div class={styles.create__actions}>
+          <button type="submit" class="button button--primary" disabled={request.busy()}>
+            {request.busy() ? "Creating…" : "Create letter"}
+          </button>
+          <a href={paths.desk["cover-letters"]()} class="button button--outline">
+            Cancel
+          </a>
+        </div>
+      </Show>
     </form>
   );
 }
@@ -251,6 +297,7 @@ function CreateLetter(props: { source: CoverLetter | undefined }) {
 export default function CoverLetters() {
   const [search] = useSearchParams();
   const letters = createMemo(() => getDeskCoverLetters());
+  const applications = createMemo(() => getDeskApplications());
   const creating = () => search.new !== undefined;
   const source = () => letters().find((letter) => letter.id === search.from);
 
@@ -261,7 +308,7 @@ export default function CoverLetters() {
         <div class="desk-head__text">
           <p class="desk-head__path">~/desk/cover-letters</p>
           <h1 class="desk-head__title">Cover letters</h1>
-          <p class="desk-head__sub">One for each application. Private, only in the desk.</p>
+          <p class="desk-head__sub">Each belongs to an application. Private, only in the desk.</p>
         </div>
 
         <Show when={!creating()}>
@@ -273,7 +320,12 @@ export default function CoverLetters() {
       </header>
 
       <Show when={creating()}>
-        <CreateLetter source={source()} />
+        <CreateLetter
+          source={source()}
+          applicationId={typeof search.application === "string" ? search.application : undefined}
+          applications={applications()}
+          letters={letters()}
+        />
       </Show>
 
       <Show
@@ -302,5 +354,6 @@ export default function CoverLetters() {
 export const route = {
   preload: () => {
     void getDeskCoverLetters();
+    void getDeskApplications();
   },
 } satisfies RouteDefinition;

@@ -1,10 +1,10 @@
 import "server-only";
 import {
   cvEntries,
-  cvVariantEntries,
-  cvVariantEntriesRelations,
-  cvVariants,
-  cvVariantsRelations,
+  cvEntryPicks,
+  cvEntryPicksRelations,
+  cvs,
+  cvsRelations,
   projects,
   skillGroups,
 } from "../../server/db/schema";
@@ -14,10 +14,10 @@ import postgres from "postgres";
 
 const schema = {
   cvEntries,
-  cvVariantEntries,
-  cvVariantEntriesRelations,
-  cvVariants,
-  cvVariantsRelations,
+  cvEntryPicks,
+  cvEntryPicksRelations,
+  cvs,
+  cvsRelations,
   projects,
   skillGroups,
 };

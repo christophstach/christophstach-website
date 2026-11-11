@@ -16,7 +16,7 @@ async function launchOptions(localChrome: string | undefined) {
 
 interface RenderJob {
   url: string;
-  /** Cookies to send with the page request, e.g. the desk session for a private variant. */
+  /** Cookies to send with the page request, e.g. the desk session for a private CV. */
   cookies: Map<string, string>;
 }
 

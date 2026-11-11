@@ -1,6 +1,6 @@
 import { IconArrowRight, IconBrandGithub, IconBrandLinkedin, IconDownload } from "../icons";
 import { CV_PDF_PATH } from "../../data/endpoints";
-import { cvDownloadVisible } from "../../data/cv-variants";
+import { cvDownloadVisible } from "../../data/cvs";
 import styles from "./home.module.css";
 
 /** The terminal window with name, role and links, beside the portrait. */

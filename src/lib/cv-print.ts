@@ -1,11 +1,11 @@
-import type { PrintedCv } from "./cv-variant";
+import type { PrintedCv } from "./cv";
 import { query } from "@solidjs/router";
 
-/** The public CV: the primary variant, which /christoph-stach-cv.pdf prints. */
+/** The public CV: the primary CV, which /christoph-stach-cv.pdf prints. */
 export const getPrimaryCv = query(async (): Promise<PrintedCv> => {
   "use server";
 
-  const { printStoredVariant, requireMarkedVariant } = await import("../server/cv-variants");
+  const { printStoredCv, requireMarkedCv } = await import("../server/cvs");
 
-  return printStoredVariant(await requireMarkedVariant("isPrimary"));
+  return printStoredCv(await requireMarkedCv("isPrimary"));
 }, "cv-print");

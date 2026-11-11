@@ -5,8 +5,8 @@ import {
   coverLetters,
   cvEntries,
   cvProfile,
-  cvVariantEntries,
-  cvVariants,
+  cvEntryPicks,
+  cvs,
   skillGroups,
 } from "../../server/db/schema";
 import { HttpError } from "./http";
@@ -93,7 +93,7 @@ async function loadProfile(): Promise<Profile> {
 }
 
 /**
- * Everything variants pick from, in the shapes the site renders. Each field is
+ * Everything CVs pick from, in the shapes the site renders. Each field is
  * copied by name, so desk-only names and notes never reach the site or the PDF.
  */
 async function loadCvContent(): Promise<CvContent> {
@@ -134,19 +134,19 @@ async function requireEntry(id: string): Promise<EntryRecord> {
   return toRecord(row);
 }
 
-/** Content changed, so every variant's page check is out of date. */
+/** Content changed, so every CV's page check is out of date. */
 async function forgetPageChecks(tx: Tx) {
-  await tx.update(cvVariants).set({ pageFillsBuild: "" });
+  await tx.update(cvs).set({ pageFillsBuild: "" });
 }
 
-/** Takes bullets an entry no longer has out of every variant that picks them. */
+/** Takes bullets an entry no longer has out of every CV that picks them. */
 async function dropBullets(tx: Tx, entryId: string, keep: string[]) {
   await tx
-    .update(cvVariantEntries)
+    .update(cvEntryPicks)
     .set({
-      bullets: sql`array(select bullet from unnest(${cvVariantEntries.bullets}) as bullet where bullet = any(${sql.param(keep)}::text[]))`,
+      bullets: sql`array(select bullet from unnest(${cvEntryPicks.bullets}) as bullet where bullet = any(${sql.param(keep)}::text[]))`,
     })
-    .where(eq(cvVariantEntries.entryId, entryId));
+    .where(eq(cvEntryPicks.entryId, entryId));
 }
 
 function entryColumns(entry: EntryRecord) {
@@ -167,7 +167,7 @@ function entryColumns(entry: EntryRecord) {
 
 /**
  * Creates an entry (409 if the id is taken) or updates one (404 if missing).
- * Its section never changes. Bullets it no longer has leave the variants.
+ * Its section never changes. Bullets it no longer has leave the CVs.
  */
 async function saveEntry(entry: EntryRecord, { create }: { create: boolean }) {
   await useDb().transaction(async (tx) => {
@@ -198,7 +198,7 @@ async function saveEntry(entry: EntryRecord, { create }: { create: boolean }) {
   });
 }
 
-/** Deletes an entry and takes it out of every variant. */
+/** Deletes an entry and takes it out of every CV. */
 async function deleteEntry(id: string) {
   await useDb().transaction(async (tx) => {
     const deleted = await tx
@@ -210,14 +210,14 @@ async function deleteEntry(id: string) {
       throw new HttpError(404, `No CV entry "${id}".`);
     }
 
-    await tx.delete(cvVariantEntries).where(eq(cvVariantEntries.entryId, id));
+    await tx.delete(cvEntryPicks).where(eq(cvEntryPicks.entryId, id));
     await forgetPageChecks(tx);
   });
 }
 
 /**
  * Replaces all skill groups with these, in this order. Groups left out are
- * deleted and taken out of every variant.
+ * deleted and taken out of every CV.
  */
 async function saveSkillGroups(groups: SkillGroupRecord[]) {
   const ids = groups.map((group) => group.label);
@@ -245,14 +245,14 @@ async function saveSkillGroups(groups: SkillGroupRecord[]) {
         .onConflictDoUpdate({ target: skillGroups.id, set: columns });
     }, Promise.resolve());
 
-    await tx.update(cvVariants).set({
-      skills: sql`array(select skill from unnest(${cvVariants.skills}) as skill where skill = any(${sql.param(ids)}::text[]))`,
+    await tx.update(cvs).set({
+      skills: sql`array(select skill from unnest(${cvs.skills}) as skill where skill = any(${sql.param(ids)}::text[]))`,
     });
     await forgetPageChecks(tx);
   });
 }
 
-/** Writes the profile; variants and letters print it, so their page checks are out of date. */
+/** Writes the profile; CVs and letters print it, so their page checks are out of date. */
 async function saveProfile(profile: Profile) {
   await useDb().transaction(async (tx) => {
     const columns = { ...profile, updatedAt: new Date() };

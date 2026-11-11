@@ -111,7 +111,7 @@ function Bullets(props: BulletsProps) {
   return (
     <DeskFormSection
       title="bullets"
-      description="Variants pick bullets one by one. Drag to set the order new picks start with."
+      description="Cvs pick bullets one by one. Drag to set the order new picks start with."
       single
     >
       <Show when={props.form.bullets.length > 0}>
@@ -172,7 +172,7 @@ function Bullets(props: BulletsProps) {
                   <span class={styles.bullet__meta}>
                     {props.usedBy(bullet().id).length > 0
                       ? `in ${props.usedBy(bullet().id).join(", ")}`
-                      : "in no variant"}
+                      : "in no CV"}
                   </span>
                 </div>
 
