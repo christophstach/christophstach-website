@@ -222,6 +222,15 @@ export function IconPlus(props: IconProps): JSX.Element {
   return <TablerIcon {...props} path="M12 5v14m-7-7h14" />;
 }
 
+export function IconSend(props: IconProps): JSX.Element {
+  return (
+    <TablerIcon
+      {...props}
+      path="M10 14L21 3m0 0l-6.5 18a.55.55 0 0 1-1 0L10 14l-7-3.5a.55.55 0 0 1 0-1z"
+    />
+  );
+}
+
 export function IconStack(props: IconProps): JSX.Element {
   return <TablerIcon {...props} path="M12 4L4 8l8 4l8-4l-8-4M4 12l8 4l8-4M4 16l8 4l8-4" />;
 }

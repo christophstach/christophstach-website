@@ -164,7 +164,7 @@ session only for `DESK_GITHUB_USER_ID`. The session is h3's sealed cookie, from 
 (`src/server/session.ts`; `SESSION_SECRET` comma-separated, newest seals). `src/middleware.ts`
 redirects anonymous `/desk/**` requests to `/login`, before anything renders. Sidebar sections
 are data in `src/data/desk.ts`. Desk reads are queries in `src/lib/desk/queries.ts` (keys
-`desk-cvs`, `desk-cover-letters`, `desk-cv-content`, `desk-projects`, `desk-profile`,
+`desk-cvs`, `desk-applications`, `desk-cover-letters`, `desk-cv-content`, `desk-projects`, `desk-profile`,
 `desk-user`). Editors keep their form in `useDraft` (`src/lib/desk/draft.ts`): a store that
 follows the stored value, reconciled by id, compared by content so refetches don't reset
 typing; it asks before leaving with unsaved changes. Change store arrays in place (`setItems` in
@@ -172,7 +172,13 @@ typing; it asks before leaving with unsaved changes. Change store arrays in plac
 `DeskTable` (overview lists: search, filters, sorting, opt-in reorder), `DeskFormSection`,
 `DeskSaveBar`, `DeskMenu`, `DeskLinkRows`, `DeskCvRows` (a CV's picks).
 
-**Cover letters** are private to the desk, one per application (`cover_letters`,
+**Applications** are private to the desk (`applications`, `src/server/applications.ts`, edited
+at `/desk/applications/<id>`): the job, its status and next step, contacts and history (jsonb
+lists, ids unique within the application), and the CV sent with it. Status and source are the
+fixed lists in `src/data/applications.ts`; `src/lib/application.ts` says when a next step is due.
+Deleting an application deletes its cover letters.
+
+**Cover letters** are private to the desk, each belonging to an application (`cover_letters`,
 `src/server/cover-letters.ts`, edited at `/desk/cover-letters/<id>`). Name and contact come
 from the profile, the role under the name from the linked CV or else the profile.
 `CoverLetterDocument.tsx` is printed from `/desk/cover-letter-print/<id>` and shown live in the

@@ -1,5 +1,6 @@
 import "server-only";
 import { listEntries, listSkillGroups, loadProfile } from "./cv-content";
+import { listApplications } from "./applications";
 import { listCoverLetters } from "./cover-letters";
 import { listProjects } from "./projects";
 import { listCvs } from "./cvs";
@@ -13,6 +14,12 @@ async function deskCvs() {
   await requireUser();
 
   return listCvs();
+}
+
+async function deskApplications() {
+  await requireUser();
+
+  return listApplications();
 }
 
 async function deskCoverLetters() {
@@ -41,5 +48,5 @@ async function deskProjects() {
   return listProjects();
 }
 
-export { deskContent, deskCoverLetters, deskProfile, deskProjects, deskCvs };
+export { deskApplications, deskContent, deskCoverLetters, deskProfile, deskProjects, deskCvs };
 export { requireUser } from "./auth";

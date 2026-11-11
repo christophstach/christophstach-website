@@ -1,0 +1,98 @@
+import "server-only";
+import type { Application, ApplicationRecord } from "../data/applications";
+import { applications, coverLetters } from "../../server/db/schema";
+import { asc, desc, eq } from "drizzle-orm";
+import { HttpError } from "./http";
+import { requireLinkedCv } from "./cvs";
+import { useDb } from "./db";
+
+type ApplicationRow = typeof applications.$inferSelect;
+
+function toApplication(row: ApplicationRow): Application {
+  return {
+    id: row.id,
+    company: row.company,
+    jobTitle: row.jobTitle,
+    jobUrl: row.jobUrl,
+    jobDescription: row.jobDescription,
+    location: row.location,
+    source: row.source,
+    status: row.status,
+    cvId: row.cvId ?? "",
+    appliedOn: row.appliedOn,
+    nextStep: row.nextStep,
+    nextStepOn: row.nextStepOn,
+    contacts: row.contacts,
+    events: row.events,
+    note: row.note,
+  };
+}
+
+function notFound(id: string) {
+  return new HttpError(404, `No application "${id}".`);
+}
+
+/** All applications, newest first, each with its cover letters. */
+async function listApplications(): Promise<ApplicationRecord[]> {
+  const [rows, letters] = await Promise.all([
+    useDb().select().from(applications).orderBy(desc(applications.createdAt), asc(applications.id)),
+    useDb()
+      .select({
+        id: coverLetters.id,
+        label: coverLetters.label,
+        applicationId: coverLetters.applicationId,
+      })
+      .from(coverLetters)
+      .orderBy(asc(coverLetters.createdAt), asc(coverLetters.id)),
+  ]);
+
+  return rows.map((row) =>
+    Object.assign(toApplication(row), {
+      letters: letters
+        .filter((letter) => letter.applicationId === row.id)
+        .map(({ id, label }) => ({ id, label })),
+      updatedAt: row.updatedAt.toISOString(),
+    }),
+  );
+}
+
+function applicationColumns(application: Application) {
+  return { ...application, cvId: application.cvId || null, updatedAt: new Date() };
+}
+
+/** Creates an application (409 if the id is taken) or updates one (404 if missing). */
+async function saveApplication(application: Application, { create }: { create: boolean }) {
+  await requireLinkedCv(application.cvId);
+
+  const written = create
+    ? await useDb()
+        .insert(applications)
+        .values(applicationColumns(application))
+        .onConflictDoNothing()
+        .returning({ id: applications.id })
+    : await useDb()
+        .update(applications)
+        .set(applicationColumns(application))
+        .where(eq(applications.id, application.id))
+        .returning({ id: applications.id });
+
+  if (written.length === 0) {
+    throw create
+      ? new HttpError(409, `Application "${application.id}" exists.`)
+      : notFound(application.id);
+  }
+}
+
+/** Deletes an application and, with it, its cover letters. */
+async function deleteApplication(id: string) {
+  const deleted = await useDb()
+    .delete(applications)
+    .where(eq(applications.id, id))
+    .returning({ id: applications.id });
+
+  if (deleted.length === 0) {
+    throw notFound(id);
+  }
+}
+
+export { deleteApplication, listApplications, saveApplication };

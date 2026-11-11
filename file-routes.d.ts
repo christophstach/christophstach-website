@@ -135,6 +135,18 @@ declare module "virtual:file-routes" {
       $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)")>>>;
     },
     {
+      path: "/desk/(shell)/applications/:id";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/applications/[id]"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/applications/[id]")>>>;
+      $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/applications/[id]"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/applications/[id]")>>>;
+    },
+    {
+      path: "/desk/(shell)/applications/";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/applications/index"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/applications/index")>>>;
+      $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/applications/index"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/applications/index")>>>;
+    },
+    {
       path: "/desk/(shell)/content/education/:id";
       page: true;
       $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/content/education/[id]"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/content/education/[id]")>>>;
@@ -332,6 +344,14 @@ declare module "virtual:file-routes" {
           children?: undefined;
         },
         {
+          path: "/applications/";
+          id: "/applications/";
+          page: true;
+          $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/applications/index"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/applications/index")>>>;
+          $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/applications/index"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/applications/index")>>>;
+          children?: undefined;
+        },
+        {
           path: "/cover-letters/";
           id: "/cover-letters/";
           page: true;
@@ -353,6 +373,14 @@ declare module "virtual:file-routes" {
           page: true;
           $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/content/skills/index"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/content/skills/index")>>>;
           $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/content/skills/index"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/content/skills/index")>>>;
+          children?: undefined;
+        },
+        {
+          path: "/applications/:id";
+          id: "/applications/:id";
+          page: true;
+          $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/applications/[id]"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/applications/[id]")>>>;
+          $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/applications/[id]"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/applications/[id]")>>>;
           children?: undefined;
         },
         {

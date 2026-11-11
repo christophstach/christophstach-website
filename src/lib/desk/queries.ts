@@ -18,6 +18,14 @@ export const getDeskCvs = query(async () => {
   return desk.deskCvs();
 }, "desk-cvs");
 
+export const getDeskApplications = query(async () => {
+  "use server";
+
+  const desk = await import("../../server/desk-read");
+
+  return desk.deskApplications();
+}, "desk-applications");
+
 export const getDeskCoverLetters = query(async () => {
   "use server";
 

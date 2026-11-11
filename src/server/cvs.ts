@@ -214,6 +214,19 @@ async function deleteCv(id: string) {
   }
 }
 
+/** Throws a 400 unless the id is empty or names a stored CV. */
+async function requireLinkedCv(cvId: string) {
+  if (!cvId) {
+    return;
+  }
+
+  const [row] = await useDb().select({ id: cvs.id }).from(cvs).where(eq(cvs.id, cvId));
+
+  if (!row) {
+    throw new HttpError(400, `No CV "${cvId}".`);
+  }
+}
+
 export {
   currentBuild,
   deleteCv,
@@ -222,6 +235,7 @@ export {
   printStoredCv,
   requireMarkedCv,
   requireCv,
+  requireLinkedCv,
   saveCv,
   storePageFills,
 };

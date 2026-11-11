@@ -6,6 +6,7 @@ import {
   IconLayoutDashboard,
   IconMail,
   IconSchool,
+  IconSend,
   IconStack,
   IconTools,
 } from "../components/icons";
@@ -62,7 +63,12 @@ export const deskContentLinks: (DeskLink & { hint: string })[] = [
 
 export const deskSections: DeskSection[] = [
   { to: paths.desk(), label: "overview", icon: IconLayoutDashboard },
-  { to: paths.desk["cover-letters"](), label: "cover-letters", icon: IconMail },
+  {
+    to: paths.desk.applications(),
+    label: "applications",
+    icon: IconSend,
+    pages: [{ to: paths.desk["cover-letters"](), label: "cover-letters", icon: IconMail }],
+  },
   { to: paths.desk.cvs(), label: "cvs", icon: IconFileCv },
   { to: paths.desk.content(), label: "content", icon: IconStack, pages: deskContentLinks },
 ];

@@ -56,6 +56,14 @@ interface Application {
   note: string;
 }
 
+/** An application as the desk lists it, with its letters. */
+interface ApplicationRecord extends Application {
+  /** The ids and names of its cover letters, oldest first. */
+  letters: { id: string; label: string }[];
+  /** ISO timestamp of the last save. */
+  updatedAt: string;
+}
+
 const APPLICATION_STATUSES: readonly ApplicationStatus[] = [
   "saved",
   "applied",
@@ -78,9 +86,31 @@ const APPLICATION_SOURCES: readonly ApplicationSource[] = [
   "other",
 ];
 
-export { APPLICATION_SOURCES, APPLICATION_STATUSES, CLOSED_STATUSES };
+/** How the desk names each status. */
+const STATUS_LABELS: Record<ApplicationStatus, string> = {
+  saved: "Not sent",
+  applied: "Applied",
+  interviewing: "Interviewing",
+  offer: "Offer",
+  accepted: "Accepted",
+  rejected: "Rejected",
+  withdrawn: "Withdrawn",
+};
+
+/** How the desk names each source. */
+const SOURCE_LABELS: Record<ApplicationSource, string> = {
+  portal: "Job portal",
+  linkedin: "LinkedIn",
+  recruiter: "Recruiter",
+  referral: "Referral",
+  direct: "Direct",
+  other: "Other",
+};
+
+export { APPLICATION_SOURCES, APPLICATION_STATUSES, CLOSED_STATUSES, SOURCE_LABELS, STATUS_LABELS };
 export type {
   Application,
+  ApplicationRecord,
   ApplicationContact,
   ApplicationEvent,
   ApplicationSource,

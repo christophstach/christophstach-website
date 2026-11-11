@@ -1,8 +1,8 @@
 import "server-only";
 import type { CoverLetter, CoverLetterRecord, PrintedCoverLetter } from "../data/cover-letters";
 import { asc, desc, eq } from "drizzle-orm";
-import { coverLetters, cvs } from "../../server/db/schema";
-import { currentBuild, requireCv } from "./cvs";
+import { coverLetters } from "../../server/db/schema";
+import { currentBuild, requireCv, requireLinkedCv } from "./cvs";
 import { HttpError } from "./http";
 import { loadProfile } from "./cv-content";
 import { printedLetter } from "../lib/cover-letter";
@@ -58,18 +58,6 @@ async function requireCoverLetter(id: string): Promise<CoverLetter> {
   }
 
   return toLetter(row);
-}
-
-async function requireLinkedCv(cvId: string) {
-  if (!cvId) {
-    return;
-  }
-
-  const [row] = await useDb().select({ id: cvs.id }).from(cvs).where(eq(cvs.id, cvId));
-
-  if (!row) {
-    throw new HttpError(400, `No CV "${cvId}".`);
-  }
 }
 
 function letterColumns(letter: CoverLetter) {
