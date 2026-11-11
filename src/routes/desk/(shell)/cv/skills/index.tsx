@@ -146,7 +146,8 @@ export default function SkillsPage() {
       </header>
 
       <Show when={creating()}>
-        <CreateGroup groups={content().skills} />
+        {/* The list as shown, so a new group keeps an unsaved reorder instead of resetting it. */}
+        <CreateGroup groups={rows()} />
       </Show>
 
       <Show when={request.error() !== "" && !dirty()}>
