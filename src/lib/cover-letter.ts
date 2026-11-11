@@ -39,26 +39,27 @@ function printedLetter(
   };
 }
 
-type Wording = Pick<CoverLetter, "language" | "jobTitle" | "subject" | "salutation" | "closing">;
+type Wording = Pick<CoverLetter, "language" | "subject" | "salutation" | "closing">;
 
 /**
- * The wording after a change of language or job title. Only text that is still
- * the default follows; whatever was written by hand stays.
+ * The wording after a change of language or job title (the application's, which
+ * the subject names). Only text that is still the default follows; whatever
+ * was written by hand stays.
  */
 function rewordLetter<Letter extends Wording>(
   letter: Letter,
-  language: CoverLetterLanguage,
-  jobTitle: string,
+  change: { language: CoverLetterLanguage; jobTitle: string; previousJobTitle: string },
 ): Letter {
   const from = COVER_LETTER_WORDING[letter.language];
-  const to = COVER_LETTER_WORDING[language];
+  const to = COVER_LETTER_WORDING[change.language];
 
   return {
     ...letter,
-    language,
-    jobTitle,
+    language: change.language,
     subject:
-      letter.subject === from.subject(letter.jobTitle) ? to.subject(jobTitle) : letter.subject,
+      letter.subject === from.subject(change.previousJobTitle)
+        ? to.subject(change.jobTitle)
+        : letter.subject,
     salutation: letter.salutation === from.salutation ? to.salutation : letter.salutation,
     closing: letter.closing === from.closing ? to.closing : letter.closing,
   };

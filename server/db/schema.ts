@@ -221,24 +221,19 @@ const applications = pgTable("applications", {
 const coverLetters = pgTable("cover_letters", {
   /** URL slug, e.g. /desk/cover-letters/acme-frontend. */
   id: text().primaryKey(),
-  /** The application it belongs to; deleting that deletes the letter. */
-  applicationId: text().references(() => applications.id, {
-    onDelete: "cascade",
-    onUpdate: "cascade",
-  }),
+  /**
+   * The application it belongs to: its job and its CV, whose role prints under
+   * the name. Deleting the application deletes the letter.
+   */
+  applicationId: text()
+    .notNull()
+    .references(() => applications.id, { onDelete: "cascade", onUpdate: "cascade" }),
   /** Desk only: how the desk lists it. Never printed. */
   label: text().notNull(),
   /** Desk only: what it is for. Never printed. */
   note: text().notNull().default(""),
-  /** The CV sent with it; its role is printed under the name. */
-  cvId: text().references(() => cvs.id, { onDelete: "set null", onUpdate: "cascade" }),
-  company: text().notNull(),
   /** Printed above the date when set: a person, an address, one item per line. */
   recipient: text().notNull().default(""),
-  /** Desk only, like the url and the description of the job. */
-  jobTitle: text().notNull().default(""),
-  jobUrl: text().notNull().default(""),
-  jobDescription: text().notNull().default(""),
   /** Sets the date format and the default wording. */
   language: text({ enum: ["en", "de"] })
     .notNull()

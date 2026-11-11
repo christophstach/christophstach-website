@@ -56,6 +56,13 @@ async function listApplications(): Promise<ApplicationRecord[]> {
   );
 }
 
+/** The application with this id; undefined if there is none. */
+async function findApplication(id: string): Promise<Application | undefined> {
+  const [row] = await useDb().select().from(applications).where(eq(applications.id, id));
+
+  return row === undefined ? undefined : toApplication(row);
+}
+
 function applicationColumns(application: Application) {
   return { ...application, cvId: application.cvId || null, updatedAt: new Date() };
 }
@@ -95,4 +102,4 @@ async function deleteApplication(id: string) {
   }
 }
 
-export { deleteApplication, listApplications, saveApplication };
+export { deleteApplication, findApplication, listApplications, saveApplication };

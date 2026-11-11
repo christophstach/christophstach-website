@@ -127,7 +127,7 @@ function LettersPanel() {
                     </span>
                   </span>
                   <span class="panel-row__meta">
-                    {letter.jobTitle === "" ? letter.company : letter.jobTitle}
+                    {letter.application.jobTitle || letter.application.company}
                   </span>
                 </a>
               </li>

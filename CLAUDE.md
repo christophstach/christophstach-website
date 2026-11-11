@@ -180,7 +180,8 @@ Deleting an application deletes its cover letters.
 
 **Cover letters** are private to the desk, each belonging to an application (`cover_letters`,
 `src/server/cover-letters.ts`, edited at `/desk/cover-letters/<id>`). Name and contact come
-from the profile, the role under the name from the linked CV or else the profile.
+from the profile, the role under the name from the application's CV or else the profile; the
+job (the subject's default wording names it) is the application's too.
 `CoverLetterDocument.tsx` is printed from `/desk/cover-letter-print/<id>` and shown live in the
 editor; it shares `CvHead.tsx` and the `.cv-paper` palette with the CV. A letter has one fixed
 layout (`COVER_LETTER_MARGIN_MM`), and its page check flags more than one page. Language

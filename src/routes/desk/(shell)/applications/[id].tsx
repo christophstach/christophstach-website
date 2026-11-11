@@ -508,6 +508,13 @@ export default function ApplicationEditor() {
                 </For>
               </ul>
             </Show>
+            <a
+              href={paths.desk["cover-letters"]({ new: "1", application: params.id })}
+              class={["button button--outline", styles["add-button"]]}
+            >
+              <IconPlus size={16} />
+              New letter
+            </a>
           </div>
         </DeskFormSection>
       </div>
