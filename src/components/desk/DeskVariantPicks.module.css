@@ -116,11 +116,6 @@ span.grip {
   cursor: pointer;
 }
 
-.row__main input {
-  flex: none;
-  accent-color: var(--color-accent);
-}
-
 .row__text {
   display: grid;
   gap: 0.125rem;

@@ -81,6 +81,71 @@ ol {
   color: var(--color-accent-contrast);
 }
 
+/* Checkboxes drawn the same on every device: the native box differs in size,
+   margin, shape and alignment by browser and OS. It stays a native input, so
+   labels, keyboard and screen readers work as before. */
+input[type="checkbox"] {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex: none;
+  inline-size: 1rem;
+  block-size: 1rem;
+  margin: 0;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+input[type="checkbox"]::before {
+  content: "";
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+  background-color: var(--color-accent-contrast);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5l10 -10'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  transform: scale(0);
+  transition: transform 120ms ease;
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--color-accent);
+}
+
+input[type="checkbox"]:checked {
+  border-color: var(--color-accent);
+  background-color: var(--color-accent);
+}
+
+input[type="checkbox"]:checked::before {
+  transform: scale(1);
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 1px;
+}
+
+input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Forced colors drop backgrounds, which would hide the check: use the system's box. */
+@media (forced-colors: active) {
+  input[type="checkbox"] {
+    appearance: auto;
+  }
+
+  input[type="checkbox"]::before {
+    content: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
