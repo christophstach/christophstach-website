@@ -18,4 +18,4 @@ minimumReleaseAgeExclude:
   - "@rolldown/binding-win32-arm64-msvc@1.2.18"
   - "@rolldown/binding-win32-x64-msvc@1.2.18"
   - rolldown@1.2.18
-  - vite@8.3.7
+  - vite@8.3.8
