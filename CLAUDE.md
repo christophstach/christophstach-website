@@ -87,8 +87,9 @@ Data the app reads goes through `query()`s whose bodies are `"use server"` (`src
 `src/lib/cv-print.ts`); writes are plain `"use server"` functions. Two rules keep the client
 build working: server-only modules (`src/server/**`, marked `import "server-only"`) are
 imported with `await import()` inside the `"use server"` body, never at the top of a module the
-client sees; and a server page doesn't import `src/router.ts` statically (the router imports
-every page, which is a cycle that hangs the build). Server function arguments travel as JSON:
+client sees; and a server page never imports `src/router.ts` (the router imports every page,
+which is a cycle that hangs the build): it gets the typed paths from `routePaths()` in
+`src/route-paths.ts`, which the router registers. Server function arguments travel as JSON:
 leave an unset field out of an object argument instead of passing `undefined`. The router
 refetches every query after any server function call, so anything that runs Chrome (page
 checks) is a plain server function, not a query. Every desk server function and desk endpoint

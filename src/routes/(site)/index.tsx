@@ -5,6 +5,7 @@ import { HomeStack } from "../../components/home/HomeStack";
 import { HomeStats } from "../../components/home/HomeStats";
 import { cvHomeSchema } from "../../data/public-api";
 import { monthsBetween } from "../../lib/format";
+import { routePaths } from "../../route-paths";
 
 // A server page: rendered on the server per request, its code never reaches
 // the browser. Jobs and skill groups come from /api/cv-home, which the CDN
@@ -15,9 +16,8 @@ export default async function Home() {
   // Imported here, inside the server function, so the client build never
   // resolves the server-only module.
   const { fetchPublic } = await import("../../server/fetch-public");
-  // The router imports every route, this page eagerly: a static import here
-  // would be a cycle that hangs the build.
-  const { paths } = await import("../../router");
+  // Not from src/router.ts, which imports this page (see src/route-paths.ts).
+  const paths = routePaths();
   const { experience, skills } = await fetchPublic(CV_HOME_API_PATH, cvHomeSchema);
 
   const totalSkills = skills.reduce((sum, group) => sum + group.items.length, 0);
