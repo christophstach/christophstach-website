@@ -2,6 +2,18 @@
    No positioned text, as in the CV: it would print out of reading order. */
 .letter {
   --cv-scale: calc(14 / 13);
+
+  /* As tall as an A4 page inside its margin (--letter-margin, set from
+     COVER_LETTER_MARGIN_MM), so the body can sit in the middle of the free
+     height under the head. 1mm short of the page, or rounding in Chrome's
+     print could push an empty second page. A longer letter just grows. */
+  display: flex;
+  flex-direction: column;
+  min-block-size: calc(297mm - 2 * var(--letter-margin) - 1mm);
+}
+
+.letter__body {
+  margin-block: auto;
 }
 
 .letter__to {
