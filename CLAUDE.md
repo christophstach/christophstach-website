@@ -167,7 +167,8 @@ follows the stored value, reconciled by id, compared by content so refetches don
 typing; it asks before leaving with unsaved changes. Change store arrays in place (`setItems` in
 `src/lib/desk/picks.ts`) and key lists by a stable field. Shared desk components:
 `DeskTable` (overview lists: search, filters, sorting, opt-in reorder), `DeskFormSection`,
-`DeskSaveBar`, `DeskMenu`, `DeskPickList`, `DeskLinkRows`, `DeskVariantRows` (a variant's picks).
+`DeskSaveBar`, `DeskMenu`, `DeskLinkRows`, `DeskVariantRows` (a variant's picks). Checkboxes
+are plain `<input type="checkbox">`: `base.css` draws them.
 
 **Cover letters** are private to the desk, one per application (`cover_letters`,
 `src/server/cover-letters.ts`, edited at `/desk/cover-letters/<id>`). Name and contact come
