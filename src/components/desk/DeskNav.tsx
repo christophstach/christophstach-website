@@ -19,7 +19,7 @@ export function DeskNav(props: { collapsed: boolean }) {
       <ul>
         <For each={deskSections}>
           {(section) => (
-            <li>
+            <li class={{ [styles["desk__nav-home"] ?? ""]: section.to === paths.desk() }}>
               <a
                 href={section.to}
                 title={props.collapsed ? section.label : undefined}

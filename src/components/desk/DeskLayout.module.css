@@ -70,6 +70,12 @@
   list-style: none;
 }
 
+/* In the top bar, "/desk" in the path leads to the overview: leaving it out
+   lets the other sections fit a phone's width. */
+.desk__nav-home {
+  display: none;
+}
+
 /* One row shape for sections, the user and sign out, so icons line up in a
    single column whether the sidebar is open or collapsed. */
 .desk__item {
@@ -224,6 +230,10 @@
 
   .desk__nav > ul {
     flex-direction: column;
+  }
+
+  .desk__nav-home {
+    display: list-item;
   }
 
   .desk__nav {
