@@ -214,6 +214,8 @@
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   vertical-align: top;
+  /* Metadata keeps to one line; the primary cell takes the rest of the width. */
+  white-space: nowrap;
 }
 
 .table__cell--end {
@@ -225,8 +227,10 @@
 .table__cell--primary {
   min-inline-size: 14rem;
   font-family: var(--font-body);
+  inline-size: 100%;
   font-size: var(--text-base);
   color: var(--color-text);
+  white-space: normal;
   overflow-wrap: anywhere;
 }
 
@@ -300,6 +304,7 @@
     gap: var(--space-1);
     padding: 0;
     text-align: start;
+    white-space: normal;
   }
 
   .table__cell--primary {
