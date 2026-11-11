@@ -230,10 +230,13 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
     setPicked({});
   }
 
-  // Rows move only in their stored order with all of them shown: in a sorted view
-  // a drop would fight the sort, and with rows hidden it is unclear where it lands.
-  const reorderable = () => props.reorder !== undefined && sort() === undefined && !narrowed();
   const movable = (row: T) => props.reorder?.movable?.(row) ?? true;
+  // Rows move only in their stored order with every movable row shown: in a sorted
+  // view a drop would fight the sort, and with rows hidden it is unclear where it lands.
+  const reorderable = () =>
+    props.reorder !== undefined &&
+    sort() === undefined &&
+    shown().filter(movable).length === props.rows.filter(movable).length;
   const drag = useDragReorder(
     () => shown().flatMap((row) => (movable(row) ? [props.rowKey(row)] : [])),
     (ids) => {
@@ -242,6 +245,8 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
       }
     },
   );
+
+  const checkId = (row: T) => `${id}-check-${props.rowKey(row)}`;
 
   const columnCount = () =>
     props.columns.length +
@@ -504,6 +509,7 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
                         <td class={[styles.table__cell, styles["table__cell--check"]]}>
                           <input
                             type="checkbox"
+                            id={checkId(row())}
                             class={styles.table__check}
                             checked={select().checked(row())}
                             aria-label={select().label(row())}
@@ -528,7 +534,17 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
                         >
                           <Show
                             when={column().primary === true ? props.rowHref?.(row()) : undefined}
-                            fallback={column().cell(row())}
+                            fallback={
+                              <Show
+                                when={column().primary === true && props.select !== undefined}
+                                fallback={column().cell(row())}
+                              >
+                                {/* Without a link, the row's name checks it, as a label does. */}
+                                <label for={checkId(row())} class={styles.table__label}>
+                                  {column().cell(row())}
+                                </label>
+                              </Show>
+                            }
                           >
                             {(href) => (
                               <a

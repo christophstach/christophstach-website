@@ -449,3 +449,9 @@
     padding-inline-start: var(--space-10);
   }
 }
+
+/* A checkable row's name, a label for its checkbox. */
+.table__label {
+  display: block;
+  cursor: pointer;
+}
