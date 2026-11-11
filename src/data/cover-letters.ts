@@ -12,8 +12,9 @@ interface CoverLetter {
   note: string;
   /** The CV variant sent with it; empty if none. Its role is printed under the name. */
   variantId: string;
+  /** Desk only: lists the letter. Never printed. */
   company: string;
-  /** Printed under the company: a person, an address, one item per line. */
+  /** Printed above the date when set: a person, an address, one item per line. */
   recipient: string;
   /** Desk only, like the url and the description of the job. */
   jobTitle: string;
@@ -38,7 +39,6 @@ interface CoverLetterRecord extends CoverLetter {
 
 type PrintedFields =
   | "language"
-  | "company"
   | "recipient"
   | "letterDate"
   | "subject"

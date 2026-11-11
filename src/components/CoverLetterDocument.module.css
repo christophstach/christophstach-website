@@ -21,10 +21,6 @@
   white-space: pre-line;
 }
 
-.letter__company {
-  font-weight: 600;
-}
-
 .letter__date {
   margin-top: 16px;
   color: var(--cv-soft);

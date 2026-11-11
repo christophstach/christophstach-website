@@ -97,7 +97,7 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
         </label>
       </DeskFormSection>
 
-      <DeskFormSection title="job" description="Only the company prints.">
+      <DeskFormSection title="job" description="Only for you; none of it prints.">
         <label class="field">
           <span class="field__label">company</span>
           <input {...bind("company")} class="input" required />
@@ -161,7 +161,7 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
             {...bind("recipient")}
             class="input"
             rows="2"
-            placeholder="A person or an address, under the company."
+            placeholder="Optional: a person or an address, above the date."
           />
         </label>
         <label class="field field--wide">

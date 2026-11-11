@@ -22,13 +22,10 @@ export function CoverLetterDocument(props: { letter: PrintedCoverLetter }) {
 
       {/* Everything under the head, centred in the page's free height. */}
       <div class={styles.letter__body}>
-        <p class={styles.letter__to}>
-          <strong class={styles.letter__company}>{props.letter.company}</strong>
-          <Show when={props.letter.recipient !== ""}>
-            <br />
-            {props.letter.recipient}
-          </Show>
-        </p>
+        {/* The company never prints; the recipient does, when set. */}
+        <Show when={props.letter.recipient !== ""}>
+          <p class={styles.letter__to}>{props.letter.recipient}</p>
+        </Show>
 
         <Show when={props.letter.letterDate !== ""}>
           <p class={styles.letter__date}>

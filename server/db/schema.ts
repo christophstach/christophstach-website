@@ -187,7 +187,7 @@ const coverLetters = pgTable("cover_letters", {
   /** The CV variant sent with it; its role is printed under the name. */
   variantId: text().references(() => cvVariants.id, { onDelete: "set null", onUpdate: "cascade" }),
   company: text().notNull(),
-  /** Printed under the company: a person, an address, one item per line. */
+  /** Printed above the date when set: a person, an address, one item per line. */
   recipient: text().notNull().default(""),
   /** Desk only, like the url and the description of the job. */
   jobTitle: text().notNull().default(""),

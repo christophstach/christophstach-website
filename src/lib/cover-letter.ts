@@ -28,7 +28,6 @@ function printedLetter(
 ): PrintedCoverLetter {
   return {
     language: letter.language,
-    company: letter.company,
     recipient: letter.recipient,
     letterDate: letter.letterDate,
     subject: letter.subject,
