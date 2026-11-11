@@ -2,11 +2,17 @@ import {
   COVER_LETTER_LANGUAGES,
   COVER_LETTER_WORDING,
 } from "../../../../data/cover-letter-wording";
-import type { CoverLetter, CoverLetterLanguage } from "../../../../data/cover-letters";
+import type {
+  CoverLetter,
+  CoverLetterLanguage,
+  CoverLetterRecord,
+} from "../../../../data/cover-letters";
 import { For, Show, createMemo, createStore } from "solid-js";
 import { rewordLetter, slugify } from "../../../../lib/cover-letter";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import { DeskMeta } from "../../../../components/desk/DeskMeta";
+import { DeskTable } from "../../../../components/desk/DeskTable";
+import type { DeskTableColumn, DeskTableFilter } from "../../../../components/desk/DeskTable";
 import { IconPlus } from "../../../../components/icons";
 import type { RouteDefinition } from "@solidjs/router";
 import { formatDay } from "../../../../lib/format";
@@ -24,6 +30,66 @@ function status(letter: { id: string; pageFills: number[] }) {
     ? { tone: "none" as const, text: "checking pages…" }
     : letterStatus(letter.pageFills);
 }
+
+const LETTER_COLUMNS: DeskTableColumn<CoverLetterRecord>[] = [
+  {
+    id: "application",
+    header: "application",
+    primary: true,
+    cell: (letter) => (
+      <span class={styles.letter}>
+        <span class={styles.letter__label}>{letter.label}</span>
+        <Show when={letter.note !== ""}>
+          <span class="desk-note">{letter.note}</span>
+        </Show>
+      </span>
+    ),
+    sort: (letter) => letter.label,
+    search: (letter) => `${letter.label} ${letter.company} ${letter.jobTitle} ${letter.note}`,
+  },
+  {
+    id: "pages",
+    header: "pages",
+    cell: (letter) => (
+      <span class={`desk-status desk-status--${status(letter).tone}`}>{status(letter).text}</span>
+    ),
+  },
+  {
+    id: "date",
+    header: "date",
+    cell: (letter) => (letter.letterDate === "" ? "–" : formatDay(letter.letterDate, "en")),
+    sort: (letter) => letter.letterDate,
+    firstDirection: "desc",
+  },
+  {
+    id: "language",
+    header: "language",
+    cell: (letter) => COVER_LETTER_WORDING[letter.language].name,
+    sort: (letter) => COVER_LETTER_WORDING[letter.language].name,
+  },
+];
+
+const LETTER_FILTERS: DeskTableFilter<CoverLetterRecord>[] = [
+  {
+    id: "language",
+    label: "language",
+    options: COVER_LETTER_LANGUAGES.map((language) => ({
+      value: language,
+      label: COVER_LETTER_WORDING[language].name,
+    })),
+    value: (letter) => letter.language,
+  },
+  {
+    id: "pages",
+    label: "pages",
+    options: [
+      { value: "ok", label: "fits" },
+      { value: "warn", label: "too long" },
+      { value: "none", label: "not checked" },
+    ],
+    value: (letter) => status(letter).tone,
+  },
+];
 
 interface CreateForm {
   id: string;
@@ -218,37 +284,16 @@ export default function CoverLetters() {
           </Show>
         }
       >
-        <section class="panel" aria-labelledby="panel-letters">
-          <header class="panel__head">
-            <h2 id="panel-letters" class="panel__title">
-              applications
-            </h2>
-          </header>
-
-          <ul class="panel__rows">
-            <For each={letters()} keyed={(letter) => letter.id}>
-              {(letter) => (
-                <li>
-                  <a href={paths.desk["cover-letters"](letter().id)} class="panel-row">
-                    <span class="panel-row__label">{letter().label}</span>
-                    <Show when={letter().note !== ""}>
-                      <span class="desk-note">{letter().note}</span>
-                    </Show>
-                    <span class="panel-row__meta">
-                      <span class={`desk-status desk-status--${status(letter()).tone}`}>
-                        {status(letter()).text}
-                      </span>
-                      <Show when={letter().letterDate !== ""}>
-                        <span>{formatDay(letter().letterDate, "en")}</span>
-                      </Show>
-                      <span>{COVER_LETTER_WORDING[letter().language].name}</span>
-                    </span>
-                  </a>
-                </li>
-              )}
-            </For>
-          </ul>
-        </section>
+        <DeskTable
+          title="applications"
+          noun={["letter", "letters"]}
+          rows={letters()}
+          rowKey={(letter) => letter.id}
+          rowHref={(letter) => paths.desk["cover-letters"](letter.id)()}
+          initialSort={{ column: "date", direction: "desc" }}
+          columns={LETTER_COLUMNS}
+          filters={LETTER_FILTERS}
+        />
       </Show>
     </div>
   );

@@ -34,3 +34,14 @@
   flex-wrap: wrap;
   gap: var(--space-3);
 }
+
+/* A letter in the table: its label over its note. */
+.letter {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.letter__label {
+  font-weight: var(--font-semibold);
+  color: var(--color-heading);
+}
