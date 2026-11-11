@@ -386,3 +386,66 @@
     padding: 0;
   }
 }
+
+/* Actions in the head sit before the search. */
+.table__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+/* Checking rows on and off: unchecked rows fade. */
+.table__cell--check {
+  inline-size: 0;
+  padding-inline: var(--space-2) 0;
+}
+
+.table__check {
+  position: relative;
+  z-index: 1;
+  margin-block-start: 0.3rem;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.table__row--off .table__cell {
+  color: var(--color-text-muted);
+}
+
+.table__row--off .table__cell--primary {
+  opacity: 0.75;
+}
+
+/* A row's detail spans the table under it, lined up with its first column. */
+.table__detail-cell {
+  padding: 0 var(--space-5) var(--space-3);
+}
+
+.table__detail + .table__row {
+  border-top: 1px solid var(--color-border);
+}
+
+@container desk-table (max-width: 56rem) {
+  .table__row:has(.table__cell--check) {
+    position: relative;
+    padding-inline-start: var(--space-10);
+  }
+
+  .table__cell--check {
+    position: absolute;
+    inset-block-start: var(--space-4);
+    inset-inline-start: var(--space-4);
+    inline-size: auto;
+    padding: 0;
+  }
+
+  .table__detail,
+  .table__detail-cell {
+    display: block;
+  }
+
+  .table__row:has(.table__cell--check) + .table__detail .table__detail-cell {
+    padding-inline-start: var(--space-10);
+  }
+}
