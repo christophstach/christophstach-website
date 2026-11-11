@@ -1,6 +1,9 @@
+/* One column as wide as the screen: the nav scrolls inside it instead of
+   widening the page. */
 .desk {
   display: grid;
   grid-template-rows: auto 1fr;
+  grid-template-columns: minmax(0, 1fr);
   min-height: 100dvh;
 }
 
