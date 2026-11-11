@@ -207,49 +207,6 @@
   text-decoration: none;
 }
 
-/* Form fields (desk): a mono label over a full-width control. */
-.field {
-  display: grid;
-  gap: var(--space-1-5);
-}
-
-.field__label {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.field__hint {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.input {
-  inline-size: 100%;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border-control);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  font: inherit;
-}
-
-.input:focus-visible {
-  outline: 2px solid var(--color-ring);
-  outline-offset: 1px;
-  border-color: var(--color-accent);
-}
-
-/* Textareas grow with their text, in height only: without the containment a
-   long line would also widen them, and every column around them, past the
-   screen on a phone. */
-textarea.input {
-  contain: inline-size;
-  field-sizing: content;
-  min-block-size: 2.75rem;
-  resize: vertical;
-}
-
 /* Small rounded tag for a variant's public role. */
 .role-tag {
   display: inline-block;
