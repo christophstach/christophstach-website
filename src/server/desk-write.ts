@@ -91,7 +91,7 @@ async function saveProject(id: string, body: unknown, { create }: { create: bool
 
   await saveStoredProject(parsed, { create });
 
-  // A new project isn't picked by any variant yet, so nothing public changes.
+  // A new project isn't picked by any CV yet, so nothing public changes.
   if (!create) {
     await revalidatePaths(currentRequest(), publicPaths({ primary: true, website: true }));
   }

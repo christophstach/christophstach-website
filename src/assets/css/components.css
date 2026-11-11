@@ -207,7 +207,7 @@
   text-decoration: none;
 }
 
-/* Small rounded tag for a variant's public role. */
+/* Small rounded tag for a CV's public role. */
 .role-tag {
   display: inline-block;
   padding: 0.1rem var(--space-2);
@@ -318,7 +318,7 @@
   color: var(--color-signal);
 }
 
-/* A desk-only note in a list: what an entry, group, project or variant is for. */
+/* A desk-only note in a list: what an entry, group, project or CV is for. */
 .desk-note {
   display: -webkit-box;
   overflow: hidden;
@@ -353,7 +353,7 @@
 }
 
 /* A panel on the page: a head row with the title and a short note, then the
-   body. Desk forms and the variant editor are built from these. */
+   body. Desk forms and the cv editor are built from these. */
 /* One column that may shrink below its content, so a long line inside (a
    nowrap label, a wide input) can't push the panel past a phone screen. */
 .panel {

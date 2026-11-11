@@ -1,78 +1,78 @@
 import "server-only";
 import { CV_LAYOUT_STEPS, layoutQuery, sameLayout } from "../data/cv-print-layout";
 import {
-  deleteVariant as deleteStoredVariant,
-  listVariants,
-  markVariant,
-  printStoredVariant,
-  requireVariant,
-  saveVariant as saveStoredVariant,
+  deleteCv as deleteStoredCv,
+  listCvs,
+  markCv,
+  printStoredCv,
+  requireCv,
+  saveCv as saveStoredCv,
   storePageFills,
-} from "./cv-variants";
+} from "./cvs";
 import { pageFills, points } from "./pdf-pages";
 import { renderPdf, revalidatePaths } from "./cv-pdf";
 import { CV_PDF_PATH } from "../data/endpoints";
 import type { CvLayout } from "../data/cv-print-layout";
 import { HttpError } from "./http";
 import { currentRequest } from "./desk-write";
-import { parseVariantBody } from "./cv-variant-body";
+import { parseCvBody } from "./cv-body";
 import { paths } from "../router";
 import { publicPaths } from "./cv-public-paths";
 import { requireUser } from "./auth";
 
-// The desk's CV variant writes, prints and page checks. Each checks the
+// The desk's CV writes, prints and page checks. Each checks the
 // session first and parses its input.
 
-async function saveVariant(id: string, body: unknown, { create }: { create: boolean }) {
+async function saveCv(id: string, body: unknown, { create }: { create: boolean }) {
   await requireUser();
 
-  const variant = parseVariantBody(id, body);
+  const cv = parseCvBody(id, body);
 
-  await saveStoredVariant(variant, { create });
+  await saveStoredCv(cv, { create });
 
-  // A new variant has no public role yet; saving one that has renews it.
+  // A new CV has no public role yet; saving one that has renews it.
   if (!create) {
-    const { primaryId, websiteId } = await listVariants();
+    const { primaryId, websiteId } = await listCvs();
 
     await revalidatePaths(
       currentRequest(),
-      publicPaths({ primary: primaryId === variant.id, website: websiteId === variant.id }),
+      publicPaths({ primary: primaryId === cv.id, website: websiteId === cv.id }),
     );
   }
 
-  return variant;
+  return cv;
 }
 
-async function deleteVariant(id: string) {
+async function deleteCv(id: string) {
   await requireUser();
-  await deleteStoredVariant(id);
+  await deleteStoredCv(id);
 }
 
-/** Gives a variant the primary role (the PDF) or the website role (/curriculum). */
+/** Gives a CV the primary role (the PDF) or the website role (/curriculum). */
 async function markRole(id: string, role: "primary" | "website") {
   await requireUser();
-  await markVariant(id, role === "primary" ? "isPrimary" : "isWebsite");
+  await markCv(id, role === "primary" ? "isPrimary" : "isWebsite");
   await revalidatePaths(
     currentRequest(),
     publicPaths({ primary: role === "primary", website: role === "website" }),
   );
 }
 
-/** A variant's printed content, with trial layout steps when given. */
+/** A CV's printed content, with trial layout steps when given. */
 async function printForDesk(id: string, layout: CvLayout | undefined) {
   await requireUser();
 
-  const cv = await printStoredVariant(await requireVariant(id));
+  const cv = await printStoredCv(await requireCv(id));
 
   return layout === undefined ? cv : { ...cv, layout };
 }
 
 /**
- * The primary variant is read from the public PDF, so this reads the cached
+ * The primary CV is read from the public PDF, so this reads the cached
  * file that visitors download and only runs Chrome when that cache is cold.
- * Other variants are private and rendered for the request.
+ * Other CVs are private and rendered for the request.
  */
-async function variantPdf(request: Request, id: string, primaryId: string) {
+async function cvPdf(request: Request, id: string, primaryId: string) {
   if (id !== primaryId) {
     return renderPdf(request, paths.desk["cv-print"](id)(), true);
   }
@@ -88,7 +88,7 @@ async function variantPdf(request: Request, id: string, primaryId: string) {
   return new Uint8Array(await response.arrayBuffer());
 }
 
-/** The pages of a variant printed with trial steps; never stored. */
+/** The pages of a CV printed with trial steps; never stored. */
 async function trialPages(request: Request, id: string, layout: CvLayout) {
   const path = paths.desk["cv-print"](id, layoutQuery(layout));
 
@@ -99,19 +99,19 @@ async function trialPages(request: Request, id: string, layout: CvLayout) {
 }
 
 /**
- * The pages of a variant with its stored steps; the result is stored with it.
+ * The pages of a CV with its stored steps; the result is stored with it.
  * Checks no session: the caller does, and `request` carries the one Chrome uses.
  */
 async function storedPages(
   request: Request,
-  variant: { id: string; layout: CvLayout },
+  cv: { id: string; layout: CvLayout },
   primaryId: string,
 ) {
-  const margin = points(CV_LAYOUT_STEPS.margin[variant.layout.margin]);
-  const pages = await pageFills(await variantPdf(request, variant.id, primaryId), margin);
+  const margin = points(CV_LAYOUT_STEPS.margin[cv.layout.margin]);
+  const pages = await pageFills(await cvPdf(request, cv.id, primaryId), margin);
 
   await storePageFills(
-    variant.id,
+    cv.id,
     pages.map((page) => page.fill),
   );
 
@@ -119,26 +119,26 @@ async function storedPages(
 }
 
 /**
- * How full each page of a variant's PDF is. Steps that differ from the
+ * How full each page of a CV's PDF is. Steps that differ from the
  * stored ones are a trial: printed with them, shown, never stored. Otherwise
- * the result is stored with the variant for the overview.
+ * the result is stored with the CV for the overview.
  */
 async function checkPages(id: string, trial: CvLayout | undefined) {
   await requireUser();
 
   const request = currentRequest();
-  const { variants, primaryId } = await listVariants();
-  const variant = variants.find((candidate) => candidate.id === id);
+  const { cvs, primaryId } = await listCvs();
+  const cv = cvs.find((candidate) => candidate.id === id);
 
-  if (variant === undefined) {
-    throw new HttpError(404, `No CV variant "${id}".`);
+  if (cv === undefined) {
+    throw new HttpError(404, `No CV "${id}".`);
   }
 
-  if (trial !== undefined && !sameLayout(trial, variant.layout)) {
-    return { pages: await trialPages(request, variant.id, trial), trial: true };
+  if (trial !== undefined && !sameLayout(trial, cv.layout)) {
+    return { pages: await trialPages(request, cv.id, trial), trial: true };
   }
 
-  return { pages: await storedPages(request, variant, primaryId), trial: false };
+  return { pages: await storedPages(request, cv, primaryId), trial: false };
 }
 
-export { checkPages, deleteVariant, markRole, printForDesk, saveVariant, storedPages };
+export { checkPages, deleteCv, markRole, printForDesk, saveCv, storedPages };

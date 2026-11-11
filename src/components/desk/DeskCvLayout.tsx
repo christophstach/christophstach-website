@@ -97,7 +97,7 @@ function Steps<Field extends Key>(props: StepsProps<Field>) {
 }
 
 interface DeskCvLayoutProps {
-  /** The layout steps of the variant being edited. */
+  /** The layout steps of the CV being edited. */
   layout: CvLayout;
   onChange: (layout: CvLayout) => void;
   /** The stored steps, which the page check shows until steps are tried. */
@@ -109,7 +109,7 @@ interface DeskCvLayoutProps {
 }
 
 /**
- * The variant's layout steps, under the page check: try steps there before
+ * The CV's layout steps, under the page check: try steps there before
  * saving them, so finding the two full pages takes no saves.
  */
 export function DeskCvLayout(props: DeskCvLayoutProps) {

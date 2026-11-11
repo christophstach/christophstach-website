@@ -1,6 +1,6 @@
 import "server-only";
 import { asc, eq, sql } from "drizzle-orm";
-import { cvVariants, projects } from "../../server/db/schema";
+import { cvs, projects } from "../../server/db/schema";
 import { HttpError } from "./http";
 import type { ProjectRecord } from "../data/projects";
 import { useDb } from "./db";
@@ -75,14 +75,14 @@ async function saveProject(project: ProjectRecord, { create }: { create: boolean
       throw create ? new HttpError(409, `Project "${project.id}" exists.`) : notFound(project.id);
     }
 
-    // Variants print their projects, so their page checks are out of date.
+    // CVs print their projects, so their page checks are out of date.
     if (!create) {
-      await tx.update(cvVariants).set({ pageFillsBuild: "" });
+      await tx.update(cvs).set({ pageFillsBuild: "" });
     }
   });
 }
 
-/** Deletes a project and takes it out of every variant that picks it. */
+/** Deletes a project and takes it out of every CV that picks it. */
 async function deleteProject(id: string) {
   await useDb().transaction(async (tx) => {
     const deleted = await tx
@@ -94,8 +94,8 @@ async function deleteProject(id: string) {
       throw notFound(id);
     }
 
-    await tx.update(cvVariants).set({
-      projects: sql`array_remove(${cvVariants.projects}, ${id})`,
+    await tx.update(cvs).set({
+      projects: sql`array_remove(${cvs.projects}, ${id})`,
       pageFillsBuild: "",
     });
   });

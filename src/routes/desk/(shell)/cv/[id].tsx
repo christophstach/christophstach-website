@@ -1,8 +1,8 @@
 import { DEFAULT_CV_LAYOUT, sameLayout } from "../../../../data/cv-print-layout";
 import { IconCopy, IconFileDownload, IconTrash, IconWorld } from "../../../../components/icons";
 import { Show, createMemo, createSignal, snapshot } from "solid-js";
-import { deleteDeskVariant, markDeskVariant, saveDeskVariant } from "../../../../lib/desk/variants";
-import { getDeskContent, getDeskProjects, getDeskVariants } from "../../../../lib/desk/queries";
+import { deleteDeskCv, markDeskCv, saveDeskCv } from "../../../../lib/desk/cvs";
+import { getDeskContent, getDeskProjects, getDeskCvs } from "../../../../lib/desk/queries";
 import { useNavigate, useParams } from "@solidjs/router";
 import type { CvLayout } from "../../../../data/cv-print-layout";
 import { DeskCvLayout } from "../../../../components/desk/DeskCvLayout";
@@ -10,26 +10,26 @@ import { DeskCvPdf } from "../../../../components/desk/DeskCvPdf";
 import { DeskMenu } from "../../../../components/desk/DeskMenu";
 import { DeskMeta } from "../../../../components/desk/DeskMeta";
 import { DeskSaveBar } from "../../../../components/desk/DeskSaveBar";
-import type { DeskVariant } from "../../../../lib/desk/queries";
-import { DeskVariantPicks } from "../../../../components/desk/DeskVariantPicks";
+import type { DeskCv } from "../../../../lib/desk/queries";
+import { DeskCvPicks } from "../../../../components/desk/DeskCvPicks";
 import type { MenuAction } from "../../../../components/desk/DeskMenu";
 import type { RouteDefinition } from "@solidjs/router";
-import type { SetForm } from "../../../../components/desk/DeskVariantPicks";
-import type { VariantInput } from "../../../../lib/desk/variants";
+import type { SetForm } from "../../../../components/desk/DeskCvPicks";
+import type { CvInput } from "../../../../lib/desk/cvs";
 import { paths } from "../../../../router";
-import styles from "../../../../components/desk/page-cv-variant.module.css";
+import styles from "../../../../components/desk/page-cv.module.css";
 import { useDeskRequest } from "../../../../lib/desk/request";
 import { useDraft } from "../../../../lib/desk/draft";
-import { variantContent } from "../../../../lib/desk-variant";
+import { cvContent } from "../../../../lib/desk-cv";
 
-/** The editable part of a variant: its content without the id. */
-function toForm(variant: DeskVariant): VariantInput {
-  const { id: _id, ...content } = variantContent(variant);
+/** The editable part of a CV: its content without the id. */
+function toForm(cv: DeskCv): CvInput {
+  const { id: _id, ...content } = cvContent(cv);
 
   return content;
 }
 
-const EMPTY_FORM: VariantInput = {
+const EMPTY_FORM: CvInput = {
   label: "",
   note: "",
   role: "",
@@ -42,19 +42,19 @@ const EMPTY_FORM: VariantInput = {
   layout: { ...DEFAULT_CV_LAYOUT },
 };
 
-interface VariantRailProps {
+interface CvRailProps {
   id: string;
   primary: boolean;
   revision: number;
   trial: CvLayout | undefined;
-  form: VariantInput;
+  form: CvInput;
   setForm: SetForm;
-  saved: VariantInput;
+  saved: CvInput;
   onCheck: () => void;
 }
 
 /** The editor's side column: the page check, the layout steps, the desk name and note. */
-function VariantRail(props: VariantRailProps) {
+function CvRail(props: CvRailProps) {
   const bind = (key: "label" | "note") => ({
     value: props.form[key],
     onInput: (event: InputEvent & { currentTarget: HTMLInputElement | HTMLTextAreaElement }) => {
@@ -69,7 +69,7 @@ function VariantRail(props: VariantRailProps) {
   return (
     <aside class={styles.editor__rail}>
       <DeskCvPdf
-        variant={props.id}
+        cv={props.id}
         primary={props.primary}
         revision={props.revision}
         trial={props.trial}
@@ -96,7 +96,7 @@ function VariantRail(props: VariantRailProps) {
           {...bind("note")}
           class="input"
           rows="2"
-          placeholder="What this variant is for, e.g. which jobs."
+          placeholder="What this CV is for, e.g. which jobs."
         />
         <span class="field__hint">Only the desk shows the name and the note.</span>
       </label>
@@ -104,33 +104,33 @@ function VariantRail(props: VariantRailProps) {
   );
 }
 
-export default function VariantEditor() {
-  const params = useParams<{ variant: string }>();
+export default function CvEditor() {
+  const params = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const data = createMemo(() => getDeskVariants());
+  const data = createMemo(() => getDeskCvs());
   const [removing, setRemoving] = createSignal(false);
-  // While deleting, the refetched list no longer has the variant: keep
+  // While deleting, the refetched list no longer has the CV: keep
   // showing the last one until the page has navigated away.
-  const stored = createMemo((previous?: DeskVariant) => {
-    const variant = data().variants.find((candidate) => candidate.id === params.variant);
+  const stored = createMemo((previous?: DeskCv) => {
+    const cv = data().cvs.find((candidate) => candidate.id === params.id);
 
-    if (variant !== undefined) {
-      return variant;
+    if (cv !== undefined) {
+      return cv;
     }
 
     if (removing() && previous !== undefined) {
       return previous;
     }
 
-    throw Object.assign(new Error(`No CV variant "${params.variant}".`), { status: 404 });
+    throw Object.assign(new Error(`No CV "${params.id}".`), { status: 404 });
   });
   const { form, setForm, saved, dirty, reset, leave } = useDraft(
     () => toForm(stored()),
     EMPTY_FORM,
   );
   const request = useDeskRequest();
-  const isPrimary = () => data().primaryId === params.variant;
-  const isWebsite = () => data().websiteId === params.variant;
+  const isPrimary = () => data().primaryId === params.id;
+  const isWebsite = () => data().websiteId === params.id;
   // Bumped after every save, so the page check runs again.
   const [revision, setRevision] = createSignal(0);
   // Steps the page check prints before they are saved; undefined checks the stored ones.
@@ -147,22 +147,20 @@ export default function VariantEditor() {
   async function save(event: SubmitEvent) {
     event.preventDefault();
 
-    if (
-      await request.run(() => saveDeskVariant(params.variant, snapshot(form), { create: false }))
-    ) {
+    if (await request.run(() => saveDeskCv(params.id, snapshot(form), { create: false }))) {
       setTrial(undefined);
       setRevision((value) => value + 1);
     }
   }
 
   async function remove() {
-    if (!confirm(`Delete the variant "${saved().label}"?`)) {
+    if (!confirm(`Delete the cv "${saved().label}"?`)) {
       return;
     }
 
     setRemoving(true);
 
-    if (await request.run(() => deleteDeskVariant(params.variant))) {
+    if (await request.run(() => deleteDeskCv(params.id))) {
       leave();
       navigate(paths.desk.cv());
     } else {
@@ -177,7 +175,7 @@ export default function VariantEditor() {
           {
             label: "Make primary (PDF)",
             icon: IconFileDownload,
-            run: () => void request.run(() => markDeskVariant(params.variant, "primary")),
+            run: () => void request.run(() => markDeskCv(params.id, "primary")),
           },
         ]),
     ...(isWebsite()
@@ -186,14 +184,14 @@ export default function VariantEditor() {
           {
             label: "Use on website",
             icon: IconWorld,
-            run: () => void request.run(() => markDeskVariant(params.variant, "website")),
+            run: () => void request.run(() => markDeskCv(params.id, "website")),
           },
         ]),
     {
       label: "Duplicate",
       icon: IconCopy,
       run: () => {
-        navigate(paths.desk.cv({ new: "1", from: params.variant }));
+        navigate(paths.desk.cv({ new: "1", from: params.id }));
       },
     },
     ...(isPrimary() || isWebsite()
@@ -203,13 +201,13 @@ export default function VariantEditor() {
 
   return (
     <div class="desk-page editor">
-      <DeskMeta title={`${saved().label === "" ? params.variant : saved().label} · CV · Desk`} />
+      <DeskMeta title={`${saved().label === "" ? params.id : saved().label} · CV · Desk`} />
       <header class="desk-head">
         <div class="desk-head__text">
           <p class="desk-head__path">
-            <a href={paths.desk.cv()}>~/desk/cv</a> / {params.variant}
+            <a href={paths.desk.cv()}>~/desk/cv</a> / {params.id}
           </p>
-          <h1 class="desk-head__title">{form.label === "" ? params.variant : form.label}</h1>
+          <h1 class="desk-head__title">{form.label === "" ? params.id : form.label}</h1>
           <p class={["desk-head__sub", styles.editor__role]}>
             <Show when={isPrimary()}>
               <span class="role-tag">PDF</span>
@@ -224,7 +222,7 @@ export default function VariantEditor() {
           </Show>
         </div>
 
-        <DeskMenu actions={actions()} label="Variant actions" />
+        <DeskMenu actions={actions()} label="Cv actions" />
       </header>
 
       <Show when={request.error() !== "" && !dirty()}>
@@ -234,10 +232,10 @@ export default function VariantEditor() {
       </Show>
 
       <form class={styles.editor__body} onSubmit={(event) => void save(event)}>
-        <DeskVariantPicks form={form} setForm={setForm} />
+        <DeskCvPicks form={form} setForm={setForm} />
 
-        <VariantRail
-          id={params.variant}
+        <CvRail
+          id={params.id}
           primary={isPrimary()}
           revision={revision()}
           trial={trial()}
@@ -266,7 +264,7 @@ export default function VariantEditor() {
 
 export const route = {
   preload: () => {
-    void getDeskVariants();
+    void getDeskCvs();
     void getDeskContent();
     void getDeskProjects();
   },

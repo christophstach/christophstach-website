@@ -1,11 +1,11 @@
 import "server-only";
 import { CV_HOME_API_PATH, CV_PDF_PATH, CV_WEBSITE_API_PATH } from "../data/endpoints";
 
-/** Cached public files that show the primary variant. */
+/** Cached public files that show the primary CV. */
 const PRIMARY_PATHS = [CV_PDF_PATH];
 
 /**
- * Cached public data that shows the website variant. The pages that read it
+ * Cached public data that shows the website CV. The pages that read it
  * (/ and /curriculum) render per request, so only their data is cached.
  */
 const WEBSITE_PATHS = [CV_WEBSITE_API_PATH];

@@ -1,19 +1,19 @@
 import { Show, createMemo } from "solid-js";
 import { getDeskContent, getDeskProjects } from "../../lib/desk/queries";
 import { inOrder, setItems, toggled } from "../../lib/desk/picks";
-import { DeskVariantBullets } from "./DeskVariantBullets";
-import { DeskVariantRows } from "./DeskVariantRows";
+import { DeskCvBullets } from "./DeskCvBullets";
+import { DeskCvRows } from "./DeskCvRows";
 import type { EntryRecord } from "../../data/cv";
-import type { VariantInput } from "../../lib/desk/variants";
+import type { CvInput } from "../../lib/desk/cvs";
 import { formatMonth } from "../../lib/format";
 import { paths } from "../../router";
-import styles from "./DeskVariantPicks.module.css";
+import styles from "./DeskCvPicks.module.css";
 
 type Section = "experience" | "education";
-type SetForm = (write: (draft: VariantInput) => void) => void;
+type SetForm = (write: (draft: CvInput) => void) => void;
 
 interface PicksProps {
-  form: VariantInput;
+  form: CvInput;
   setForm: SetForm;
 }
 
@@ -112,7 +112,7 @@ function Entries(props: PicksProps & { section: Section; title: string }) {
         edit={paths.desk.cv[props.section]()}
         editText={`Edit ${props.section}`}
       />
-      <DeskVariantRows
+      <DeskCvRows
         picked={picked()}
         leftOut={entries().filter((entry) => !ids().includes(entry.id))}
         idOf={(entry) => entry.id}
@@ -154,7 +154,7 @@ function Entries(props: PicksProps & { section: Section; title: string }) {
         }}
         below={(entry) => (
           <Show when={entry.bullets.length > 0}>
-            <DeskVariantBullets
+            <DeskCvBullets
               form={props.form}
               setForm={props.setForm}
               section={props.section}
@@ -180,7 +180,7 @@ function Skills(props: PicksProps) {
         edit={paths.desk.cv.skills()}
         editText="Edit skills"
       />
-      <DeskVariantRows
+      <DeskCvRows
         picked={inOrder(props.form.skills, groups(), (group) => group.label)}
         leftOut={groups().filter((group) => !props.form.skills.includes(group.label))}
         idOf={(group) => group.label}
@@ -212,11 +212,11 @@ function Projects(props: PicksProps) {
       <SectionHead
         id="projects"
         title="Projects"
-        count="Printed after the education; the website variant's show on /curriculum"
+        count="Printed after the education; the website CV's show on /curriculum"
         edit={paths.desk.cv.projects()}
         editText="Edit projects"
       />
-      <DeskVariantRows
+      <DeskCvRows
         picked={inOrder(props.form.projects, projects(), (project) => project.id)}
         leftOut={projects().filter((project) => !props.form.projects.includes(project.id))}
         idOf={(project) => project.id}
@@ -240,8 +240,8 @@ function Projects(props: PicksProps) {
   );
 }
 
-/** Everything a variant picks: its heading, skills, entries with bullets, projects. */
-export function DeskVariantPicks(props: PicksProps) {
+/** Everything a CV picks: its heading, skills, entries with bullets, projects. */
+export function DeskCvPicks(props: PicksProps) {
   return (
     <div class={styles.picks}>
       <Heading form={props.form} setForm={props.setForm} />

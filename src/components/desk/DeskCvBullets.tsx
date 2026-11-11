@@ -2,19 +2,19 @@ import { For, Show } from "solid-js";
 import { inOrder, setItems, toggled } from "../../lib/desk/picks";
 import type { EntryRecord } from "../../data/cv";
 import { IconGripVertical } from "../icons";
-import type { VariantInput } from "../../lib/desk/variants";
-import styles from "./DeskVariantPicks.module.css";
+import type { CvInput } from "../../lib/desk/cvs";
+import styles from "./DeskCvPicks.module.css";
 import { useDragReorder } from "../../lib/drag-reorder";
 
 interface BulletsProps {
-  form: VariantInput;
-  setForm: (write: (draft: VariantInput) => void) => void;
+  form: CvInput;
+  setForm: (write: (draft: CvInput) => void) => void;
   section: "experience" | "education";
   entry: EntryRecord;
 }
 
 /** An entry's bullets: the printed ones in print order (draggable), then the rest, faded. */
-export function DeskVariantBullets(props: BulletsProps) {
+export function DeskCvBullets(props: BulletsProps) {
   const chosen = () =>
     props.form[props.section].find((pick) => pick.id === props.entry.id)?.bullets ?? [];
   const writeChosen = (ids: string[]) => {

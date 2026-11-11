@@ -6,14 +6,14 @@ export interface TimelineLink {
 }
 
 /**
- * Bullets keyed by a stable id, in display order. Each CV variant picks the
- * ones it prints by id, so the text lives in one place however many variants
+ * Bullets keyed by a stable id, in display order. Each CV picks the
+ * ones it prints by id, so the text lives in one place however many CVs
  * use it.
  */
 export type Bullets = Record<string, string>;
 
 export interface TimelineEntry {
-  /** Stable id that CV variants refer to. */
+  /** Stable id that CVs refer to. */
   id: string;
   title: string;
   organization: string;
@@ -66,7 +66,7 @@ export interface SkillGroupRecord extends SkillGroup {
 
 /**
  * The CV's building blocks, stored in the database and edited in the desk.
- * Variants pick from them by id; every variant prints the same profile.
+ * CVs pick from them by id; every CV prints the same profile.
  */
 export interface CvContent {
   profile: Profile;
@@ -84,7 +84,7 @@ export interface ProfileLink {
 /** The CV's header; one, stored in the database and edited in the desk. */
 export interface Profile {
   name: string;
-  /** Not printed: each variant has its own role line. */
+  /** Not printed: each CV has its own role line. */
   role: string;
   location: string;
   email: string;

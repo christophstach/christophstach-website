@@ -62,7 +62,7 @@ export default function ProfilePage() {
             <a href={paths.desk.cv()}>~/desk/cv</a> / profile
           </p>
           <h1 class="desk-head__title">Profile</h1>
-          <p class="desk-head__sub">The header every variant's PDF prints.</p>
+          <p class="desk-head__sub">The header every CV's PDF prints.</p>
         </div>
       </header>
 
@@ -81,7 +81,7 @@ export default function ProfilePage() {
           <label class="field">
             <span class="field__label">role</span>
             <input {...bind("role")} class="input" />
-            <span class="field__hint">Not printed: each variant has its own role line.</span>
+            <span class="field__hint">Not printed: each CV has its own role line.</span>
           </label>
         </DeskFormSection>
 

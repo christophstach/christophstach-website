@@ -1,4 +1,4 @@
-import { getDeskContent, getDeskVariants } from "../../../../../lib/desk/queries";
+import { getDeskContent, getDeskCvs } from "../../../../../lib/desk/queries";
 import { DeskEntryEditor } from "../../../../../components/desk/DeskEntryEditor";
 import type { RouteDefinition } from "@solidjs/router";
 import { useParams } from "@solidjs/router";
@@ -12,6 +12,6 @@ export default function ExperienceEntry() {
 export const route = {
   preload: () => {
     void getDeskContent();
-    void getDeskVariants();
+    void getDeskCvs();
   },
 } satisfies RouteDefinition;

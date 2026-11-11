@@ -3,22 +3,22 @@ import {
   getDeskContent,
   getDeskCoverLetters,
   getDeskProjects,
-  getDeskVariants,
+  getDeskCvs,
 } from "../../../lib/desk/queries";
 import { letterStatus, pageStatus } from "../../../lib/cv-layout";
 import { DeskMeta } from "../../../components/desk/DeskMeta";
 import type { RouteDefinition } from "@solidjs/router";
 import { formatRelative } from "../../../lib/format";
 import { paths } from "../../../router";
-import { letterChecks, variantChecks } from "../../../lib/desk/page-checks";
+import { letterChecks, cvChecks } from "../../../lib/desk/page-checks";
 import styles from "../../../components/desk/page-index.module.css";
 
 const LATEST_LETTERS = 5;
 
-function variantStatus(variant: { id: string; pageFills: number[] }) {
-  return variantChecks.running().includes(variant.id)
+function cvStatus(cv: { id: string; pageFills: number[] }) {
+  return cvChecks.running().includes(cv.id)
     ? { tone: "none" as const, text: "checking pages…" }
-    : pageStatus(variant.pageFills);
+    : pageStatus(cv.pageFills);
 }
 
 function letterRowStatus(letter: { id: string; pageFills: number[] }) {
@@ -76,50 +76,50 @@ function ContentPanel() {
   );
 }
 
-function VariantsPanel() {
-  const data = createMemo(() => getDeskVariants());
+function CvsPanel() {
+  const data = createMemo(() => getDeskCvs());
   const isPublic = (id: string) => id === data().primaryId || id === data().websiteId;
 
-  // The public variants first, then the most recently edited.
-  const variants = () =>
-    data().variants.toSorted(
+  // The public CVs first, then the most recently edited.
+  const cvs = () =>
+    data().cvs.toSorted(
       (first, second) =>
         Number(isPublic(second.id)) - Number(isPublic(first.id)) ||
         second.updatedAt.localeCompare(first.updatedAt),
     );
 
   return (
-    <section class="panel" aria-labelledby="panel-variants">
+    <section class="panel" aria-labelledby="panel-cvs">
       <header class="panel__head">
-        <h2 id="panel-variants" class="panel__title">
-          cv variants
+        <h2 id="panel-cvs" class="panel__title">
+          cvs
         </h2>
         <a href={paths.desk.cv({ new: "1" })} class={["text-link panel__end", styles["add-link"]]}>
-          New variant
+          New CV
         </a>
       </header>
 
-      <Show when={variants().length > 0} fallback={<p class="panel__empty">No CV variants yet.</p>}>
+      <Show when={cvs().length > 0} fallback={<p class="panel__empty">No CVs yet.</p>}>
         <ul class="panel__rows">
-          <For each={variants()}>
-            {(variant) => (
+          <For each={cvs()}>
+            {(cv) => (
               <li>
-                <a href={paths.desk.cv(variant.id)} class={["panel-row", styles.row]}>
+                <a href={paths.desk.cv(cv.id)} class={["panel-row", styles.row]}>
                   <span class={styles.row__main}>
-                    <span class="panel-row__label">{variant.label}</span>
-                    <Show when={variant.id === data().primaryId}>
+                    <span class="panel-row__label">{cv.label}</span>
+                    <Show when={cv.id === data().primaryId}>
                       <span class={"role-tag"}>PDF</span>
                     </Show>
-                    <Show when={variant.id === data().websiteId}>
+                    <Show when={cv.id === data().websiteId}>
                       <span class={"role-tag"}>/curriculum</span>
                     </Show>
                   </span>
                   <span class="panel-row__meta">
-                    <span class={`desk-status desk-status--${variantStatus(variant).tone}`}>
-                      {variantStatus(variant).text}
+                    <span class={`desk-status desk-status--${cvStatus(cv).tone}`}>
+                      {cvStatus(cv).text}
                     </span>
                   </span>
-                  <span class="panel-row__meta">{formatRelative(variant.updatedAt)}</span>
+                  <span class="panel-row__meta">{formatRelative(cv.updatedAt)}</span>
                 </a>
               </li>
             )}
@@ -189,7 +189,7 @@ function LettersPanel() {
 
 export const route = {
   preload: () => {
-    void getDeskVariants();
+    void getDeskCvs();
     void getDeskCoverLetters();
     void getDeskContent();
     void getDeskProjects();
@@ -210,7 +210,7 @@ export default function DeskOverview() {
 
       <div class="panels">
         <ContentPanel />
-        <VariantsPanel />
+        <CvsPanel />
         <LettersPanel />
       </div>
     </div>

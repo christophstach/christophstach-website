@@ -56,7 +56,7 @@ export default defineConfig({
           ...(process.env.ISR_BYPASS_TOKEN === undefined
             ? {}
             : { bypassToken: process.env.ISR_BYPASS_TOKEN }),
-          // Measures the pages of every CV variant and cover letter without a
+          // Measures the pages of every CV and cover letter without a
           // page check on this build, so nobody has to open the desk for it.
           // Daily, the shortest interval every Vercel plan allows; Vercel calls
           // it with CRON_SECRET.

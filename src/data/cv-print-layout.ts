@@ -2,8 +2,8 @@
 import { custom, object, safeParse, catch as withFallback } from "zod/mini";
 
 /**
- * How a variant's PDF uses its pages: fixed steps on the one design, so a
- * variant can fill its two pages without changing how the CV looks. "normal"
+ * How a CV's PDF uses its pages: fixed steps on the one design, so a
+ * CV can fill its two pages without changing how the CV looks. "normal"
  * is the base layout of CvDocument.
  */
 const CV_LAYOUT_STEPS = {

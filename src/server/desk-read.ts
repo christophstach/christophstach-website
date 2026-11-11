@@ -2,17 +2,17 @@ import "server-only";
 import { listEntries, listSkillGroups, loadProfile } from "./cv-content";
 import { listCoverLetters } from "./cover-letters";
 import { listProjects } from "./projects";
-import { listVariants } from "./cv-variants";
+import { listCvs } from "./cvs";
 
 import { requireUser } from "./auth";
 
 // The desk's reads. Each checks the session first: the page guard doesn't
 // cover server functions, which anyone can call.
 
-async function deskVariants() {
+async function deskCvs() {
   await requireUser();
 
-  return listVariants();
+  return listCvs();
 }
 
 async function deskCoverLetters() {
@@ -41,5 +41,5 @@ async function deskProjects() {
   return listProjects();
 }
 
-export { deskContent, deskCoverLetters, deskProfile, deskProjects, deskVariants };
+export { deskContent, deskCoverLetters, deskProfile, deskProjects, deskCvs };
 export { requireUser } from "./auth";

@@ -1,6 +1,6 @@
 import type { CvLayout } from "./cv-print-layout";
 
-/** One entry of a variant: which timeline entry, and which of its bullets in what order. */
+/** One entry of a CV: which timeline entry, and which of its bullets in what order. */
 interface EntryPick {
   /** A TimelineEntry id from cv.ts. */
   id: string;
@@ -9,20 +9,20 @@ interface EntryPick {
 }
 
 /**
- * A printed CV assembled from the building blocks in cv.ts. Variants choose
+ * A printed CV assembled from the building blocks in cv.ts. CVs choose
  * and order content, and pick layout steps (CV_LAYOUT_STEPS in cv-print-layout.ts) to fill their
- * pages; the design is the same CvDocument for all of them. Variants are
+ * pages; the design is the same CvDocument for all of them. CVs are
  * stored in the database (server/db) and edited in the desk; saving one with
  * an unknown id fails.
  */
-interface CvVariant {
+interface Cv {
   /** URL slug, e.g. /desk/cv-print/frontend. */
   id: string;
   /** Name shown in the desk. */
   label: string;
   /** Desk only: what it is for. Never printed. */
   note: string;
-  /** Not printed on the CV; a cover letter linked to this variant prints it under the name. */
+  /** Not printed on the CV; a cover letter linked to this CV prints it under the name. */
   role: string;
   /** One line under the role: how the career fits together for this kind of job. Empty prints none. */
   summary: string;
@@ -30,7 +30,7 @@ interface CvVariant {
   coreTechnologies: string[];
   experience: EntryPick[];
   education: EntryPick[];
-  /** Project ids, in display order; printed after the education, and /curriculum shows the website variant's. */
+  /** Project ids, in display order; printed after the education, and /curriculum shows the website CV's. */
   projects: string[];
   /** SkillGroup labels to print as a skills section; empty prints none. */
   skills: string[];
@@ -45,5 +45,5 @@ interface CvVariant {
  */
 const cvDownloadVisible = true;
 
-export type { CvVariant, EntryPick };
+export type { Cv, EntryPick };
 export { cvDownloadVisible };

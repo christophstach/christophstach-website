@@ -1,4 +1,4 @@
-import { getDeskContent, getDeskVariants } from "../../../../../lib/desk/queries";
+import { getDeskContent, getDeskCvs } from "../../../../../lib/desk/queries";
 import { DeskEntryList } from "../../../../../components/desk/DeskEntryList";
 import { DeskMeta } from "../../../../../components/desk/DeskMeta";
 import type { RouteDefinition } from "@solidjs/router";
@@ -15,6 +15,6 @@ export default function EducationList() {
 export const route = {
   preload: () => {
     void getDeskContent();
-    void getDeskVariants();
+    void getDeskCvs();
   },
 } satisfies RouteDefinition;

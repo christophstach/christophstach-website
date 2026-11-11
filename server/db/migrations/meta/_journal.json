@@ -134,6 +134,13 @@
       "when": 1793656110298,
       "tag": "0018_cover_letters",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794437488306,
+      "tag": "0019_rename_variants_to_cvs",
+      "breakpoints": true
     }
   ]
 }

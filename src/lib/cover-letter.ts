@@ -20,11 +20,11 @@ function paragraphs(body: string): string[] {
     .filter(Boolean);
 }
 
-/** What a letter prints; the role is the linked CV variant's, or else the profile's. */
+/** What a letter prints; the role is the linked CV's, or else the profile's. */
 function printedLetter(
   letter: CoverLetter,
   profile: Profile,
-  variantRole: string | undefined,
+  cvRole: string | undefined,
 ): PrintedCoverLetter {
   return {
     language: letter.language,
@@ -35,7 +35,7 @@ function printedLetter(
     body: letter.body,
     closing: letter.closing,
     profile,
-    role: variantRole === undefined || variantRole === "" ? profile.role : variantRole,
+    role: cvRole === undefined || cvRole === "" ? profile.role : cvRole,
   };
 }
 

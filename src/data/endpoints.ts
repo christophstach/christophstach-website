@@ -13,14 +13,14 @@ export const DEV_SIGN_IN_PATH = "/auth/dev";
 /** What the home page shows of the CV (ISR-cached JSON). */
 export const CV_HOME_API_PATH = "/api/cv-home";
 
-/** What /curriculum shows of the website variant (ISR-cached JSON). */
+/** What /curriculum shows of the website CV (ISR-cached JSON). */
 export const CV_WEBSITE_API_PATH = "/api/cv-website";
 
 /** The scheduled page check, called by Vercel Cron with CRON_SECRET. */
 export const PAGE_CHECKS_API_PATH = "/api/desk/page-checks";
 
-/** A private CV variant as a PDF, for the desk. */
-export function deskVariantPdfPath(id: string): string {
+/** A private CV as a PDF, for the desk. */
+export function deskCvPdfPath(id: string): string {
   return `/api/desk/cv/${encodeURIComponent(id)}`;
 }
 

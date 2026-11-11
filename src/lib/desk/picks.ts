@@ -1,11 +1,11 @@
-// Helpers for lists of picked ids, as CV variants keep them.
+// Helpers for lists of picked ids, as CVs keep them.
 
 /** Adds or removes an id at the end of a list. */
 function toggled(ids: string[], id: string, on: boolean): string[] {
   return on ? [...ids, id] : ids.filter((other) => other !== id);
 }
 
-/** Picked items in the variant's order, from all items by id. */
+/** Picked items in the CV's order, from all items by id. */
 function inOrder<Item>(ids: string[], items: Item[], idOf: (item: Item) => string): Item[] {
   return ids.flatMap((id) => items.find((item) => idOf(item) === id) ?? []);
 }

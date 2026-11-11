@@ -4,10 +4,10 @@ import { CvDocument } from "../../../components/CvDocument";
 import type { CvLayout } from "../../../data/cv-print-layout";
 import { createMemo } from "solid-js";
 import { cvLayoutSchema } from "../../../data/cv-print-layout";
-import { getDeskVariantPrint } from "../../../lib/desk/variants";
+import { getDeskCvPrint } from "../../../lib/desk/cvs";
 import { safeParse } from "zod/mini";
 
-// A private CV variant, printed by /api/desk/cv/<variant> and by the desk's
+// A private CV, printed by /api/desk/cv/<CV> and by the desk's
 // page check. It lives under /desk so the guard keeps it behind the GitHub
 // session, and has no frame because Chrome prints it as is. Layout steps in
 // the query are a trial of unsaved steps.
@@ -17,7 +17,7 @@ function withTrial(id: string, trial: CvLayout | undefined) {
 }
 
 export default function DeskCvPrint() {
-  const params = useParams<{ variant: string }>();
+  const params = useParams<{ id: string }>();
   const [search] = useSearchParams();
   const trial = () => {
     const parsed = safeParse(cvLayoutSchema, {
@@ -28,7 +28,7 @@ export default function DeskCvPrint() {
 
     return parsed.success ? parsed.data : undefined;
   };
-  const cv = createMemo(() => getDeskVariantPrint(withTrial(params.variant, trial())));
+  const cv = createMemo(() => getDeskCvPrint(withTrial(params.id, trial())));
 
   return (
     <>

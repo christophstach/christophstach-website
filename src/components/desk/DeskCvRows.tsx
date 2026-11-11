@@ -1,7 +1,7 @@
 import { For, Show } from "solid-js";
 import { IconGripVertical } from "../icons";
 import type { JSX } from "@solidjs/web";
-import styles from "./DeskVariantPicks.module.css";
+import styles from "./DeskCvPicks.module.css";
 import { useDragReorder } from "../../lib/drag-reorder";
 
 /** A row's text: what it's called, a detail line, the desk note. */
@@ -11,10 +11,10 @@ interface RowText {
   note: string;
 }
 
-interface DeskVariantRowsProps<Item> {
+interface DeskCvRowsProps<Item> {
   /** Picked items in print order. */
   picked: Item[];
-  /** Items this variant leaves out. */
+  /** Items this CV leaves out. */
   leftOut: Item[];
   idOf: (item: Item) => string;
   textOf: (item: Item) => RowText;
@@ -41,11 +41,11 @@ function Text(props: { text: RowText }) {
 }
 
 /**
- * One section of the variant editor: the picked items first, draggable into
+ * One section of the CV editor: the picked items first, draggable into
  * print order, then the ones left out, faded. Checking or unchecking moves
  * an item between the two.
  */
-export function DeskVariantRows<Item>(props: DeskVariantRowsProps<Item>) {
+export function DeskCvRows<Item>(props: DeskCvRowsProps<Item>) {
   const drag = useDragReorder(
     () => props.picked.map((item) => props.idOf(item)),
     (ids) => {

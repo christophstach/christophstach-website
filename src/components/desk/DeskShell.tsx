@@ -3,10 +3,10 @@ import { Show, createEffect, createMemo, createSignal } from "solid-js";
 import { DeskNav } from "./DeskNav";
 import { DeskSession } from "./DeskSession";
 import type { ParentProps } from "solid-js";
-import { getDeskCoverLetters, getDeskVariants } from "../../lib/desk/queries";
-import { letterChecks, variantChecks } from "../../lib/desk/page-checks";
+import { getDeskCoverLetters, getDeskCvs } from "../../lib/desk/queries";
+import { letterChecks, cvChecks } from "../../lib/desk/page-checks";
 import { checkDeskLetterPages } from "../../lib/desk/letters";
-import { checkVariantPages } from "../../lib/desk/variants";
+import { checkCvPages } from "../../lib/desk/cvs";
 import { pageCookie } from "../../lib/cookies";
 import { paths } from "../../router";
 import styles from "./DeskLayout.module.css";
@@ -17,16 +17,16 @@ const COLLAPSED_COOKIE = "desk-sidebar-collapsed";
 
 /** The desk's frame: the sidebar with its sections, the session, the page. */
 export function DeskShell(props: ParentProps) {
-  const variants = createMemo(() => getDeskVariants());
+  const cvs = createMemo(() => getDeskCvs());
   const letters = createMemo(() => getDeskCoverLetters());
 
-  // After a deploy no variant or letter has a page check on the new build, nor
+  // After a deploy no CV or letter has a page check on the new build, nor
   // does one written straight to the database; run them in the background
   // (browser only) so the lists show every page status.
   createEffect(
-    () => variants().variants,
+    () => cvs().cvs,
     (list) => {
-      void variantChecks.checkMissing(list, (id) => checkVariantPages({ id }));
+      void cvChecks.checkMissing(list, (id) => checkCvPages({ id }));
     },
   );
   createEffect(

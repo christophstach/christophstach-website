@@ -11,7 +11,7 @@ const coverLetterSchema = object(
   {
     label: text(NOT_LETTER),
     note: trimmed(NOT_LETTER),
-    variantId: trimmed(NOT_LETTER),
+    cvId: trimmed(NOT_LETTER),
     company: text(NOT_LETTER),
     recipient: trimmed(NOT_LETTER),
     jobTitle: trimmed(NOT_LETTER),

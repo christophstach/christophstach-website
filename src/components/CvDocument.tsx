@@ -3,7 +3,7 @@ import { formatMonth, stripScheme } from "../lib/format";
 import { CV_LAYOUT_STEPS } from "../data/cv-print-layout";
 import { CvHead } from "./CvHead";
 import { CvText } from "./CvText";
-import type { PrintedCv } from "../lib/cv-variant";
+import type { PrintedCv } from "../lib/cv";
 import { Style } from "@solidjs/meta";
 import styles from "./CvDocument.module.css";
 
@@ -130,7 +130,7 @@ function Projects(props: { projects: PrintedCv["projects"] }) {
 }
 
 /**
- * The printed CV for every variant. Variants change the content passed in
+ * The printed CV for every CV. CVs change the content passed in
  * and pick layout steps; this template and its print styles are the one
  * design they all share.
  */

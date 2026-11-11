@@ -3,11 +3,11 @@ import { revalidate } from "@solidjs/router";
 
 interface Checkable {
   id: string;
-  /** Empty when the variant or letter has no page check on this build. */
+  /** Empty when the CV or letter has no page check on this build. */
   pageFills: number[];
 }
 
-/** Checks one variant's or letter's pages; the result is stored with it. */
+/** Checks one CV's or letter's pages; the result is stored with it. */
 type CheckPages = (id: string) => Promise<unknown>;
 
 /**
@@ -68,10 +68,10 @@ function createPageChecks(queryKey: string) {
   return { checkMissing, forget, running };
 }
 
-const variantChecks = createPageChecks("desk-cv-variants");
+const cvChecks = createPageChecks("desk-cvs");
 const letterChecks = createPageChecks("desk-cover-letters");
 
-/** CV content changed: every variant may need a check again. */
-const forgetPageChecks = variantChecks.forget;
+/** CV content changed: every CV may need a check again. */
+const forgetPageChecks = cvChecks.forget;
 
-export { forgetPageChecks, letterChecks, variantChecks };
+export { forgetPageChecks, letterChecks, cvChecks };

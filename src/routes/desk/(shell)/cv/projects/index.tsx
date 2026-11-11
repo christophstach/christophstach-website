@@ -1,5 +1,5 @@
 import { For, Show, createMemo, createStore } from "solid-js";
-import { getDeskProjects, getDeskVariants } from "../../../../../lib/desk/queries";
+import { getDeskProjects, getDeskCvs } from "../../../../../lib/desk/queries";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import { DeskMeta } from "../../../../../components/desk/DeskMeta";
 import { DeskTable } from "../../../../../components/desk/DeskTable";
@@ -100,14 +100,14 @@ function CreateProject() {
 export default function ProjectsPage() {
   const [search] = useSearchParams();
   const projects = createMemo(() => getDeskProjects());
-  const variants = createMemo(() => getDeskVariants());
+  const cvs = createMemo(() => getDeskCvs());
   const creating = () => search.new !== undefined;
 
-  /** Labels of the variants that show a project. */
+  /** Labels of the CVs that show a project. */
   const usedBy = (id: string) =>
-    variants()
-      .variants.filter((variant) => variant.projects.includes(id))
-      .map((variant) => variant.label);
+    cvs()
+      .cvs.filter((cv) => cv.projects.includes(id))
+      .map((cv) => cv.label);
 
   return (
     <div class="desk-page">
@@ -119,7 +119,7 @@ export default function ProjectsPage() {
           </p>
           <h1 class="desk-head__title">Projects</h1>
           <p class="desk-head__sub">
-            Projects for /curriculum. The website variant picks which ones show, and in what order.
+            Projects for /curriculum. The website CV picks which ones show, and in what order.
           </p>
         </div>
 
@@ -178,7 +178,7 @@ export default function ProjectsPage() {
               id: "shown",
               header: "shown by",
               cell: (project) =>
-                usedBy(project.id).length > 0 ? usedBy(project.id).join(", ") : "no variant",
+                usedBy(project.id).length > 0 ? usedBy(project.id).join(", ") : "no CV",
               sort: (project) => usedBy(project.id).join(", "),
             },
           ]}
@@ -187,7 +187,7 @@ export default function ProjectsPage() {
               id: "shown",
               label: "shown",
               options: [
-                { value: "yes", label: "by a variant" },
+                { value: "yes", label: "by a CV" },
                 { value: "no", label: "by none" },
               ],
               value: (project) => (usedBy(project.id).length > 0 ? "yes" : "no"),
@@ -202,6 +202,6 @@ export default function ProjectsPage() {
 export const route = {
   preload: () => {
     void getDeskProjects();
-    void getDeskVariants();
+    void getDeskCvs();
   },
 } satisfies RouteDefinition;

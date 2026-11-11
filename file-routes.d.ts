@@ -88,10 +88,10 @@ declare module "virtual:file-routes" {
       $$route?: undefined;
     },
     {
-      path: "/api/desk/cv/:variant";
+      path: "/api/desk/cv/:id";
       page: false;
-      $GET: FileRouteLazyRef<Pick<typeof import("./src/routes/api/desk/cv/[variant]"), Extract<"GET", keyof typeof import("./src/routes/api/desk/cv/[variant]")>>>;
-      $HEAD: FileRouteLazyRef<Pick<typeof import("./src/routes/api/desk/cv/[variant]"), Extract<"GET", keyof typeof import("./src/routes/api/desk/cv/[variant]")>>>;
+      $GET: FileRouteLazyRef<Pick<typeof import("./src/routes/api/desk/cv/[id]"), Extract<"GET", keyof typeof import("./src/routes/api/desk/cv/[id]")>>>;
+      $HEAD: FileRouteLazyRef<Pick<typeof import("./src/routes/api/desk/cv/[id]"), Extract<"GET", keyof typeof import("./src/routes/api/desk/cv/[id]")>>>;
       $$route?: undefined;
     },
     {
@@ -147,10 +147,10 @@ declare module "virtual:file-routes" {
       $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/cover-letters/index"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/cover-letters/index")>>>;
     },
     {
-      path: "/desk/(shell)/cv/:variant";
+      path: "/desk/(shell)/cv/:id";
       page: true;
-      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/cv/[variant]"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/cv/[variant]")>>>;
-      $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/cv/[variant]"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/cv/[variant]")>>>;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/cv/[id]"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/cv/[id]")>>>;
+      $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/cv/[id]"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/cv/[id]")>>>;
     },
     {
       path: "/desk/(shell)/cv/education/:id";
@@ -225,9 +225,9 @@ declare module "virtual:file-routes" {
       $$route?: undefined;
     },
     {
-      path: "/desk/cv-print/:variant";
+      path: "/desk/cv-print/:id";
       page: true;
-      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/cv-print/[variant]"), Extract<"default", keyof typeof import("./src/routes/desk/cv-print/[variant]")>>>;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/cv-print/[id]"), Extract<"default", keyof typeof import("./src/routes/desk/cv-print/[id]")>>>;
       $$route?: undefined;
     }
   ];
@@ -310,6 +310,14 @@ declare module "virtual:file-routes" {
           children?: undefined;
         },
         {
+          path: "/cv/:id";
+          id: "/cv/:id";
+          page: true;
+          $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/cv/[id]"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/cv/[id]")>>>;
+          $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/cv/[id]"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/cv/[id]")>>>;
+          children?: undefined;
+        },
+        {
           path: "/cv/profile";
           id: "/cv/profile";
           page: true;
@@ -323,14 +331,6 @@ declare module "virtual:file-routes" {
           page: true;
           $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/cv/skills/index"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/cv/skills/index")>>>;
           $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/cv/skills/index"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/cv/skills/index")>>>;
-          children?: undefined;
-        },
-        {
-          path: "/cv/:variant";
-          id: "/cv/:variant";
-          page: true;
-          $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/cv/[variant]"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/cv/[variant]")>>>;
-          $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/cv/[variant]"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/cv/[variant]")>>>;
           children?: undefined;
         },
         {
@@ -408,10 +408,10 @@ declare module "virtual:file-routes" {
       ];
     },
     {
-      path: "/desk/cv-print/:variant";
-      id: "/desk/cv-print/:variant";
+      path: "/desk/cv-print/:id";
+      id: "/desk/cv-print/:id";
       page: true;
-      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/cv-print/[variant]"), Extract<"default", keyof typeof import("./src/routes/desk/cv-print/[variant]")>>>;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/cv-print/[id]"), Extract<"default", keyof typeof import("./src/routes/desk/cv-print/[id]")>>>;
       $$route?: undefined;
       children?: undefined;
     },

@@ -16,7 +16,7 @@ const stringsSchema = array(string());
 const linkSchema = object({ text: string(), href: string() });
 const linksSchema = array(linkSchema);
 
-/** An entry as a variant prints it: only the picked bullets, in order. */
+/** An entry as a CV prints it: only the picked bullets, in order. */
 const printedEntrySchema = object({
   id: string(),
   title: string(),
@@ -37,7 +37,7 @@ const projectSchema = object({
   url: string(),
 });
 
-/** GET /api/cv-website: what /curriculum shows of the website variant. */
+/** GET /api/cv-website: what /curriculum shows of the website CV. */
 const cvWebsiteSchema = object({
   experience: array(printedEntrySchema),
   education: array(printedEntrySchema),

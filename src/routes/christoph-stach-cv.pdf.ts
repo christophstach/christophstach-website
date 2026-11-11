@@ -2,7 +2,7 @@ import type { APIHandler } from "filesystem-routing/api";
 import { paths } from "../router";
 import { renderPdf } from "../server/cv-pdf";
 
-// The public CV PDF: the primary variant, printed from /cv-print on request so
+// The public CV PDF: the primary CV, printed from /cv-print on request so
 // it always matches the CV data. On Vercel the response is cached (ISR), so
 // Chrome runs once per deployment or desk change, not once per download.
 export const GET: APIHandler = async (event) => {

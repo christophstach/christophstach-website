@@ -1,6 +1,6 @@
 import { For, Show, createMemo, createSignal, snapshot } from "solid-js";
 import { deleteDeskProject, saveDeskProject } from "../../../../../lib/desk/content";
-import { getDeskProjects, getDeskVariants } from "../../../../../lib/desk/queries";
+import { getDeskProjects, getDeskCvs } from "../../../../../lib/desk/queries";
 import { useNavigate, useParams } from "@solidjs/router";
 import { DeskFormSection } from "../../../../../components/desk/DeskFormSection";
 import { DeskMenu } from "../../../../../components/desk/DeskMenu";
@@ -42,7 +42,7 @@ export default function ProjectEditor() {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
   const projects = createMemo(() => getDeskProjects());
-  const variants = createMemo(() => getDeskVariants());
+  const cvs = createMemo(() => getDeskCvs());
   const [removing, setRemoving] = createSignal(false);
   // While deleting, the refetched list no longer has the project: keep
   // showing the last one until the page has navigated away.
@@ -64,8 +64,7 @@ export default function ProjectEditor() {
     EMPTY_FORM,
   );
   const request = useDeskRequest();
-  const usedBy = () =>
-    variants().variants.filter((variant) => variant.projects.includes(params.id));
+  const usedBy = () => cvs().cvs.filter((cv) => cv.projects.includes(params.id));
   const heading = () => [form.name, form.title].find((text) => text !== "") ?? params.id;
 
   const bind = (key: keyof ProjectForm) => ({
@@ -93,7 +92,7 @@ export default function ProjectEditor() {
   async function remove() {
     const label = saved().name === "" ? saved().title : saved().name;
 
-    if (!confirm(`Delete the project "${label}"? Variants that show it drop it.`)) {
+    if (!confirm(`Delete the project "${label}"? Cvs that show it drop it.`)) {
       return;
     }
 
@@ -119,7 +118,7 @@ export default function ProjectEditor() {
           </p>
           <h1 class="desk-head__title">{heading()}</h1>
           <p class="desk-head__sub">
-            Printed by the variants that pick it; /curriculum shows the website variant's.
+            Printed by the CVs that pick it; /curriculum shows the website CV's.
           </p>
         </div>
 
@@ -181,21 +180,21 @@ export default function ProjectEditor() {
 
         <DeskFormSection
           title="shown by"
-          description="Pick projects in a variant's projects table."
+          description="Pick projects in a CV's projects table."
           single
         >
           <Show
             when={usedBy().length > 0}
-            fallback={<p class={styles.project__none}>No variant shows this project.</p>}
+            fallback={<p class={styles.project__none}>No CV shows this project.</p>}
           >
             <ul class="form-rows">
               <For each={usedBy()}>
-                {(variant) => (
-                  <li class={styles.project__variant}>
-                    <a href={paths.desk.cv(variant.id)} class="text-link">
-                      {variant.label}
+                {(cv) => (
+                  <li class={styles.project__cv}>
+                    <a href={paths.desk.cv(cv.id)} class="text-link">
+                      {cv.label}
                     </a>
-                    <Show when={variant.id === variants().websiteId}>
+                    <Show when={cv.id === cvs().websiteId}>
                       <span class="role-tag">/curriculum</span>
                     </Show>
                   </li>
@@ -216,6 +215,6 @@ export default function ProjectEditor() {
 export const route = {
   preload: () => {
     void getDeskProjects();
-    void getDeskVariants();
+    void getDeskCvs();
   },
 } satisfies RouteDefinition;

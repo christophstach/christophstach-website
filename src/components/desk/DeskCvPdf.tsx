@@ -1,27 +1,27 @@
-import { CV_PDF_PATH, deskVariantPdfPath } from "../../data/endpoints";
+import { CV_PDF_PATH, deskCvPdfPath } from "../../data/endpoints";
 import { For, Show, createEffect, createSignal } from "solid-js";
 import type { CvLayout } from "../../data/cv-print-layout";
 import { DeskPageSheets } from "./DeskPageSheets";
-import { checkVariantPages } from "../../lib/desk/variants";
+import { checkCvPages } from "../../lib/desk/cvs";
 import { errorMessage } from "../../lib/desk/request";
 import { layoutWarnings } from "../../lib/cv-layout";
 import { revalidate } from "@solidjs/router";
 import styles from "./DeskCvPdf.module.css";
 
 interface DeskCvPdfProps {
-  /** Id of the CV variant to check. */
-  variant: string;
-  /** Whether it is the public variant, the PDF that visitors download. */
+  /** Id of the CV to check. */
+  cv: string;
+  /** Whether it is the public CV, the PDF that visitors download. */
   primary: boolean;
-  /** Bumped after the variant is saved, to check it again. */
+  /** Bumped after the CV is saved, to check it again. */
   revision: number;
   /** Unsaved layout steps to print instead of the stored ones, or undefined. */
   trial: CvLayout | undefined;
 }
 
-type Check = Awaited<ReturnType<typeof checkVariantPages>>;
+type Check = Awaited<ReturnType<typeof checkCvPages>>;
 
-/** Prints a variant's PDF and shows how full each page is, with warnings. */
+/** Prints a CV's PDF and shows how full each page is, with warnings. */
 export function DeskCvPdf(props: DeskCvPdfProps) {
   const [check, setCheck] = createSignal<Check | undefined>();
   const [error, setError] = createSignal("");
@@ -32,10 +32,10 @@ export function DeskCvPdf(props: DeskCvPdfProps) {
   };
 
   // Runs in the browser only: printing a PDF means a few seconds of Chrome.
-  // The check of the stored steps is stored with the variant, so the overview
+  // The check of the stored steps is stored with the CV, so the overview
   // shows it; a trial isn't.
   createEffect(
-    () => ({ id: props.variant, revision: props.revision, trial: props.trial }),
+    () => ({ id: props.cv, revision: props.revision, trial: props.trial }),
     ({ id, trial }) => {
       let current = true;
 
@@ -43,13 +43,13 @@ export function DeskCvPdf(props: DeskCvPdfProps) {
       setError("");
       void (async () => {
         try {
-          const result = await checkVariantPages(trial === undefined ? { id } : { id, trial });
+          const result = await checkCvPages(trial === undefined ? { id } : { id, trial });
 
           if (current) {
             setCheck(result);
 
             if (!result.trial) {
-              revalidate("desk-cv-variants");
+              revalidate("desk-cvs");
             }
           }
         } catch (error_) {
@@ -107,7 +107,7 @@ export function DeskCvPdf(props: DeskCvPdfProps) {
 
       <p class={styles["cv-pdf__note"]}>
         <a
-          href={props.primary ? CV_PDF_PATH : deskVariantPdfPath(props.variant)}
+          href={props.primary ? CV_PDF_PATH : deskCvPdfPath(props.cv)}
           class="text-link"
           target="_blank"
         >

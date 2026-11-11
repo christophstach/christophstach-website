@@ -1,5 +1,5 @@
 import { For, Show, createMemo, createSignal, snapshot } from "solid-js";
-import { getDeskContent, getDeskVariants } from "../../../../../lib/desk/queries";
+import { getDeskContent, getDeskCvs } from "../../../../../lib/desk/queries";
 import { useNavigate, useParams } from "@solidjs/router";
 import { DeskFormSection } from "../../../../../components/desk/DeskFormSection";
 import { DeskMenu } from "../../../../../components/desk/DeskMenu";
@@ -33,7 +33,7 @@ export default function SkillGroupEditor() {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
   const content = createMemo(() => getDeskContent());
-  const variants = createMemo(() => getDeskVariants());
+  const cvs = createMemo(() => getDeskCvs());
   const [removing, setRemoving] = createSignal(false);
   // While deleting, the refetched list no longer has the group: keep showing
   // the last one until the page has navigated away.
@@ -55,7 +55,7 @@ export default function SkillGroupEditor() {
     EMPTY_FORM,
   );
   const request = useDeskRequest();
-  const usedBy = () => variants().variants.filter((variant) => variant.skills.includes(params.id));
+  const usedBy = () => cvs().cvs.filter((cv) => cv.skills.includes(params.id));
   const heading = () => [form.name, form.title].find((text) => text !== "") ?? params.id;
 
   const bind = (key: keyof GroupForm) => ({
@@ -82,7 +82,7 @@ export default function SkillGroupEditor() {
   }
 
   async function remove() {
-    const users = usedBy().map((variant) => variant.label);
+    const users = usedBy().map((cv) => cv.label);
     const question =
       users.length > 0
         ? `${users.join(", ")} print "${saved().name}". Delete it anyway?`
@@ -116,7 +116,7 @@ export default function SkillGroupEditor() {
           </p>
           <h1 class="desk-head__title">{heading()}</h1>
           <p class="desk-head__sub">
-            The home page shows every group; the variants that pick it print it in the PDF.
+            The home page shows every group; the CVs that pick it print it in the PDF.
           </p>
         </div>
 
@@ -169,19 +169,19 @@ export default function SkillGroupEditor() {
 
         <DeskFormSection
           title="printed by"
-          description="Pick skill groups in a variant's skills table."
+          description="Pick skill groups in a CV's skills table."
           single
         >
           <Show
             when={usedBy().length > 0}
-            fallback={<p class={styles.group__none}>No variant prints this group.</p>}
+            fallback={<p class={styles.group__none}>No CV prints this group.</p>}
           >
             <ul class="form-rows">
               <For each={usedBy()}>
-                {(variant) => (
+                {(cv) => (
                   <li>
-                    <a href={paths.desk.cv(variant.id)} class="text-link">
-                      {variant.label}
+                    <a href={paths.desk.cv(cv.id)} class="text-link">
+                      {cv.label}
                     </a>
                   </li>
                 )}
@@ -201,6 +201,6 @@ export default function SkillGroupEditor() {
 export const route = {
   preload: () => {
     void getDeskContent();
-    void getDeskVariants();
+    void getDeskCvs();
   },
 } satisfies RouteDefinition;

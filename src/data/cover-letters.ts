@@ -10,8 +10,8 @@ interface CoverLetter {
   label: string;
   /** Desk only: what it is for. Never printed. */
   note: string;
-  /** The CV variant sent with it; empty if none. Its role is printed under the name. */
-  variantId: string;
+  /** The CV sent with it; empty if none. Its role is printed under the name. */
+  cvId: string;
   /** Desk only: lists the letter. Never printed. */
   company: string;
   /** Printed above the date when set: a person, an address, one item per line. */

@@ -1,30 +1,30 @@
 import { For, Show, createMemo, createStore } from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
-import { variantContent, variantCounts } from "../../../../lib/desk-variant";
+import { cvContent, cvCounts } from "../../../../lib/desk-cv";
 import { DeskMeta } from "../../../../components/desk/DeskMeta";
 import { DeskTable } from "../../../../components/desk/DeskTable";
 import type { DeskTableColumn, DeskTableFilter } from "../../../../components/desk/DeskTable";
-import type { DeskVariant } from "../../../../lib/desk/queries";
+import type { DeskCv } from "../../../../lib/desk/queries";
 import { IconPlus } from "../../../../components/icons";
 import type { RouteDefinition } from "@solidjs/router";
 import { formatRelative } from "../../../../lib/format";
-import { getDeskVariants } from "../../../../lib/desk/queries";
+import { getDeskCvs } from "../../../../lib/desk/queries";
 import { pageStatus } from "../../../../lib/cv-layout";
 import { paths } from "../../../../router";
-import { variantChecks } from "../../../../lib/desk/page-checks";
-import { saveDeskVariant } from "../../../../lib/desk/variants";
+import { cvChecks } from "../../../../lib/desk/page-checks";
+import { saveDeskCv } from "../../../../lib/desk/cvs";
 import styles from "../../../../components/desk/page-cv-index.module.css";
 import { useDeskRequest } from "../../../../lib/desk/request";
 
-/** A variant's page status: a running check first, then the stored result. */
-function status(variant: DeskVariant) {
-  return variantChecks.running().includes(variant.id)
+/** A CV's page status: a running check first, then the stored result. */
+function status(cv: DeskCv) {
+  return cvChecks.running().includes(cv.id)
     ? { tone: "none" as const, text: "checking pages…" }
-    : pageStatus(variant.pageFills);
+    : pageStatus(cv.pageFills);
 }
 
-/** The form for a new variant, opened by "?new"; "?new&from=<id>" starts from that variant. */
-function CreateVariant(props: { variants: DeskVariant[]; from: string }) {
+/** The form for a new CV, opened by "?new"; "?new&from=<id>" starts from that CV. */
+function CreateCv(props: { cvs: DeskCv[]; from: string }) {
   const navigate = useNavigate();
   const request = useDeskRequest();
   const [form, setForm] = createStore({ id: "", label: "", from: "" });
@@ -44,16 +44,16 @@ function CreateVariant(props: { variants: DeskVariant[]; from: string }) {
   async function create(event: SubmitEvent) {
     event.preventDefault();
 
-    const base = props.variants.find((variant) => variant.id === from());
+    const base = props.cvs.find((cv) => cv.id === from());
     const id = form.id.trim();
 
     if (base === undefined) {
       return;
     }
 
-    const variant = { ...variantContent(base), label: form.label.trim(), note: "" };
+    const cv = { ...cvContent(base), label: form.label.trim(), note: "" };
 
-    if (await request.run(() => saveDeskVariant(id, variant, { create: true }))) {
+    if (await request.run(() => saveDeskCv(id, cv, { create: true }))) {
       setForm(() => ({ id: "", label: "", from: "" }));
       navigate(paths.desk.cv(id));
     }
@@ -61,7 +61,7 @@ function CreateVariant(props: { variants: DeskVariant[]; from: string }) {
 
   return (
     <form class={styles.create} onSubmit={(event) => void create(event)}>
-      <h2 class={styles.create__title}>New variant</h2>
+      <h2 class={styles.create__title}>New CV</h2>
 
       <div class={styles.create__fields}>
         <label class="field">
@@ -96,10 +96,10 @@ function CreateVariant(props: { variants: DeskVariant[]; from: string }) {
               });
             }}
           >
-            <For each={props.variants}>
-              {(variant) => (
-                <option value={variant.id} selected={variant.id === from()}>
-                  {variant.label}
+            <For each={props.cvs}>
+              {(cv) => (
+                <option value={cv.id} selected={cv.id === from()}>
+                  {cv.label}
                 </option>
               )}
             </For>
@@ -117,7 +117,7 @@ function CreateVariant(props: { variants: DeskVariant[]; from: string }) {
 
       <div class={styles.create__actions}>
         <button type="submit" class="button button--primary" disabled={request.busy()}>
-          {request.busy() ? "Creating…" : "Create variant"}
+          {request.busy() ? "Creating…" : "Create CV"}
         </button>
         <a href={paths.desk.cv()} class="button button--outline">
           Cancel
@@ -127,66 +127,63 @@ function CreateVariant(props: { variants: DeskVariant[]; from: string }) {
   );
 }
 
-export default function VariantList() {
+export default function CvList() {
   const [search] = useSearchParams();
-  const data = createMemo(() => getDeskVariants());
-  const isPublic = (variant: DeskVariant) =>
-    variant.id === data().primaryId || variant.id === data().websiteId;
+  const data = createMemo(() => getDeskCvs());
+  const isPublic = (cv: DeskCv) => cv.id === data().primaryId || cv.id === data().websiteId;
   // The public ones first, until a column sorts them.
   const rows = createMemo(() => [
-    ...data().variants.filter((variant) => isPublic(variant)),
-    ...data().variants.filter((variant) => !isPublic(variant)),
+    ...data().cvs.filter((cv) => isPublic(cv)),
+    ...data().cvs.filter((cv) => !isPublic(cv)),
   ]);
 
-  const columns: DeskTableColumn<DeskVariant>[] = [
+  const columns: DeskTableColumn<DeskCv>[] = [
     {
-      id: "variant",
-      header: "variant",
+      id: "cv",
+      header: "cv",
       primary: true,
-      cell: (variant) => (
-        <span class={styles.variant}>
+      cell: (cv) => (
+        <span class={styles.cv}>
           <span class={styles.row__top}>
-            <span class={styles.variant__label}>{variant.label}</span>
-            <Show when={variant.id === data().primaryId}>
+            <span class={styles.cv__label}>{cv.label}</span>
+            <Show when={cv.id === data().primaryId}>
               <span class="role-tag">PDF</span>
             </Show>
-            <Show when={variant.id === data().websiteId}>
+            <Show when={cv.id === data().websiteId}>
               <span class="role-tag">/curriculum</span>
             </Show>
           </span>
-          <span class={styles.row__role}>{variant.role}</span>
-          <Show when={variant.note !== ""}>
-            <span class="desk-note">{variant.note}</span>
+          <span class={styles.row__role}>{cv.role}</span>
+          <Show when={cv.note !== ""}>
+            <span class="desk-note">{cv.note}</span>
           </Show>
         </span>
       ),
-      sort: (variant) => variant.label,
-      search: (variant) => `${variant.label} ${variant.id} ${variant.role} ${variant.note}`,
+      sort: (cv) => cv.label,
+      search: (cv) => `${cv.label} ${cv.id} ${cv.role} ${cv.note}`,
     },
     {
       id: "pages",
       header: "pages",
-      cell: (variant) => (
-        <span class={`desk-status desk-status--${status(variant).tone}`}>
-          {status(variant).text}
-        </span>
+      cell: (cv) => (
+        <span class={`desk-status desk-status--${status(cv).tone}`}>{status(cv).text}</span>
       ),
     },
     {
       id: "contents",
       header: "contents",
-      cell: (variant) => variantCounts(variant),
+      cell: (cv) => cvCounts(cv),
     },
     {
       id: "changed",
       header: "changed",
-      cell: (variant) => formatRelative(variant.updatedAt),
-      sort: (variant) => variant.updatedAt,
+      cell: (cv) => formatRelative(cv.updatedAt),
+      sort: (cv) => cv.updatedAt,
       firstDirection: "desc",
     },
   ];
 
-  const filters: DeskTableFilter<DeskVariant>[] = [
+  const filters: DeskTableFilter<DeskCv>[] = [
     {
       id: "use",
       label: "used for",
@@ -194,7 +191,7 @@ export default function VariantList() {
         { value: "public", label: "public" },
         { value: "private", label: "applications" },
       ],
-      value: (variant) => (isPublic(variant) ? "public" : "private"),
+      value: (cv) => (isPublic(cv) ? "public" : "private"),
     },
     {
       id: "pages",
@@ -204,45 +201,45 @@ export default function VariantList() {
         { value: "warn", label: "needs work" },
         { value: "none", label: "not checked" },
       ],
-      value: (variant) => status(variant).tone,
+      value: (cv) => status(cv).tone,
     },
   ];
   const fromQuery = () => (typeof search.from === "string" ? search.from : data().primaryId);
 
   return (
     <div class="desk-page">
-      <DeskMeta title="CV variants · Desk" />
+      <DeskMeta title="CVs · Desk" />
       <header class="desk-head">
         <div class="desk-head__text">
           <p class="desk-head__path">~/desk/cv</p>
-          <h1 class="desk-head__title">CV variants</h1>
+          <h1 class="desk-head__title">CVs</h1>
           <p class="desk-head__sub">
-            Each variant picks entries and bullets from the CV. One is the PDF, one the website.
+            Each CV picks entries and bullets from the CV content. One is the PDF, one the website.
           </p>
         </div>
 
         <Show when={search.new === undefined}>
           <a href={paths.desk.cv({ new: "1" })} class="button button--primary">
             <IconPlus size={16} />
-            New variant
+            New CV
           </a>
         </Show>
       </header>
 
       <Show when={search.new !== undefined}>
-        <CreateVariant variants={data().variants} from={fromQuery()} />
+        <CreateCv cvs={data().cvs} from={fromQuery()} />
       </Show>
 
       <Show
-        when={data().variants.length > 0}
-        fallback={<p class="panel panel__empty">No CV variants in the database.</p>}
+        when={data().cvs.length > 0}
+        fallback={<p class="panel panel__empty">No CVs in the database.</p>}
       >
         <DeskTable
-          title="variants"
-          noun={["variant", "variants"]}
+          title="cvs"
+          noun={["cv", "cvs"]}
           rows={rows()}
-          rowKey={(variant) => variant.id}
-          rowHref={(variant) => paths.desk.cv(variant.id)()}
+          rowKey={(cv) => cv.id}
+          rowHref={(cv) => paths.desk.cv(cv.id)()}
           columns={columns}
           filters={filters}
         />
@@ -253,6 +250,6 @@ export default function VariantList() {
 
 export const route = {
   preload: () => {
-    void getDeskVariants();
+    void getDeskCvs();
   },
 } satisfies RouteDefinition;

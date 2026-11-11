@@ -2,8 +2,8 @@ import { COVER_LETTER_LANGUAGES, COVER_LETTER_WORDING } from "../../data/cover-l
 import { For, Show } from "solid-js";
 import type { CoverLetter } from "../../data/cover-letters";
 import { DeskFormSection } from "./DeskFormSection";
-import type { DeskVariant } from "../../lib/desk/queries";
-import { deskVariantPdfPath } from "../../data/endpoints";
+import type { DeskCv } from "../../lib/desk/queries";
+import { deskCvPdfPath } from "../../data/endpoints";
 import { rewordLetter } from "../../lib/cover-letter";
 
 type TextKey = Exclude<keyof CoverLetter, "id" | "language">;
@@ -12,7 +12,7 @@ type SetForm = (write: (draft: CoverLetter) => void) => void;
 interface DeskLetterFieldsProps {
   form: CoverLetter;
   setForm: SetForm;
-  variants: DeskVariant[];
+  cvs: DeskCv[];
 }
 
 type FieldElement = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
@@ -29,7 +29,7 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
       });
     },
   });
-  const linked = () => props.variants.find((variant) => variant.id === props.form.variantId);
+  const linked = () => props.cvs.find((cv) => cv.id === props.form.cvId);
 
   /** A new language or job title rewords only the text that is still the default. */
   function reword(language: CoverLetter["language"], jobTitle: string) {
@@ -52,25 +52,25 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
           <input {...bind("label")} class="input" required />
         </label>
         <label class="field">
-          <span class="field__label">cv variant</span>
-          {/* `selected` on the options: see the variant select in /desk/cv. */}
+          <span class="field__label">cv</span>
+          {/* `selected` on the options: see the CV select in /desk/cv. */}
           <select
             class="input"
             onChange={(event) => {
               const { value } = event.currentTarget;
 
               props.setForm((draft) => {
-                draft.variantId = value;
+                draft.cvId = value;
               });
             }}
           >
-            <option value="" selected={props.form.variantId === ""}>
+            <option value="" selected={props.form.cvId === ""}>
               None
             </option>
-            <For each={props.variants}>
-              {(variant) => (
-                <option value={variant.id} selected={variant.id === props.form.variantId}>
-                  {variant.label}
+            <For each={props.cvs}>
+              {(cv) => (
+                <option value={cv.id} selected={cv.id === props.form.cvId}>
+                  {cv.label}
                 </option>
               )}
             </For>
@@ -78,8 +78,8 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
           <span class="field__hint">
             The CV you send with it; its role prints under your name.{" "}
             <Show when={linked()}>
-              {(variant) => (
-                <a href={deskVariantPdfPath(variant().id)} class="text-link" target="_blank">
+              {(cv) => (
+                <a href={deskCvPdfPath(cv().id)} class="text-link" target="_blank">
                   Open the CV
                 </a>
               )}

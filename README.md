@@ -6,7 +6,7 @@ Personal CV website of Christoph Stach, built with [Solid 2](https://v2.solidjs.
 
 - **Solid 2** — TSX with fine-grained reactivity, no virtual DOM; file-based routing (`filesystem-routing` + `@solidjs/router`), `"use server"` functions for data
 - **Vite 8 + Nitro 3** — streaming-free async SSR, deployed to Vercel; the public data and the CV PDF are cached with ISR, `/` and `/curriculum` render per request
-- **Postgres and Drizzle** — CV content and variants, edited in the private `/desk` and printed to PDF
+- **Postgres and Drizzle** — CV content and CVs, edited in the private `/desk` and printed to PDF
 - **GitHub OAuth** — sealed-cookie sessions for `/desk` from Nitro's h3
 - **zod/mini** — validates the environment and every input that comes from outside
 - **Pure CSS design system** — design tokens in `src/assets/css/tokens.css` (primitives + semantic aliases), reset in `base.css`, shared component classes in `components.css`, a CSS Module per component

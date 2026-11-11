@@ -26,7 +26,7 @@ export const deskSections: DeskLink[] = [
   { to: paths.desk["cover-letters"](), label: "cover-letters", icon: IconMail },
 ];
 
-/** Under "cv": the content the variants pick from. */
+/** Under "cv": the content the CVs pick from. */
 export const deskContentLinks: DeskLink[] = [
   { to: paths.desk.cv.profile(), label: "profile", icon: IconId },
   { to: paths.desk.cv.experience(), label: "experience", icon: IconBriefcase },

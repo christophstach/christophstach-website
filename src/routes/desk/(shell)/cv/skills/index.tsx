@@ -1,5 +1,5 @@
 import { Show, createMemo, createStore } from "solid-js";
-import { getDeskContent, getDeskVariants } from "../../../../../lib/desk/queries";
+import { getDeskContent, getDeskCvs } from "../../../../../lib/desk/queries";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import { DeskMeta } from "../../../../../components/desk/DeskMeta";
 import { DeskSaveBar } from "../../../../../components/desk/DeskSaveBar";
@@ -99,7 +99,7 @@ function CreateGroup(props: { groups: SkillGroupRecord[] }) {
 export default function SkillsPage() {
   const [search] = useSearchParams();
   const content = createMemo(() => getDeskContent());
-  const variants = createMemo(() => getDeskVariants());
+  const cvs = createMemo(() => getDeskCvs());
   const creating = () => search.new !== undefined;
   // Only the order is edited here; each group's fields have their own page.
   const { form, setForm, dirty, reset } = useDraft<{ order: string[] }>(
@@ -109,11 +109,11 @@ export default function SkillsPage() {
   const request = useDeskRequest();
   const rows = () => inOrder(form.order, content().skills, (group) => group.label);
 
-  /** Names of the variants that print this skill group. */
+  /** Names of the CVs that print this skill group. */
   const usedBy = (label: string) =>
-    variants()
-      .variants.filter((variant) => variant.skills.includes(label))
-      .map((variant) => variant.label);
+    cvs()
+      .cvs.filter((cv) => cv.skills.includes(label))
+      .map((cv) => cv.label);
 
   async function save(event: SubmitEvent) {
     event.preventDefault();
@@ -133,7 +133,7 @@ export default function SkillsPage() {
           </p>
           <h1 class="desk-head__title">Skills</h1>
           <p class="desk-head__sub">
-            The home page shows every group in this order; variants pick which ones the PDF prints.
+            The home page shows every group in this order; CVs pick which ones the PDF prints.
           </p>
         </div>
 
@@ -204,10 +204,10 @@ export default function SkillsPage() {
                 firstDirection: "desc",
               },
               {
-                id: "variants",
+                id: "cvs",
                 header: "printed by",
                 cell: (group) =>
-                  usedBy(group.label).length > 0 ? usedBy(group.label).join(", ") : "no variant",
+                  usedBy(group.label).length > 0 ? usedBy(group.label).join(", ") : "no CV",
                 sort: (group) => usedBy(group.label).length,
                 firstDirection: "desc",
               },
@@ -217,7 +217,7 @@ export default function SkillsPage() {
                 id: "printed",
                 label: "printed",
                 options: [
-                  { value: "yes", label: "by a variant" },
+                  { value: "yes", label: "by a CV" },
                   { value: "no", label: "by none" },
                 ],
                 value: (group) => (usedBy(group.label).length > 0 ? "yes" : "no"),
@@ -237,6 +237,6 @@ export default function SkillsPage() {
 export const route = {
   preload: () => {
     void getDeskContent();
-    void getDeskVariants();
+    void getDeskCvs();
   },
 } satisfies RouteDefinition;

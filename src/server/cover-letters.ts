@@ -1,8 +1,8 @@
 import "server-only";
 import type { CoverLetter, CoverLetterRecord, PrintedCoverLetter } from "../data/cover-letters";
 import { asc, desc, eq } from "drizzle-orm";
-import { coverLetters, cvVariants } from "../../server/db/schema";
-import { currentBuild, requireVariant } from "./cv-variants";
+import { coverLetters, cvs } from "../../server/db/schema";
+import { currentBuild, requireCv } from "./cvs";
 import { HttpError } from "./http";
 import { loadProfile } from "./cv-content";
 import { printedLetter } from "../lib/cover-letter";
@@ -15,7 +15,7 @@ function toLetter(row: LetterRow): CoverLetter {
     id: row.id,
     label: row.label,
     note: row.note,
-    variantId: row.variantId ?? "",
+    cvId: row.cvId ?? "",
     company: row.company,
     recipient: row.recipient,
     jobTitle: row.jobTitle,
@@ -60,18 +60,15 @@ async function requireCoverLetter(id: string): Promise<CoverLetter> {
   return toLetter(row);
 }
 
-async function requireLinkedVariant(variantId: string) {
-  if (!variantId) {
+async function requireLinkedCv(cvId: string) {
+  if (!cvId) {
     return;
   }
 
-  const [row] = await useDb()
-    .select({ id: cvVariants.id })
-    .from(cvVariants)
-    .where(eq(cvVariants.id, variantId));
+  const [row] = await useDb().select({ id: cvs.id }).from(cvs).where(eq(cvs.id, cvId));
 
   if (!row) {
-    throw new HttpError(400, `No CV variant "${variantId}".`);
+    throw new HttpError(400, `No CV "${cvId}".`);
   }
 }
 
@@ -79,7 +76,7 @@ function letterColumns(letter: CoverLetter) {
   // A saved letter has to be measured again.
   return {
     ...letter,
-    variantId: letter.variantId || null,
+    cvId: letter.cvId || null,
     pageFills: [],
     pageFillsBuild: "",
     updatedAt: new Date(),
@@ -88,7 +85,7 @@ function letterColumns(letter: CoverLetter) {
 
 /** Creates a cover letter (409 if the id is taken) or updates one (404 if missing). */
 async function saveCoverLetter(letter: CoverLetter, { create }: { create: boolean }) {
-  await requireLinkedVariant(letter.variantId);
+  await requireLinkedCv(letter.cvId);
 
   const written = create
     ? await useDb()
@@ -129,12 +126,12 @@ async function storeCoverLetterFills(id: string, fills: number[]) {
 /** What the print page shows. */
 async function printCoverLetter(id: string): Promise<PrintedCoverLetter> {
   const letter = await requireCoverLetter(id);
-  const [profile, variant] = await Promise.all([
+  const [profile, cv] = await Promise.all([
     loadProfile(),
-    letter.variantId ? requireVariant(letter.variantId) : undefined,
+    letter.cvId ? requireCv(letter.cvId) : undefined,
   ]);
 
-  return printedLetter(letter, profile, variant?.role);
+  return printedLetter(letter, profile, cv?.role);
 }
 
 export {
