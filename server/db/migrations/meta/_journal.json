@@ -162,6 +162,13 @@
       "when": 1794438652266,
       "tag": "0022_letters_read_the_application",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794438932978,
+      "tag": "0023_application_sent_copy",
+      "breakpoints": true
     }
   ]
 }

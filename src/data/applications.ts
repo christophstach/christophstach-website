@@ -56,10 +56,20 @@ interface Application {
   note: string;
 }
 
+/** What the desk shows of what an application sent (the frozen copy itself is SentCopy). */
+interface SentSummary {
+  /** ISO timestamp; empty when the copy no longer fits what the desk renders. */
+  sentAt: string;
+  hasCv: boolean;
+  letters: { id: string; label: string }[];
+}
+
 /** An application as the desk lists it, with its letters. */
 interface ApplicationRecord extends Application {
   /** The ids and names of its cover letters, oldest first. */
   letters: { id: string; label: string }[];
+  /** What it sent; null until it was marked as sent. */
+  sent: SentSummary | null;
   /** ISO timestamp of the last save. */
   updatedAt: string;
 }
@@ -115,4 +125,5 @@ export type {
   ApplicationEvent,
   ApplicationSource,
   ApplicationStatus,
+  SentSummary,
 };

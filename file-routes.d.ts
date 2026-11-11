@@ -81,6 +81,20 @@ declare module "virtual:file-routes" {
       $$route?: undefined;
     },
     {
+      path: "/api/desk/applications/:id/sent-cv";
+      page: false;
+      $GET: FileRouteLazyRef<Pick<typeof import("./src/routes/api/desk/applications/[id]/sent-cv"), Extract<"GET", keyof typeof import("./src/routes/api/desk/applications/[id]/sent-cv")>>>;
+      $HEAD: FileRouteLazyRef<Pick<typeof import("./src/routes/api/desk/applications/[id]/sent-cv"), Extract<"GET", keyof typeof import("./src/routes/api/desk/applications/[id]/sent-cv")>>>;
+      $$route?: undefined;
+    },
+    {
+      path: "/api/desk/applications/:id/sent-letters/:letter";
+      page: false;
+      $GET: FileRouteLazyRef<Pick<typeof import("./src/routes/api/desk/applications/[id]/sent-letters/[letter]"), Extract<"GET", keyof typeof import("./src/routes/api/desk/applications/[id]/sent-letters/[letter]")>>>;
+      $HEAD: FileRouteLazyRef<Pick<typeof import("./src/routes/api/desk/applications/[id]/sent-letters/[letter]"), Extract<"GET", keyof typeof import("./src/routes/api/desk/applications/[id]/sent-letters/[letter]")>>>;
+      $$route?: undefined;
+    },
+    {
       path: "/api/desk/cover-letters/:id/pdf";
       page: false;
       $GET: FileRouteLazyRef<Pick<typeof import("./src/routes/api/desk/cover-letters/[id]/pdf"), Extract<"GET", keyof typeof import("./src/routes/api/desk/cover-letters/[id]/pdf")>>>;
@@ -246,6 +260,18 @@ declare module "virtual:file-routes" {
       path: "/desk/cv-print/:id";
       page: true;
       $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/cv-print/[id]"), Extract<"default", keyof typeof import("./src/routes/desk/cv-print/[id]")>>>;
+      $$route?: undefined;
+    },
+    {
+      path: "/desk/sent-print/:id/:letter";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/sent-print/[id]/[letter]"), Extract<"default", keyof typeof import("./src/routes/desk/sent-print/[id]/[letter]")>>>;
+      $$route?: undefined;
+    },
+    {
+      path: "/desk/sent-print/:id/";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/sent-print/[id]/index"), Extract<"default", keyof typeof import("./src/routes/desk/sent-print/[id]/index")>>>;
       $$route?: undefined;
     }
   ];
@@ -458,10 +484,26 @@ declare module "virtual:file-routes" {
       children?: undefined;
     },
     {
+      path: "/desk/sent-print/:id/";
+      id: "/desk/sent-print/:id/";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/sent-print/[id]/index"), Extract<"default", keyof typeof import("./src/routes/desk/sent-print/[id]/index")>>>;
+      $$route?: undefined;
+      children?: undefined;
+    },
+    {
       path: "/desk/cover-letter-print/:id";
       id: "/desk/cover-letter-print/:id";
       page: true;
       $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/cover-letter-print/[id]"), Extract<"default", keyof typeof import("./src/routes/desk/cover-letter-print/[id]")>>>;
+      $$route?: undefined;
+      children?: undefined;
+    },
+    {
+      path: "/desk/sent-print/:id/:letter";
+      id: "/desk/sent-print/:id/:letter";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/sent-print/[id]/[letter]"), Extract<"default", keyof typeof import("./src/routes/desk/sent-print/[id]/[letter]")>>>;
       $$route?: undefined;
       children?: undefined;
     }

@@ -6,9 +6,13 @@ import {
 } from "../../../../data/applications";
 import type { Application, ApplicationRecord } from "../../../../data/applications";
 import { For, Show, createMemo, createSignal, snapshot } from "solid-js";
-import { IconPlus, IconTrash } from "../../../../components/icons";
+import { IconPlus, IconSend, IconTrash } from "../../../../components/icons";
 import { applicationName, statusTone, today } from "../../../../lib/application";
-import { deleteDeskApplication, saveDeskApplication } from "../../../../lib/desk/applications";
+import {
+  deleteDeskApplication,
+  markDeskApplicationSent,
+  saveDeskApplication,
+} from "../../../../lib/desk/applications";
 import { getDeskApplications, getDeskCvs } from "../../../../lib/desk/queries";
 import { useNavigate, useParams } from "@solidjs/router";
 import { DeskFormSection } from "../../../../components/desk/DeskFormSection";
@@ -16,7 +20,12 @@ import { DeskMenu } from "../../../../components/desk/DeskMenu";
 import { DeskMeta } from "../../../../components/desk/DeskMeta";
 import { DeskSaveBar } from "../../../../components/desk/DeskSaveBar";
 import type { RouteDefinition } from "@solidjs/router";
-import { deskCvPdfPath } from "../../../../data/endpoints";
+import {
+  deskCvPdfPath,
+  deskSentCvPdfPath,
+  deskSentLetterPdfPath,
+} from "../../../../data/endpoints";
+import { formatRelative } from "../../../../lib/format";
 import { paths } from "../../../../router";
 import styles from "../../../../components/desk/page-applications-id.module.css";
 import { useDeskRequest } from "../../../../lib/desk/request";
@@ -128,6 +137,24 @@ export default function ApplicationEditor() {
   async function save(event: SubmitEvent) {
     event.preventDefault();
     await request.run(() => saveDeskApplication(snapshot(form), { create: false }));
+  }
+
+  /** Freezes the CV and letters as they print now; unsaved changes would be left out. */
+  async function markSent() {
+    if (dirty()) {
+      alert("Save or discard your changes first.");
+
+      return;
+    }
+
+    if (
+      stored().sent !== null &&
+      !confirm("Replace the copy kept when you sent it with how it prints now?")
+    ) {
+      return;
+    }
+
+    await request.run(() => markDeskApplicationSent(params.id));
   }
 
   async function remove() {
@@ -516,6 +543,67 @@ export default function ApplicationEditor() {
               New letter
             </a>
           </div>
+        </DeskFormSection>
+
+        <DeskFormSection
+          title="sent"
+          description="The CV and letters as they printed when you sent them."
+          single
+        >
+          <Show
+            when={stored().sent}
+            fallback={
+              <p class={styles.none}>
+                Not marked as sent. Marking it keeps a copy of the CV and letters as they print now,
+                whatever changes later.
+              </p>
+            }
+          >
+            {(sent) => (
+              <Show
+                when={sent().sentAt !== ""}
+                fallback={
+                  <p class={styles.none}>
+                    The stored copy no longer fits what the desk renders. Mark it as sent again to
+                    keep a new one.
+                  </p>
+                }
+              >
+                <p>Sent {formatRelative(sent().sentAt)}.</p>
+                <ul class={styles.letters}>
+                  <Show when={sent().hasCv}>
+                    <li>
+                      <a href={deskSentCvPdfPath(params.id)} class="text-link" target="_blank">
+                        CV as sent
+                      </a>
+                    </li>
+                  </Show>
+                  <For each={sent().letters}>
+                    {(letter) => (
+                      <li>
+                        <a
+                          href={deskSentLetterPdfPath(params.id, letter.id)}
+                          class="text-link"
+                          target="_blank"
+                        >
+                          {letter.label} as sent
+                        </a>
+                      </li>
+                    )}
+                  </For>
+                </ul>
+              </Show>
+            )}
+          </Show>
+          <button
+            type="button"
+            class={["button button--outline", styles["add-button"]]}
+            disabled={request.busy()}
+            onClick={() => void markSent()}
+          >
+            <IconSend size={16} />
+            {stored().sent === null ? "Mark as sent" : "Mark as sent again"}
+          </button>
         </DeskFormSection>
       </div>
 

@@ -24,6 +24,16 @@ export function deskCvPdfPath(id: string): string {
   return `/api/desk/cv/${encodeURIComponent(id)}`;
 }
 
+/** The CV an application sent, as a PDF of how it printed then. */
+export function deskSentCvPdfPath(id: string): string {
+  return `/api/desk/applications/${encodeURIComponent(id)}/sent-cv`;
+}
+
+/** A cover letter an application sent, as a PDF of how it printed then. */
+export function deskSentLetterPdfPath(id: string, letter: string): string {
+  return `/api/desk/applications/${encodeURIComponent(id)}/sent-letters/${encodeURIComponent(letter)}`;
+}
+
 /** A cover letter as a PDF, for the desk. */
 export function deskLetterPdfPath(id: string): string {
   return `/api/desk/cover-letters/${encodeURIComponent(id)}/pdf`;

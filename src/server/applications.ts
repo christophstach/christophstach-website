@@ -1,8 +1,9 @@
 import "server-only";
-import type { Application, ApplicationRecord } from "../data/applications";
+import type { Application, ApplicationRecord, SentSummary } from "../data/applications";
 import { applications, coverLetters } from "../../server/db/schema";
 import { asc, desc, eq } from "drizzle-orm";
 import { HttpError } from "./http";
+import { readSentCopy } from "../data/sent-copy";
 import { requireLinkedCv } from "./cvs";
 import { useDb } from "./db";
 
@@ -32,6 +33,23 @@ function notFound(id: string) {
   return new HttpError(404, `No application "${id}".`);
 }
 
+/** What the desk shows of a stored copy; null if there is none. */
+function sentSummary(value: unknown): SentSummary | null {
+  if (value === null) {
+    return null;
+  }
+
+  const copy = readSentCopy(value);
+
+  return copy === undefined
+    ? { sentAt: "", hasCv: false, letters: [] }
+    : {
+        sentAt: copy.sentAt,
+        hasCv: copy.cv !== null,
+        letters: copy.letters.map(({ id, label }) => ({ id, label })),
+      };
+}
+
 /** All applications, newest first, each with its cover letters. */
 async function listApplications(): Promise<ApplicationRecord[]> {
   const [rows, letters] = await Promise.all([
@@ -51,6 +69,7 @@ async function listApplications(): Promise<ApplicationRecord[]> {
       letters: letters
         .filter((letter) => letter.applicationId === row.id)
         .map(({ id, label }) => ({ id, label })),
+      sent: sentSummary(row.sent),
       updatedAt: row.updatedAt.toISOString(),
     }),
   );

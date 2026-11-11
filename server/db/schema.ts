@@ -210,6 +210,11 @@ const applications = pgTable("applications", {
     .notNull()
     .default(sql`'[]'::jsonb`),
   note: text().notNull().default(""),
+  /**
+   * The CV and cover letters as they printed when it was marked as sent
+   * (SentCopy, src/data/sent-copy.ts); null until then. Parsed when read.
+   */
+  sent: jsonb(),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
