@@ -1,5 +1,11 @@
-/* A searchable, filterable, sortable list in a desk panel. On phones each row
+/* A searchable, filterable, sortable list in a desk panel. When it is narrow each row
    stacks, every value under its column's name. */
+
+/* The table stacks by its own width, not the screen's: a panel beside the
+   sidebar can be narrow on a wide screen. */
+.table {
+  container: desk-table / inline-size;
+}
 
 .table__search {
   flex: 1 1 14rem;
@@ -272,7 +278,7 @@
   font-size: var(--text-xs);
 }
 
-@media (max-width: 40rem) {
+@container desk-table (max-width: 56rem) {
   .table__controls .table__sort-select {
     display: grid;
   }
