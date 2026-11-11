@@ -64,10 +64,10 @@ interface SentSummary {
   letters: { id: string; label: string }[];
 }
 
-/** An application as the desk lists it, with its letters. */
+/** An application as the desk lists it, with its letter. */
 interface ApplicationRecord extends Application {
-  /** The ids and names of its cover letters, oldest first. */
-  letters: { id: string; label: string }[];
+  /** Its cover letter, at most one; null if it has none. */
+  letter: { id: string; label: string } | null;
   /** What it sent; null until it was marked as sent. */
   sent: SentSummary | null;
   /** ISO timestamp of the last save. */

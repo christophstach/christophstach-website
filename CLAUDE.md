@@ -176,12 +176,13 @@ typing; it asks before leaving with unsaved changes. Change store arrays in plac
 at `/desk/applications/<id>`): the job, its status and next step, contacts and history (jsonb
 lists, ids unique within the application), and the CV sent with it. Status and source are the
 fixed lists in `src/data/applications.ts`; `src/lib/application.ts` says when a next step is due.
-Deleting an application deletes its cover letters. "Mark as sent" freezes the CV and letters
-as they print then into `applications.sent` (`src/server/sent-copies.ts`); it's read through
-the zod schema in `src/data/sent-copy.ts`, since the renderers may change after it was stored,
-and printed from `/desk/sent-print/<id>` and `/desk/sent-print/<id>/<letter>`.
+An application has at most one cover letter (unique `cover_letters.application_id`), and
+deleting it deletes the letter. "Mark as sent" freezes the CV and letter as they print then
+into `applications.sent` (`src/server/sent-copies.ts`; the copy keeps a list of letters, at most
+one); it's read through the zod schema in `src/data/sent-copy.ts`, since the renderers may
+change after it was stored, and printed from `/desk/sent-print/<id>` and `/desk/sent-print/<id>/<letter>`.
 
-**Cover letters** are private to the desk, each belonging to an application (`cover_letters`,
+**Cover letters** are private to the desk, each the one letter of an application (`cover_letters`,
 `src/server/cover-letters.ts`, edited at `/desk/cover-letters/<id>`). Name and contact come
 from the profile, the role under the name from the application's CV or else the profile; the
 job (the subject's default wording names it) is the application's too.

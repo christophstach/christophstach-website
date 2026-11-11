@@ -227,11 +227,13 @@ const coverLetters = pgTable("cover_letters", {
   /** URL slug, e.g. /desk/cover-letters/acme-frontend. */
   id: text().primaryKey(),
   /**
-   * The application it belongs to: its job and its CV, whose role prints under
-   * the name. Deleting the application deletes the letter.
+   * The application it belongs to, which has at most this one letter: its job
+   * and its CV, whose role prints under the name. Deleting the application
+   * deletes the letter.
    */
   applicationId: text()
     .notNull()
+    .unique()
     .references(() => applications.id, { onDelete: "cascade", onUpdate: "cascade" }),
   /** Desk only: how the desk lists it. Never printed. */
   label: text().notNull(),

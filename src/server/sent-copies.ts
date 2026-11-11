@@ -1,6 +1,6 @@
 import "server-only";
 import { applications, coverLetters } from "../../server/db/schema";
-import { asc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { printStoredCv, requireCv } from "./cvs";
 import { HttpError } from "./http";
 import type { SentCopy } from "../data/sent-copy";
@@ -27,7 +27,7 @@ function freeEventId(events: { id: string }[]): string {
 }
 
 /**
- * Marks an application as sent: freezes its CV and cover letters as they
+ * Marks an application as sent: freezes its CV and cover letter as they
  * print now, moves a not-yet-sent one to "applied" (dated today unless it
  * has a date) and notes it in the history. Marking it again replaces the copy.
  */
@@ -39,11 +39,11 @@ async function markSent(id: string) {
   }
 
   const cv = application.cvId === "" ? undefined : await requireCv(application.cvId);
+  // At most one; kept as a list in the copy.
   const letters = await useDb()
     .select({ id: coverLetters.id, label: coverLetters.label })
     .from(coverLetters)
-    .where(eq(coverLetters.applicationId, id))
-    .orderBy(asc(coverLetters.createdAt), asc(coverLetters.id));
+    .where(eq(coverLetters.applicationId, id));
   const copy: SentCopy = {
     sentAt: new Date().toISOString(),
     cv: cv === undefined ? null : await printStoredCv(cv),
@@ -53,11 +53,7 @@ async function markSent(id: string) {
   };
   const sentWith = [
     cv === undefined ? "" : `the CV "${cv.label}"`,
-    letters.length === 0
-      ? ""
-      : letters.length === 1
-        ? "1 cover letter"
-        : `${letters.length} cover letters`,
+    letters.length === 0 ? "" : "its cover letter",
   ].filter((part) => part !== "");
   const today = todayUtc();
 

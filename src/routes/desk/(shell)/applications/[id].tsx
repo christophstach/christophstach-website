@@ -158,13 +158,9 @@ export default function ApplicationEditor() {
   }
 
   async function remove() {
-    const letters = stored().letters.length;
-    const withLetters =
-      letters === 0
-        ? ""
-        : ` and its ${letters === 1 ? "cover letter" : `${letters} cover letters`}`;
+    const withLetter = stored().letter === null ? "" : " and its cover letter";
 
-    if (!confirm(`Delete the application "${applicationName(saved())}"${withLetters}?`)) {
+    if (!confirm(`Delete the application "${applicationName(saved())}"${withLetter}?`)) {
       return;
     }
 
@@ -518,43 +514,41 @@ export default function ApplicationEditor() {
             </span>
           </label>
           <div class="field">
-            <span class="field__label">cover letters</span>
+            <span class="field__label">cover letter</span>
             <Show
-              when={stored().letters.length > 0}
-              fallback={<p class={styles.none}>No cover letter.</p>}
+              when={stored().letter}
+              fallback={
+                <>
+                  <p class={styles.none}>No cover letter.</p>
+                  <a
+                    href={paths.desk["cover-letters"]({ new: "1", application: params.id })}
+                    class={["button button--outline", styles["add-button"]]}
+                  >
+                    <IconPlus size={16} />
+                    Write a letter
+                  </a>
+                </>
+              }
             >
-              <ul class={styles.letters}>
-                <For each={stored().letters}>
-                  {(letter) => (
-                    <li>
-                      <a href={paths.desk["cover-letters"](letter.id)} class="text-link">
-                        {letter.label}
-                      </a>
-                    </li>
-                  )}
-                </For>
-              </ul>
+              {(letter) => (
+                <a href={paths.desk["cover-letters"](letter().id)} class="text-link">
+                  {letter().label}
+                </a>
+              )}
             </Show>
-            <a
-              href={paths.desk["cover-letters"]({ new: "1", application: params.id })}
-              class={["button button--outline", styles["add-button"]]}
-            >
-              <IconPlus size={16} />
-              New letter
-            </a>
           </div>
         </DeskFormSection>
 
         <DeskFormSection
           title="sent"
-          description="The CV and letters as they printed when you sent them."
+          description="The CV and letter as they printed when you sent them."
           single
         >
           <Show
             when={stored().sent}
             fallback={
               <p class={styles.none}>
-                Not marked as sent. Marking it keeps a copy of the CV and letters as they print now,
+                Not marked as sent. Marking it keeps a copy of the CV and letter as they print now,
                 whatever changes later.
               </p>
             }

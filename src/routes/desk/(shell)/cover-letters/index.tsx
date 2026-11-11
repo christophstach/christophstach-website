@@ -135,12 +135,14 @@ interface CreateLetterProps {
 function CreateLetter(props: CreateLetterProps) {
   const navigate = useNavigate();
   const request = useDeskRequest();
+  // An application has at most one letter: only those without one can take it.
+  const open = () => props.applications.filter((candidate) => candidate.letter === null);
   // Follows the letter to duplicate and the application asked for.
   const [form, setForm] = createStore<CreateForm>(
     () => ({
       id: "",
       applicationId:
-        props.applicationId ?? props.source?.applicationId ?? props.applications[0]?.id ?? "",
+        open().find((candidate) => candidate.id === props.applicationId)?.id ?? open()[0]?.id ?? "",
       language: props.source?.language ?? "en",
     }),
     { id: "", applicationId: "", language: "en" },
@@ -149,7 +151,7 @@ function CreateLetter(props: CreateLetterProps) {
     props.applications.find((candidate) => candidate.id === form.applicationId);
   const jobTitle = (applicationId: string) =>
     props.applications.find((candidate) => candidate.id === applicationId)?.jobTitle ?? "";
-  // The application's id, or with the language when a letter has it already.
+  // The application's id, or with the language when another letter has it.
   const generatedId = () => {
     const taken = new Set(props.letters.map((letter) => letter.id));
     const base = form.applicationId;
@@ -191,12 +193,14 @@ function CreateLetter(props: CreateLetterProps) {
       </h2>
 
       <Show
-        when={props.applications.length > 0}
+        when={open().length > 0}
         fallback={
           <p>
-            A letter belongs to an application.{" "}
+            {props.applications.length === 0
+              ? "A letter belongs to an application."
+              : "Every application has its letter already."}{" "}
             <a href={paths.desk.applications({ new: "1" })} class="text-link">
-              Create one first
+              Create an application first
             </a>
             .
           </p>
@@ -216,7 +220,7 @@ function CreateLetter(props: CreateLetterProps) {
                 });
               }}
             >
-              <For each={props.applications}>
+              <For each={open()}>
                 {(candidate) => (
                   <option value={candidate.id} selected={candidate.id === form.applicationId}>
                     {applicationName(candidate)}
@@ -224,7 +228,9 @@ function CreateLetter(props: CreateLetterProps) {
                 )}
               </For>
             </select>
-            <span class="field__hint">Its job and CV: the subject names the job.</span>
+            <span class="field__hint">
+              One without a letter. Its job and CV: the subject names the job.
+            </span>
           </label>
 
           <label class="field">

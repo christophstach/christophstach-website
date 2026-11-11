@@ -50,7 +50,7 @@ function sentSummary(value: unknown): SentSummary | null {
       };
 }
 
-/** All applications, newest first, each with its cover letters. */
+/** All applications, newest first, each with its cover letter. */
 async function listApplications(): Promise<ApplicationRecord[]> {
   const [rows, letters] = await Promise.all([
     useDb().select().from(applications).orderBy(desc(applications.createdAt), asc(applications.id)),
@@ -60,15 +60,15 @@ async function listApplications(): Promise<ApplicationRecord[]> {
         label: coverLetters.label,
         applicationId: coverLetters.applicationId,
       })
-      .from(coverLetters)
-      .orderBy(asc(coverLetters.createdAt), asc(coverLetters.id)),
+      .from(coverLetters),
   ]);
 
   return rows.map((row) =>
     Object.assign(toApplication(row), {
-      letters: letters
-        .filter((letter) => letter.applicationId === row.id)
-        .map(({ id, label }) => ({ id, label })),
+      letter:
+        letters
+          .filter((letter) => letter.applicationId === row.id)
+          .map(({ id, label }) => ({ id, label }))[0] ?? null,
       sent: sentSummary(row.sent),
       updatedAt: row.updatedAt.toISOString(),
     }),
@@ -109,7 +109,7 @@ async function saveApplication(application: Application, { create }: { create: b
   }
 }
 
-/** Deletes an application and, with it, its cover letters. */
+/** Deletes an application and, with it, its cover letter. */
 async function deleteApplication(id: string) {
   const deleted = await useDb()
     .delete(applications)

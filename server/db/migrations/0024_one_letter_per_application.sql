@@ -1,0 +1,1 @@
+ALTER TABLE "cover_letters" ADD CONSTRAINT "cover_letters_applicationId_unique" UNIQUE("application_id");

@@ -32,6 +32,11 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
   });
   const linked = () =>
     props.applications.find((application) => application.id === props.form.applicationId);
+  // An application has at most one letter: its own, or one without a letter.
+  const choices = () =>
+    props.applications.filter(
+      (application) => application.letter === null || application.letter.id === props.form.id,
+    );
   const jobTitle = (applicationId: string) =>
     props.applications.find((application) => application.id === applicationId)?.jobTitle ?? "";
 
@@ -68,7 +73,7 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
               reword(props.form.language, event.currentTarget.value);
             }}
           >
-            <For each={props.applications}>
+            <For each={choices()}>
               {(application) => (
                 <option
                   value={application.id}

@@ -1,7 +1,7 @@
 import "server-only";
 import type { CoverLetter, CoverLetterRecord, PrintedCoverLetter } from "../data/cover-letters";
 import { applications, coverLetters } from "../../server/db/schema";
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, ne } from "drizzle-orm";
 import { currentBuild, requireCv } from "./cvs";
 import { HttpError } from "./http";
 import { findApplication } from "./applications";
@@ -72,6 +72,21 @@ function letterColumns(letter: CoverLetter) {
 async function saveCoverLetter(letter: CoverLetter, { create }: { create: boolean }) {
   if ((await findApplication(letter.applicationId)) === undefined) {
     throw new HttpError(400, `No application "${letter.applicationId}".`);
+  }
+
+  // An application has at most one letter.
+  const [other] = await useDb()
+    .select({ id: coverLetters.id })
+    .from(coverLetters)
+    .where(
+      and(eq(coverLetters.applicationId, letter.applicationId), ne(coverLetters.id, letter.id)),
+    );
+
+  if (other !== undefined) {
+    throw new HttpError(
+      409,
+      `Application "${letter.applicationId}" has a cover letter already: "${other.id}".`,
+    );
   }
 
   const written = create
