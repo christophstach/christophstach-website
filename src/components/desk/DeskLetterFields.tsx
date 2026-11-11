@@ -53,9 +53,9 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
         </label>
         <label class="field">
           <span class="field__label">cv variant</span>
+          {/* `selected` on the options: see the variant select in /desk/cv. */}
           <select
             class="input"
-            value={props.form.variantId}
             onChange={(event) => {
               const { value } = event.currentTarget;
 
@@ -64,9 +64,15 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
               });
             }}
           >
-            <option value="">None</option>
+            <option value="" selected={props.form.variantId === ""}>
+              None
+            </option>
             <For each={props.variants}>
-              {(variant) => <option value={variant.id}>{variant.label}</option>}
+              {(variant) => (
+                <option value={variant.id} selected={variant.id === props.form.variantId}>
+                  {variant.label}
+                </option>
+              )}
             </For>
           </select>
           <span class="field__hint">
@@ -126,7 +132,6 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
           <span class="field__label">language</span>
           <select
             class="input"
-            value={props.form.language}
             onChange={(event) => {
               const language = COVER_LETTER_LANGUAGES.find(
                 (option) => option === event.currentTarget.value,
@@ -139,7 +144,9 @@ export function DeskLetterFields(props: DeskLetterFieldsProps) {
           >
             <For each={COVER_LETTER_LANGUAGES}>
               {(language) => (
-                <option value={language}>{COVER_LETTER_WORDING[language].name}</option>
+                <option value={language} selected={language === props.form.language}>
+                  {COVER_LETTER_WORDING[language].name}
+                </option>
               )}
             </For>
           </select>

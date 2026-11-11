@@ -81,9 +81,11 @@ function CreateVariant(props: { variants: DeskVariant[]; from: string }) {
 
         <label class="field">
           <span class="field__label">based on</span>
+          {/* `selected` on the options, not `value` on the select: the select's
+              value is set before its options exist, so it would fall back to
+              the first option while the form still holds `from()`. */}
           <select
             class="input"
-            value={from()}
             onChange={(event) => {
               const { value } = event.currentTarget;
 
@@ -93,7 +95,11 @@ function CreateVariant(props: { variants: DeskVariant[]; from: string }) {
             }}
           >
             <For each={props.variants}>
-              {(variant) => <option value={variant.id}>{variant.label}</option>}
+              {(variant) => (
+                <option value={variant.id} selected={variant.id === from()}>
+                  {variant.label}
+                </option>
+              )}
             </For>
           </select>
         </label>

@@ -116,9 +116,9 @@ function CreateLetter(props: { source: CoverLetter | undefined }) {
 
         <label class="field">
           <span class="field__label">language</span>
+          {/* `selected` on the options: see the variant select in /desk/cv. */}
           <select
             class="input"
-            value={form.language}
             onChange={(event) => {
               const language = COVER_LETTER_LANGUAGES.find(
                 (option) => option === event.currentTarget.value,
@@ -133,7 +133,9 @@ function CreateLetter(props: { source: CoverLetter | undefined }) {
           >
             <For each={COVER_LETTER_LANGUAGES}>
               {(language) => (
-                <option value={language}>{COVER_LETTER_WORDING[language].name}</option>
+                <option value={language} selected={language === form.language}>
+                  {COVER_LETTER_WORDING[language].name}
+                </option>
               )}
             </For>
           </select>
