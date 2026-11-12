@@ -26,6 +26,11 @@ interface DeskTableColumn<T> {
   align?: "start" | "end" | undefined;
   /** The column that names the row: it holds the row's link and has no label on phones. */
   primary?: boolean | undefined;
+  /**
+   * A small control at the row's start, e.g. a star: its header is for screen
+   * readers only, and on phones it sits in the row's top corner. It doesn't sort.
+   */
+  control?: boolean | undefined;
 }
 
 /** One choice out of a few values, e.g. a letter's language. */
@@ -544,10 +549,15 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
                       {
                         [styles["table__head--end"] ?? ""]: column().align === "end",
                         [styles["table__head--sorted"] ?? ""]: sort()?.column === column().id,
+                        [styles["table__head--control"] ?? ""]: column().control === true,
                       },
                     ]}
                   >
-                    <Show when={column().sort} fallback={column().header}>
+                    {/* A control's header is only its aria-label. */}
+                    <Show
+                      when={column().control === true ? undefined : column().sort}
+                      fallback={column().control === true ? null : column().header}
+                    >
                       <button
                         type="button"
                         class={styles.table__sort}
@@ -641,10 +651,15 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
                   <For each={props.columns} keyed={(column) => column.id}>
                     {(column) => (
                       <td
-                        data-label={column().primary === true ? undefined : column().header}
+                        data-label={
+                          column().primary === true || column().control === true
+                            ? undefined
+                            : column().header
+                        }
                         class={[
                           styles.table__cell,
                           {
+                            [styles["table__cell--control"] ?? ""]: column().control === true,
                             [styles["table__cell--primary"] ?? ""]: column().primary === true,
                             [styles["table__cell--end"] ?? ""]: column().align === "end",
                           },

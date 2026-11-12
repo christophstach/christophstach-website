@@ -124,14 +124,17 @@
   font-size: var(--text-xs);
 }
 
-/* The favourite star: above the row's link, which covers the rest of the row. */
+/* The favourite star: above the row's link, which covers the rest of the row.
+   As tall as the tick beside it, so the two line up; its click area is larger. */
 .star {
   position: relative;
   z-index: 1;
   display: inline-grid;
   place-items: center;
-  inline-size: 1.75rem;
-  block-size: 1.75rem;
+  inline-size: 1rem;
+  block-size: 1rem;
+  padding: 0;
+  vertical-align: top;
   color: var(--color-text-muted);
   transition: color var(--transition-fast);
 }
@@ -152,4 +155,10 @@
 
 .star--on path {
   fill: currentColor;
+}
+
+.star::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--space-2) * -1);
 }

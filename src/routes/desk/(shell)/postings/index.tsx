@@ -64,6 +64,7 @@ const columns = (duplicates: Duplicates, star: Star): DeskTableColumn<JobPosting
   {
     id: "favourite",
     header: "favourite",
+    control: true,
     cell: (posting) => (
       <button
         type="button"
@@ -76,7 +77,6 @@ const columns = (duplicates: Duplicates, star: Star): DeskTableColumn<JobPosting
         <IconStar size={16} />
       </button>
     ),
-    sort: (posting) => (posting.status === "favourite" ? 0 : 1),
   },
   {
     id: "posting",
