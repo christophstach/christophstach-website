@@ -580,9 +580,12 @@
     padding-inline-end: var(--space-10);
   }
 
+  /* Centred on the title's first line, like the tick beside a table row. */
   .table__cell--check {
     position: absolute;
-    inset-block-start: var(--space-4);
+    inset-block-start: calc(
+      var(--space-4) + (var(--text-base) * var(--leading-relaxed) - 1rem) / 2
+    );
     inset-inline-end: var(--space-4);
     inline-size: auto;
     padding: 0;
@@ -605,7 +608,9 @@
 
   .table__cell--control {
     position: absolute;
-    inset-block-start: var(--space-4);
+    inset-block-start: calc(
+      var(--space-4) + (var(--text-base) * var(--leading-relaxed) - 1rem) / 2
+    );
     inset-inline-end: var(--space-4);
     inline-size: auto;
     padding: 0;
