@@ -19,6 +19,11 @@ export const CV_WEBSITE_API_PATH = "/api/cv-website";
 /** The scheduled page check, called by Vercel Cron with CRON_SECRET. */
 export const PAGE_CHECKS_API_PATH = "/api/desk/page-checks";
 
+/** Where a collector is sent job postings, with its secret (POST). */
+export function collectorEndpointPath(id: string): string {
+  return `/api/collectors/${encodeURIComponent(id)}`;
+}
+
 /** A private CV as a PDF, for the desk. */
 export function deskCvPdfPath(id: string): string {
   return `/api/desk/cv/${encodeURIComponent(id)}`;
