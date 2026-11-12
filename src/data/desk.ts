@@ -1,5 +1,6 @@
 import {
   IconBriefcase,
+  IconBuilding,
   IconFileCv,
   IconFolders,
   IconId,
@@ -71,6 +72,7 @@ export const deskSections: DeskSection[] = [
     icon: IconSend,
     pages: [
       { to: paths.desk.postings(), label: "postings", icon: IconInbox },
+      { to: paths.desk.companies(), label: "companies", icon: IconBuilding },
       { to: paths.desk["cover-letters"](), label: "cover-letters", icon: IconMail },
       { to: paths.desk.collectors(), label: "collectors", icon: IconRss },
     ],

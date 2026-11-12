@@ -74,6 +74,14 @@ export const getDeskCollectors = query(async () => {
   return desk.deskCollectors();
 }, "desk-collectors");
 
+export const getDeskCompanies = query(async () => {
+  "use server";
+
+  const desk = await import("../../server/desk-read");
+
+  return desk.deskCompanies();
+}, "desk-companies");
+
 export const getDeskUser = query(async () => {
   "use server";
 

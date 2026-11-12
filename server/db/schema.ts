@@ -246,6 +246,46 @@ const jobPostings = pgTable(
   (table) => [unique().on(table.source, table.externalId)],
 );
 
+/**
+ * A company the postings come from, described once for all of them. Postings
+ * find theirs by name: `key` is the name without legal form or punctuation.
+ */
+const companies = pgTable("companies", {
+  /** URL slug, e.g. /desk/companies/example-labs. */
+  id: text().primaryKey(),
+  name: text().notNull(),
+  /** companyKey(name): how postings match it. */
+  key: text().notNull().unique(),
+  field: text({
+    enum: [
+      "",
+      "ai",
+      "devtools",
+      "data",
+      "security",
+      "fintech",
+      "health",
+      "commerce",
+      "mobility",
+      "enterprise",
+      "consumer",
+      "agency",
+      "other",
+    ],
+  })
+    .notNull()
+    .default(""),
+  /** ISO 3166 country code; empty if unknown. */
+  headquarters: text().notNull().default(""),
+  funding: text({ enum: ["", "vc", "public", "private", "subsidiary"] })
+    .notNull()
+    .default(""),
+  website: text().notNull().default(""),
+  note: text().notNull().default(""),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
 const applications = pgTable("applications", {
   /** URL slug, e.g. /desk/applications/acme-frontend. */
   id: text().primaryKey(),
@@ -359,6 +399,7 @@ const cvEntryPicksRelations = relations(cvEntryPicks, ({ one }) => ({
 export {
   applications,
   collectors,
+  companies,
   coverLetters,
   cvEntries,
   cvProfile,

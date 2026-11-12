@@ -79,11 +79,19 @@ function words(text: string): string {
 }
 
 /**
+ * A company's name for matching: without its legal form, accents or
+ * punctuation, so "Example Labs GmbH" and "Example Labs" are one company.
+ */
+function companyKey(name: string): string {
+  return words(name.trim().replace(LEGAL_FORM, ""));
+}
+
+/**
  * What a posting is, for spotting the same job twice: its company and its
  * title, without gender tags or legal forms. Empty if either is missing.
  */
 function jobKey(posting: Pick<JobPosting, "company" | "title">): string {
-  const company = words(posting.company.trim().replace(LEGAL_FORM, ""));
+  const company = companyKey(posting.company);
   const title = words(posting.title.replaceAll(GENDER_TAG, " "));
 
   return company === "" || title === "" ? "" : `${company}|${title}`;
@@ -162,6 +170,7 @@ function workplaceLabel(workplace: Workplace | ""): string {
 
 export {
   SALARY_BANDS,
+  companyKey,
   workplaceLabel,
   findDuplicates,
   formatSalary,
