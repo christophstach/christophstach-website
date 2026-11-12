@@ -175,11 +175,11 @@ async function deletePosting(id: string) {
   }
 }
 
-/** Puts a posting back among the interesting ones once its application is gone. */
+/** Puts a posting back among the favourites once its application is gone. */
 async function reopenPosting(id: string) {
   await useDb()
     .update(jobPostings)
-    .set({ status: "interesting", updatedAt: new Date() })
+    .set({ status: "favourite", updatedAt: new Date() })
     .where(and(eq(jobPostings.id, id), eq(jobPostings.status, "applied")));
 }
 

@@ -235,7 +235,7 @@ const jobPostings = pgTable(
     salaryMax: integer(),
     /** ISO 4217 code, e.g. EUR; empty if no salary is stated. */
     salaryCurrency: text().notNull().default(""),
-    status: text({ enum: ["new", "interesting", "dismissed", "applied"] })
+    status: text({ enum: ["new", "favourite", "dismissed", "applied"] })
       .notNull()
       .default("new"),
     /** What it was read from (a mail's text, a page's JSON-LD), to read again later. */

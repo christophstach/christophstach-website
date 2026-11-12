@@ -130,3 +130,33 @@
   font-family: var(--font-mono);
   font-size: var(--text-xs);
 }
+
+/* The favourite star: above the row's link, which covers the rest of the row. */
+.star {
+  position: relative;
+  z-index: 1;
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  color: var(--color-text-muted);
+  transition: color var(--transition-fast);
+}
+
+.star:hover:not(:disabled),
+.star:focus-visible {
+  color: var(--color-accent);
+}
+
+.star:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.star--on {
+  color: var(--color-accent);
+}
+
+.star--on path {
+  fill: currentColor;
+}

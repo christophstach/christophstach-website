@@ -2,7 +2,7 @@
 type PostingSource = "linkedin" | "web";
 
 /** Where a posting stands in the inbox. */
-type PostingStatus = "new" | "interesting" | "dismissed" | "applied";
+type PostingStatus = "new" | "favourite" | "dismissed" | "applied";
 
 /** Where the work is done; empty if the ad does not say. */
 type Workplace = "remote" | "hybrid" | "onsite";
@@ -80,11 +80,11 @@ interface Collector {
   postings: number;
 }
 
-const POSTING_STATUSES: readonly PostingStatus[] = ["new", "interesting", "dismissed", "applied"];
+const POSTING_STATUSES: readonly PostingStatus[] = ["new", "favourite", "dismissed", "applied"];
 
 const POSTING_STATUS_LABELS: Record<PostingStatus, string> = {
   new: "New",
-  interesting: "Interesting",
+  favourite: "Favourite",
   dismissed: "Dismissed",
   applied: "Applied",
 };
