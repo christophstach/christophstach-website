@@ -5,6 +5,7 @@ import {
   IconChevronRight,
   IconChevronUp,
   IconGripVertical,
+  IconX,
 } from "../icons";
 import type { JSX } from "@solidjs/web";
 import styles from "./DeskTable.module.css";
@@ -33,13 +34,34 @@ interface DeskTableColumn<T> {
   control?: boolean | undefined;
 }
 
-/** One choice out of a few values, e.g. a letter's language. */
+/**
+ * Narrows the rows to some values, e.g. a letter's language. Several values of
+ * one filter can be picked; a row passes if one of its values is picked.
+ */
 interface DeskTableFilter<T> {
   id: string;
   label: string;
   options: readonly { value: string; label: string }[];
-  value: (row: T) => string;
+  /** The row's value, or several (a YC company is also venture-backed). */
+  value: (row: T) => string | readonly string[];
+  /** Rarely needed: it waits behind "More filters" until it's used. */
+  more?: boolean | undefined;
 }
+
+/** The main split of the rows, as tabs above the filters, e.g. a posting's status. */
+interface DeskTableTabs<T> {
+  /** Names the tabs for screen readers, e.g. "status". */
+  label: string;
+  options: readonly { value: string; label: string }[];
+  value: (row: T) => string;
+  /** The tab shown first; the first option if unset. */
+  initial?: string | undefined;
+  /** Adds a last tab with every row, named so, e.g. "All". */
+  all?: string | undefined;
+}
+
+/** The tab value that shows every row. */
+const ALL_TAB = "\u0000all";
 
 type SortDirection = "asc" | "desc";
 
@@ -54,6 +76,7 @@ interface DeskTableProps<T> {
   rows: readonly T[];
   columns: readonly DeskTableColumn<T>[];
   filters?: readonly DeskTableFilter<T>[] | undefined;
+  tabs?: DeskTableTabs<T> | undefined;
   /** A stable id for each row. */
   rowKey: (row: T) => string;
   /** Makes each whole row a link. */
@@ -114,27 +137,123 @@ function compare(a: string | number, b: string | number, direction: SortDirectio
   return direction === "asc" ? order : -order;
 }
 
-/** One value of a filter, a segment of its strip, with how many rows it leaves. */
-function FilterOption(props: {
-  name: string;
+/** A filter's values as a list. */
+function valuesOf<T>(filter: DeskTableFilter<T>, row: T): readonly string[] {
+  const value = filter.value(row);
+
+  return typeof value === "string" ? [value] : value;
+}
+
+/**
+ * A filter as a button in the bar: it opens a list of its values to tick, each
+ * with how many rows it would leave. The button says how many are ticked.
+ */
+function FilterButton(props: {
   label: string;
-  count: number;
-  checked: boolean;
-  onPick: () => void;
+  options: readonly { value: string; label: string }[];
+  counts: ReadonlyMap<string, number>;
+  picked: readonly string[];
+  onToggle: (value: string) => void;
+  onClear: () => void;
 }) {
+  const id = createUniqueId();
+  const [position, setPosition] = createSignal({
+    top: "0px",
+    left: "0px",
+    "max-block-size": "none",
+  });
+  let button: HTMLButtonElement | undefined;
+  let list: HTMLDivElement | undefined;
+
+  // The list sits in the top layer and closes on outside clicks and Escape by
+  // itself; it only needs placing by its button, inside the window: below it,
+  // or above when it fits there better.
+  function place(event: ToggleEvent) {
+    const rect = button?.getBoundingClientRect();
+
+    if (event.newState === "open" && rect !== undefined) {
+      const width = list?.offsetWidth ?? 0;
+      // Its own height, up to the 24rem the stylesheet allows.
+      const height = Math.min(list?.scrollHeight ?? 0, 24 * 16);
+      const below = window.innerHeight - rect.bottom - 14;
+      const above = rect.top - 14;
+      const down = height <= below || below >= above;
+      const room = down ? below : above;
+
+      setPosition({
+        top: `${down ? rect.bottom + 6 : rect.top - 6 - Math.min(height, room)}px`,
+        left: `${Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))}px`,
+        "max-block-size": `min(24rem, ${Math.max(room, 120)}px)`,
+      });
+    }
+  }
+
   return (
-    <label
-      class={[styles.table__option, { [styles["table__option--none"] ?? ""]: props.count === 0 }]}
-    >
-      <input
-        type="radio"
-        name={props.name}
-        checked={props.checked}
-        onChange={() => props.onPick()}
-      />
-      <span>{props.label}</span>
-      <span class={styles.table__count}>{props.count}</span>
-    </label>
+    <>
+      <button
+        ref={(element) => {
+          button = element;
+        }}
+        type="button"
+        class={[
+          styles["table__filter-button"],
+          { [styles["table__filter-button--on"] ?? ""]: props.picked.length > 0 },
+        ]}
+        popovertarget={id}
+        aria-haspopup="true"
+      >
+        {props.label}
+        <Show when={props.picked.length > 0}>
+          <span class={styles["table__filter-count"]}>{props.picked.length}</span>
+        </Show>
+        <IconChevronDown size={14} />
+      </button>
+
+      <div
+        id={id}
+        ref={(element) => {
+          list = element;
+        }}
+        popover
+        class={styles.table__popover}
+        style={position()}
+        onToggle={place}
+      >
+        <fieldset class={styles.table__choices}>
+          <legend class={styles["table__choices-legend"]}>{props.label}</legend>
+          <For each={props.options} keyed={(option) => option.value}>
+            {(option) => (
+              <label
+                class={[
+                  styles.table__choice,
+                  {
+                    [styles["table__choice--none"] ?? ""]:
+                      (props.counts.get(option().value) ?? 0) === 0,
+                  },
+                ]}
+              >
+                <input
+                  type="checkbox"
+                  checked={props.picked.includes(option().value)}
+                  onChange={() => props.onToggle(option().value)}
+                />
+                <span>{option().label}</span>
+                <span class={styles.table__count}>{props.counts.get(option().value) ?? 0}</span>
+              </label>
+            )}
+          </For>
+        </fieldset>
+        <Show when={props.picked.length > 0}>
+          <button
+            type="button"
+            class={["text-link", styles["table__choices-clear"]]}
+            onClick={() => props.onClear()}
+          >
+            Clear {props.label}
+          </button>
+        </Show>
+      </div>
+    </>
   );
 }
 
@@ -145,8 +264,13 @@ function FilterOption(props: {
 function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
   const id = createUniqueId();
   const [query, setQuery] = createSignal("");
-  const [picked, setPicked] = createSignal<Readonly<Record<string, string>>>({});
+  // The ticked values of each filter, by filter id; a filter without any is off.
+  const [picked, setPicked] = createSignal<Readonly<Record<string, readonly string[]>>>({});
   const [sort, setSort] = createSignal(untrack(() => props.initialSort));
+  const [tab, setTab] = createSignal(
+    untrack(() => props.tabs?.initial ?? props.tabs?.options[0]?.value ?? ALL_TAB),
+  );
+  const [showMore, setShowMore] = createSignal(false);
 
   const terms = createMemo(() =>
     fold(query())
@@ -173,16 +297,47 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
     return words.every((word) => text.includes(word));
   };
 
-  /** Whether a row passes every chosen filter, leaving out the one named. */
+  /** Whether a row passes every filter that has values ticked, leaving out the one named. */
   const matchesFilters = (row: T, except?: string) =>
     filters().every((filter) => {
-      const value = picked()[filter.id];
+      const values = picked()[filter.id] ?? [];
 
-      return filter.id === except || value === undefined || filter.value(row) === value;
+      return (
+        filter.id === except ||
+        values.length === 0 ||
+        valuesOf(filter, row).some((value) => values.includes(value))
+      );
     });
 
+  const matchesTab = (row: T) =>
+    props.tabs === undefined || tab() === ALL_TAB || props.tabs.value(row) === tab();
+
+  /** The rows of the current tab: what the filters narrow, and the count's total. */
+  const tabRows = createMemo(() => props.rows.filter(matchesTab));
+
+  /** How many rows each tab holds under the current search and filters. */
+  const tabCounts = createMemo(() => {
+    const byValue = new Map<string, number>();
+    const tabs = props.tabs;
+
+    if (tabs === undefined) {
+      return byValue;
+    }
+
+    for (const row of props.rows) {
+      if (matchesSearch(row) && matchesFilters(row)) {
+        const value = tabs.value(row);
+
+        byValue.set(value, (byValue.get(value) ?? 0) + 1);
+        byValue.set(ALL_TAB, (byValue.get(ALL_TAB) ?? 0) + 1);
+      }
+    }
+
+    return byValue;
+  });
+
   const shown = createMemo(() => {
-    const rows = props.rows.filter((row) => matchesSearch(row) && matchesFilters(row));
+    const rows = tabRows().filter((row) => matchesSearch(row) && matchesFilters(row));
     const current = sort();
     const column = props.columns.find((candidate) => candidate.id === current?.column);
 
@@ -195,27 +350,63 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
     return rows.toSorted((a, b) => compare(key(a), key(b), current.direction));
   });
 
-  /** For each filter, how many rows each of its values would leave. */
+  /** For each filter, how many rows of the tab each of its values would leave. */
   const counts = createMemo(() => {
-    const searched = props.rows.filter(matchesSearch);
+    const searched = tabRows().filter(matchesSearch);
 
     return new Map(
       filters().map((filter) => {
-        const rows = searched.filter((row) => matchesFilters(row, filter.id));
         const byValue = new Map<string, number>();
 
-        for (const row of rows) {
-          const value = filter.value(row);
-
-          byValue.set(value, (byValue.get(value) ?? 0) + 1);
+        for (const row of searched) {
+          if (matchesFilters(row, filter.id)) {
+            for (const value of new Set(valuesOf(filter, row))) {
+              byValue.set(value, (byValue.get(value) ?? 0) + 1);
+            }
+          }
         }
 
-        return [filter.id, { all: rows.length, byValue }] as const;
+        return [filter.id, byValue] as const;
       }),
     );
   });
 
-  const narrowed = () => query().trim() !== "" || Object.keys(picked()).length > 0;
+  /** The values that occur in any row: a filter lists only those, so its list stays put. */
+  const present = createMemo(
+    () =>
+      new Map(
+        filters().map((filter) => [
+          filter.id,
+          new Set(props.rows.flatMap((row) => valuesOf(filter, row))),
+        ]),
+      ),
+  );
+
+  /** A filter's options worth listing: the ones some row has, and any ticked. */
+  const optionsOf = (filter: DeskTableFilter<T>) =>
+    filter.options.filter(
+      (option) =>
+        present().get(filter.id)?.has(option.value) === true ||
+        (picked()[filter.id] ?? []).includes(option.value),
+    );
+
+  // A filter that can't tell the rows apart (one value for all) isn't offered.
+  const usable = () => filters().filter((filter) => optionsOf(filter).length > 1);
+  const mainFilters = () => usable().filter((filter) => filter.more !== true);
+  const moreFilters = () => usable().filter((filter) => filter.more === true);
+  const moreInUse = () => moreFilters().some((filter) => (picked()[filter.id] ?? []).length > 0);
+
+  /** Every ticked value, in the filters' order, for the chips under the bar. */
+  const chips = createMemo(() =>
+    filters().flatMap((filter) =>
+      filter.options
+        .filter((option) => (picked()[filter.id] ?? []).includes(option.value))
+        .map((option) => ({ filter, option })),
+    ),
+  );
+
+  const filtering = () => Object.values(picked()).some((values) => values.length > 0);
+  const narrowed = () => query().trim() !== "" || filtering();
   const noun = (count: number) => (count === 1 ? props.noun[0] : props.noun[1]);
 
   // Pages: 1-based. Search, filters and sorting go back to the first page.
@@ -305,13 +496,29 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
     setTicked(new Set<string>());
   }
 
-  function choose(filterId: string, value: string | undefined) {
+  /** Ticks a filter's value, or unticks it. */
+  function toggle(filterId: string, value: string) {
     narrowAgain();
     setPicked((current) => {
-      const rest = Object.fromEntries(Object.entries(current).filter(([key]) => key !== filterId));
+      const values = current[filterId] ?? [];
 
-      return value === undefined ? rest : { ...rest, [filterId]: value };
+      return {
+        ...current,
+        [filterId]: values.includes(value)
+          ? values.filter((other) => other !== value)
+          : [...values, value],
+      };
     });
+  }
+
+  function clearFilter(filterId: string) {
+    narrowAgain();
+    setPicked((current) => ({ ...current, [filterId]: [] }));
+  }
+
+  function showTab(value: string) {
+    narrowAgain();
+    setTab(value);
   }
 
   function sortBy(column: DeskTableColumn<T>) {
@@ -331,7 +538,11 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
 
   // Rows move only in their stored order with all of them shown: in a sorted view
   // a drop would fight the sort, and with rows hidden it is unclear where it lands.
-  const reorderable = () => props.reorder !== undefined && sort() === undefined && !narrowed();
+  const reorderable = () =>
+    props.reorder !== undefined &&
+    sort() === undefined &&
+    !narrowed() &&
+    (props.tabs === undefined || tab() === ALL_TAB);
   const drag = useDragReorder(
     () => shown().map((row) => props.rowKey(row)),
     (ids) => {
@@ -409,35 +620,106 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
         </Show>
       </header>
 
-      <Show when={filters().length > 0 || sortable().length > 0}>
-        <div class={styles.table__controls}>
-          <For each={filters()} keyed={(filter) => filter.id}>
-            {(filter) => (
-              <fieldset class={styles.table__filter}>
-                <legend class={styles.table__legend}>{filter().label}</legend>
-                <div class={styles.table__options}>
-                  <FilterOption
-                    name={`${id}-${filter().id}`}
-                    label="all"
-                    count={counts().get(filter().id)?.all ?? 0}
-                    checked={picked()[filter().id] === undefined}
-                    onPick={() => choose(filter().id, undefined)}
+      <Show when={props.tabs}>
+        {(tabs) => (
+          <div class={styles.table__tabs} role="group" aria-label={tabs().label}>
+            <For
+              each={[
+                ...tabs().options,
+                ...(tabs().all === undefined ? [] : [{ value: ALL_TAB, label: tabs().all ?? "" }]),
+              ]}
+              keyed={(option) => option.value}
+            >
+              {(option) => (
+                <button
+                  type="button"
+                  class={styles.table__tab}
+                  aria-pressed={tab() === option().value ? "true" : "false"}
+                  aria-controls={`${id}-grid`}
+                  onClick={() => showTab(option().value)}
+                >
+                  {option().label}
+                  <span class={styles.table__count}>{tabCounts().get(option().value) ?? 0}</span>
+                </button>
+              )}
+            </For>
+          </div>
+        )}
+      </Show>
+
+      <Show when={usable().length > 0 || sortable().length > 0}>
+        <div
+          class={[
+            styles.table__controls,
+            { [styles["table__controls--sort-only"] ?? ""]: usable().length === 0 },
+          ]}
+        >
+          <Show when={usable().length > 0}>
+            <div class={styles.table__bar}>
+              <For each={mainFilters()} keyed={(filter) => filter.id}>
+                {(filter) => (
+                  <FilterButton
+                    label={filter().label}
+                    options={optionsOf(filter())}
+                    counts={counts().get(filter().id) ?? new Map<string, number>()}
+                    picked={picked()[filter().id] ?? []}
+                    onToggle={(value) => toggle(filter().id, value)}
+                    onClear={() => clearFilter(filter().id)}
                   />
-                  <For each={filter().options} keyed={(option) => option.value}>
-                    {(option) => (
-                      <FilterOption
-                        name={`${id}-${filter().id}`}
-                        label={option().label}
-                        count={counts().get(filter().id)?.byValue.get(option().value) ?? 0}
-                        checked={picked()[filter().id] === option().value}
-                        onPick={() => choose(filter().id, option().value)}
-                      />
-                    )}
-                  </For>
-                </div>
-              </fieldset>
-            )}
-          </For>
+                )}
+              </For>
+              <Show when={showMore() || moreInUse()}>
+                <For each={moreFilters()} keyed={(filter) => filter.id}>
+                  {(filter) => (
+                    <FilterButton
+                      label={filter().label}
+                      options={optionsOf(filter())}
+                      counts={counts().get(filter().id) ?? new Map<string, number>()}
+                      picked={picked()[filter().id] ?? []}
+                      onToggle={(value) => toggle(filter().id, value)}
+                      onClear={() => clearFilter(filter().id)}
+                    />
+                  )}
+                </For>
+              </Show>
+              <Show when={moreFilters().length > 0 && !moreInUse()}>
+                <button
+                  type="button"
+                  class={["text-link", styles["table__more"]]}
+                  aria-expanded={showMore() ? "true" : "false"}
+                  onClick={() => setShowMore((open) => !open)}
+                >
+                  {showMore() ? "Fewer filters" : "More filters"}
+                </button>
+              </Show>
+            </div>
+          </Show>
+
+          <Show when={chips().length > 0}>
+            <ul class={styles.table__chips} aria-label="Active filters">
+              <For each={chips()} keyed={(chip) => `${chip.filter.id}:${chip.option.value}`}>
+                {(chip) => (
+                  <li>
+                    <button
+                      type="button"
+                      class={styles.table__chip}
+                      aria-label={`Remove ${chip().filter.label}: ${chip().option.label}`}
+                      onClick={() => toggle(chip().filter.id, chip().option.value)}
+                    >
+                      <span class={styles["table__chip-filter"]}>{chip().filter.label}</span>
+                      {chip().option.label}
+                      <IconX size={14} />
+                    </button>
+                  </li>
+                )}
+              </For>
+              <li>
+                <button type="button" class="text-link" onClick={clear}>
+                  Clear all
+                </button>
+              </li>
+            </ul>
+          </Show>
 
           {/* Phones have no header row to click, so sorting moves into a select. */}
           <Show when={sortable().length > 0}>
@@ -693,10 +975,12 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
       <Show when={shown().length === 0}>
         <p class="panel__empty">
           <Show when={props.rows.length > 0} fallback={`No ${props.noun[1]} yet.`}>
-            {`No ${props.noun[1]} match. `}
-            <button type="button" class="text-link" onClick={clear}>
-              Clear search and filters
-            </button>
+            <Show when={narrowed()} fallback={`No ${props.noun[1]} here.`}>
+              {`No ${props.noun[1]} match. `}
+              <button type="button" class="text-link" onClick={clear}>
+                Clear search and filters
+              </button>
+            </Show>
           </Show>
         </p>
       </Show>
@@ -707,8 +991,8 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
             {`${pageStart() + 1}–${pageStart() + visible().length} · `}
           </Show>
           {narrowed()
-            ? `${shown().length} of ${props.rows.length} ${noun(props.rows.length)}`
-            : `${props.rows.length} ${noun(props.rows.length)}`}
+            ? `${shown().length} of ${tabRows().length} ${noun(tabRows().length)}`
+            : `${tabRows().length} ${noun(tabRows().length)}`}
         </p>
         <Show when={narrowed() && shown().length > 0}>
           <button type="button" class="text-link" onClick={clear}>
@@ -746,4 +1030,4 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
 }
 
 export { DeskTable };
-export type { DeskTableColumn, DeskTableFilter, DeskTableReorder, DeskTableSort };
+export type { DeskTableColumn, DeskTableFilter, DeskTableReorder, DeskTableSort, DeskTableTabs };

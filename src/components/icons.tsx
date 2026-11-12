@@ -316,3 +316,7 @@ export function IconWorld(props: IconProps): JSX.Element {
 }
 
 export type { IconProps };
+
+export function IconX(props: IconProps): JSX.Element {
+  return <TablerIcon {...props} path="M18 6L6 18M6 6l12 12" />;
+}
