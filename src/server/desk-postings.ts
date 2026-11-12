@@ -1,5 +1,5 @@
 import "server-only";
-import { COLLECTOR_TYPES, POSTING_STATUSES } from "../data/postings";
+import { COLLECTOR_TYPES, POSTING_STATUSES, SALARY_CURRENCIES, WORKPLACES } from "../data/postings";
 import type { CollectorType, PostingEdit, PostingStatus } from "../data/postings";
 import {
   addPostings,
@@ -9,7 +9,18 @@ import {
   savePosting,
   setPostingsStatus,
 } from "./postings";
-import { array, boolean, literal, object, string } from "zod/mini";
+import {
+  array,
+  boolean,
+  int,
+  literal,
+  maximum,
+  minimum,
+  nullable,
+  object,
+  refine,
+  string,
+} from "zod/mini";
 import {
   createCollector,
   deleteCollector,
@@ -30,6 +41,12 @@ import { slugify } from "../lib/cover-letter";
 const NOT_POSTING = "Not a posting.";
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
 
+/** A yearly salary, in whole units of its currency. */
+const salary = int("A salary is a whole number.").check(
+  minimum(0, "A salary isn't negative."),
+  maximum(100_000_000, "That salary is too large."),
+);
+
 const editSchema = object(
   {
     company: trimmed(NOT_POSTING),
@@ -37,9 +54,19 @@ const editSchema = object(
     location: trimmed(NOT_POSTING),
     description: trimmed(NOT_POSTING),
     postedOn: emptyOrMatching(ISO_DATE, NOT_POSTING),
+    workplace: literal(["", ...WORKPLACES], NOT_POSTING),
+    salaryMin: nullable(salary),
+    salaryMax: nullable(salary),
+    salaryCurrency: literal(["", ...SALARY_CURRENCIES], NOT_POSTING),
     status: literal(POSTING_STATUSES, NOT_POSTING),
   },
   NOT_POSTING,
+).check(
+  refine(
+    (edit) =>
+      edit.salaryMin === null || edit.salaryMax === null || edit.salaryMin <= edit.salaryMax,
+    "The salary's lower end is above its upper one.",
+  ),
 );
 
 const statusSchema = object({

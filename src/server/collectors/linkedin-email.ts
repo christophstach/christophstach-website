@@ -1,7 +1,10 @@
 import "server-only";
 import type { FoundPosting, PushCollector } from "./types";
-import { array, exactOptional, maxLength, object, string } from "zod/mini";
-import { tidyLines } from "./text";
+import { NO_SALARY, readSalary, readWorkplace } from "./salary";
+import type { Salary } from "./salary";
+import type { Workplace } from "../../data/postings";
+import { array, exactOptional, maxLength, object, safeParse, string } from "zod/mini";
+import { htmlToText, tidyLines } from "./text";
 import { parseInput } from "../input";
 
 // LinkedIn's job alert mails, as the script in Gmail sends them
@@ -15,10 +18,14 @@ const bodySchema = object({
     object({
       subject: exactOptional(string("A subject is text.")),
       plain: exactOptional(string("A plain body is text.")),
+      html: exactOptional(string("An HTML body is text.")),
     }),
-    "Send { messages: [{ subject, plain }] }.",
+    "Send { messages: [{ subject, plain, html }] }.",
   ).check(maxLength(50, "At most 50 messages at a time.")),
 });
+
+/** What a posting keeps of its mail: both bodies as text. Older ones kept the plain text alone. */
+const rawSchema = object({ plain: string(), html: string() });
 
 /** A job's link; the id may follow a slug, e.g. /jobs/view/frontend-at-acme-4012345678. */
 const JOB_LINK =
@@ -33,8 +40,61 @@ const SEPARATOR = /^[-–—_=*·•.\s]{3,}$/u;
 const NOISE =
   /^(?:view job|view all|see all|see more|apply|easy apply|actively recruiting|this company is actively hiring|promoted|reposted|new|be an early applicant|your job alert|stand out and let hirers know|\d+\+? new jobs?|jobs? (?:similar|matching|you)|unsubscribe|manage (?:alerts|job alerts)|this email was intended|learn why|you are receiving|help:|linkedin corporation|©|\d+ (?:connections?|alumni|applicants?|school alum)|.* (?:connections?|alumni) works? here|.*\bapplicants?$)/iu;
 
+/** Links without their tracking: a job link as its id, any other without its query. */
+function compactLinks(text: string): string {
+  return text.replaceAll(/https?:\/\/\S+/gu, (url) => {
+    const id = JOB_LINK.exec(url)?.[1];
+
+    return id === undefined
+      ? url.replace(/[?#].*$/u, "")
+      : `https://www.linkedin.com/jobs/view/${id}/`;
+  });
+}
+
+type Card = Salary & { workplace: Workplace | "" };
+
 /**
- * Reads one mail's text. Its plain body lists each job as
+ * Reads the workplace and salary of each job from the HTML body, which the
+ * plain one leaves out. As text, a job there is its links, then
+ *
+ *   Senior Full Stack Engineer (m/w/d)
+ *   Computer Futures · Seligenstadt (Hybrid)
+ *   €60K-€80K / year
+ *   Actively recruiting
+ *
+ * up to the next job's link; any other link ends the job.
+ */
+function readCards(html: string): Map<string, Card> {
+  const cards = new Map<string, Card>();
+  let card: Card | undefined;
+
+  for (const line of html.split("\n")) {
+    const id = JOB_LINK.exec(line)?.[1];
+
+    if (id !== undefined) {
+      card = cards.get(id) ?? { workplace: "", ...NO_SALARY };
+      cards.set(id, card);
+    } else if (ANY_LINK.test(line)) {
+      card = undefined;
+    } else if (card !== undefined) {
+      const salary = readSalary(line);
+      const workplace = line.includes(" · ") ? readWorkplace(line) : "";
+
+      if (workplace !== "" && card.workplace === "") {
+        card.workplace = workplace;
+      }
+
+      if (salary.salaryMin !== null && card.salaryMin === null) {
+        Object.assign(card, salary);
+      }
+    }
+  }
+
+  return cards;
+}
+
+/**
+ * Reads one mail. Its plain body lists each job as
  *
  *   Senior Software Engineer (Frontend focused)
  *   GetYourGuide
@@ -44,13 +104,16 @@ const NOISE =
  *   ---------------------------------------------------------
  *
  * after a header line ("Your job alert for …"). Each job link takes the
- * meaningful lines since the last one or the last separator.
+ * meaningful lines since the last one or the last separator. The HTML body,
+ * as text, adds each job's workplace and salary (readCards).
  */
-function readText(text: string): FoundPosting[] {
+function readMail(plain: string, html: string): FoundPosting[] {
+  const raw = html === "" ? plain : JSON.stringify({ plain, html });
+  const cards = readCards(html);
   const found = new Map<string, FoundPosting>();
   let lines: string[] = [];
 
-  for (const line of text.split("\n")) {
+  for (const line of plain.split("\n")) {
     const id = JOB_LINK.exec(line)?.[1];
 
     if (id !== undefined) {
@@ -72,7 +135,8 @@ function readText(text: string): FoundPosting[] {
           location: place,
           description: "",
           postedOn: "",
-          raw: text,
+          ...(cards.get(id) ?? { workplace: "", ...NO_SALARY }),
+          raw,
         });
       }
 
@@ -87,19 +151,43 @@ function readText(text: string): FoundPosting[] {
   return [...found.values()];
 }
 
+/** A posting's stored mail: both bodies, or the plain one alone. */
+function storedMail(raw: string): { plain: string; html: string } {
+  if (raw.startsWith("{")) {
+    try {
+      const parsed = safeParse(rawSchema, JSON.parse(raw));
+
+      if (parsed.success) {
+        return parsed.data;
+      }
+    } catch {
+      // Plain text that happens to start with a brace.
+    }
+  }
+
+  return { plain: raw, html: "" };
+}
+
 const linkedinEmail: PushCollector = {
   type: "linkedin-email",
   read(body) {
     const { messages } = parseInput(bodySchema, body);
 
-    // Only the plain body: the HTML one lays the jobs out differently (a
-    // preview text first, salary and workplace lines), and reading it as
-    // text mixes them up.
-    return messages.flatMap((message) => readText(tidyLines(message.plain ?? "")));
+    // The plain body says which jobs there are, with their title, company
+    // and location: read as text, the HTML one mixes those up. The HTML one
+    // adds workplace and salary.
+    return messages.flatMap((message) =>
+      readMail(
+        compactLinks(tidyLines(message.plain ?? "")),
+        message.html === undefined ? "" : compactLinks(htmlToText(message.html)),
+      ),
+    );
   },
   reread(raw, externalId) {
-    return readText(raw).find((posting) => posting.externalId === externalId);
+    const { plain, html } = storedMail(raw);
+
+    return readMail(plain, html).find((posting) => posting.externalId === externalId);
   },
 };
 
-export { JOB_LINK, linkedinEmail, readText };
+export { JOB_LINK, linkedinEmail, readMail };

@@ -1,5 +1,5 @@
 import "server-only";
-import type { CollectorType, PostingSource } from "../../data/postings";
+import type { CollectorType, PostingSource, SalaryCurrency, Workplace } from "../../data/postings";
 
 /** A job ad as a collector reads it, before it is stored. */
 interface FoundPosting {
@@ -13,6 +13,11 @@ interface FoundPosting {
   description: string;
   /** ISO date or empty. */
   postedOn: string;
+  workplace: Workplace | "";
+  /** Per year, in whole units of the currency; null if not stated. */
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryCurrency: SalaryCurrency | "";
   /** What it was read from, so a better reader can read it again. */
   raw: string;
 }

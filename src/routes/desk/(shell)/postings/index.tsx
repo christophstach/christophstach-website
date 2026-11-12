@@ -3,7 +3,10 @@ import {
   POSTING_SOURCE_LABELS,
   POSTING_STATUSES,
   POSTING_STATUS_LABELS,
+  WORKPLACES,
+  WORKPLACE_LABELS,
 } from "../../../../data/postings";
+import { SALARY_BANDS, formatSalary, salaryBand, salaryTop } from "../../../../lib/posting";
 import type { Collector, JobPostingRecord, PostingStatus } from "../../../../data/postings";
 import { Show, createMemo, createSignal } from "solid-js";
 import { getDeskCollectors, getDeskPostings } from "../../../../lib/desk/queries";
@@ -48,6 +51,20 @@ const COLUMNS: DeskTableColumn<JobPostingRecord>[] = [
     sort: (posting) => posting.location,
   },
   {
+    id: "workplace",
+    header: "workplace",
+    cell: (posting) => (posting.workplace === "" ? "–" : WORKPLACE_LABELS[posting.workplace]),
+    sort: (posting) => (posting.workplace === "" ? "" : WORKPLACES.indexOf(posting.workplace)),
+  },
+  {
+    id: "salary",
+    header: "salary",
+    cell: (posting) => formatSalary(posting) || "–",
+    // Not stated sorts last either way.
+    sort: (posting) => salaryTop(posting) ?? "",
+    firstDirection: "desc",
+  },
+  {
     id: "status",
     header: "status",
     cell: (posting) => (
@@ -77,6 +94,27 @@ function filters(collectors: Collector[]): DeskTableFilter<JobPostingRecord>[] {
         label: POSTING_STATUS_LABELS[status],
       })),
       value: (posting) => posting.status,
+    },
+    {
+      id: "workplace",
+      label: "workplace",
+      options: [
+        ...WORKPLACES.map((workplace) => ({
+          value: workplace,
+          label: WORKPLACE_LABELS[workplace],
+        })),
+        { value: "", label: "Not stated" },
+      ],
+      value: (posting) => posting.workplace,
+    },
+    {
+      id: "salary",
+      label: "salary",
+      options: [
+        ...SALARY_BANDS.map((band) => ({ value: band.value, label: band.label })),
+        { value: "", label: "Not stated" },
+      ],
+      value: salaryBand,
     },
     {
       id: "source",

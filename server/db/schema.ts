@@ -226,6 +226,15 @@ const jobPostings = pgTable(
     description: text().notNull().default(""),
     /** ISO date; empty if the source doesn't say. */
     postedOn: text().notNull().default(""),
+    /** Where the work is done; empty if the source doesn't say. */
+    workplace: text({ enum: ["", "remote", "hybrid", "onsite"] })
+      .notNull()
+      .default(""),
+    /** The salary range per year, in whole units of its currency; null if not stated. */
+    salaryMin: integer(),
+    salaryMax: integer(),
+    /** ISO 4217 code, e.g. EUR; empty if no salary is stated. */
+    salaryCurrency: text().notNull().default(""),
     status: text({ enum: ["new", "interesting", "dismissed", "applied"] })
       .notNull()
       .default("new"),

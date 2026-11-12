@@ -1,6 +1,8 @@
 import "server-only";
 import type { JobPosting, JobPostingRecord, PostingEdit } from "../data/postings";
-import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import { SALARY_CURRENCIES } from "../data/postings";
 import { applications, jobPostings } from "../../server/db/schema";
 import type { FoundPosting } from "./collectors";
 import { HttpError } from "./http";
@@ -21,6 +23,10 @@ function toPosting(row: PostingRow): JobPosting {
     location: row.location,
     description: row.description,
     postedOn: row.postedOn,
+    workplace: row.workplace,
+    salaryMin: row.salaryMin,
+    salaryMax: row.salaryMax,
+    salaryCurrency: SALARY_CURRENCIES.find((code) => code === row.salaryCurrency) ?? "",
     status: row.status,
   };
 }
@@ -73,22 +79,55 @@ async function requirePosting(id: string): Promise<JobPosting> {
   return posting;
 }
 
+/** A text column that keeps its value, or takes the new read's if it is empty. */
+function fillEmpty(column: AnyPgColumn, name: string) {
+  return sql`coalesce(nullif(${column}, ''), excluded.${sql.identifier(name)})`;
+}
+
+/** A salary column that takes the new read's only while no salary is stored. */
+function fillSalary(column: AnyPgColumn, name: string) {
+  return sql`case when ${jobPostings.salaryMin} is null and ${jobPostings.salaryMax} is null
+    then excluded.${sql.identifier(name)} else ${column} end`;
+}
+
 /**
  * Stores what a collector found. A posting the desk has already (same source
- * and id) stays as it is, with its status. Answers which were new.
+ * and id) keeps its status and edits, and only fills what it lacks: an older
+ * read may have had no workplace or salary. Answers which were new.
  */
 async function addPostings(found: FoundPosting[], collectorId: string | null): Promise<string[]> {
-  if (found.length === 0) {
+  // One insert can't touch a row twice: a job in two mails of one request counts once.
+  const byId = new Map(found.map((posting) => [postingId(posting), posting]));
+  const values = Array.from(byId, ([id, posting]) =>
+    Object.assign({}, posting, { id, collectorId }),
+  );
+
+  if (values.length === 0) {
     return [];
   }
 
-  const added = await useDb()
+  const rows = await useDb()
     .insert(jobPostings)
-    .values(found.map((posting) => ({ ...posting, id: postingId(posting), collectorId })))
-    .onConflictDoNothing()
-    .returning({ id: jobPostings.id });
+    .values(values)
+    .onConflictDoUpdate({
+      target: [jobPostings.source, jobPostings.externalId],
+      set: {
+        title: fillEmpty(jobPostings.title, "title"),
+        company: fillEmpty(jobPostings.company, "company"),
+        location: fillEmpty(jobPostings.location, "location"),
+        workplace: fillEmpty(jobPostings.workplace, "workplace"),
+        salaryMin: fillSalary(jobPostings.salaryMin, "salary_min"),
+        salaryMax: fillSalary(jobPostings.salaryMax, "salary_max"),
+        salaryCurrency: fillSalary(jobPostings.salaryCurrency, "salary_currency"),
+        // The newest read, to read again later: a reader only gets better
+        // (e.g. a mail now sent with its HTML body).
+        raw: sql`coalesce(nullif(excluded.raw, ''), ${jobPostings.raw})`,
+      },
+    })
+    // xmax is 0 for a row the insert made, not for one it updated.
+    .returning({ id: jobPostings.id, added: sql<boolean>`(xmax = 0)` });
 
-  return added.map((row) => row.id);
+  return rows.filter((row) => row.added).map((row) => row.id);
 }
 
 /** Writes what the desk edits of a posting (404 if missing). */
@@ -150,6 +189,16 @@ async function updateFound(id: string, found: FoundPosting) {
       company: found.company,
       title: found.title,
       location: found.location,
+      // What the input doesn't state stays: a mail kept without its HTML body
+      // has no workplace or salary, which needn't mean the ad has none.
+      ...(found.workplace === "" ? {} : { workplace: found.workplace }),
+      ...(found.salaryMin === null && found.salaryMax === null
+        ? {}
+        : {
+            salaryMin: found.salaryMin,
+            salaryMax: found.salaryMax,
+            salaryCurrency: found.salaryCurrency,
+          }),
       updatedAt: new Date(),
     })
     .where(eq(jobPostings.id, id));

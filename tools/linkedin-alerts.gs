@@ -32,6 +32,8 @@ function collect() {
     const messages = thread.getMessages().map((message) => ({
       subject: message.getSubject(),
       plain: message.getPlainBody(),
+      // Only the HTML body has each job's workplace and salary.
+      html: message.getBody(),
     }));
     const response = UrlFetchApp.fetch(endpoint, {
       method: "post",

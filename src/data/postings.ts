@@ -4,6 +4,12 @@ type PostingSource = "linkedin" | "web";
 /** Where a posting stands in the inbox. */
 type PostingStatus = "new" | "interesting" | "dismissed" | "applied";
 
+/** Where the work is done; empty if the ad does not say. */
+type Workplace = "remote" | "hybrid" | "onsite";
+
+/** The currencies a salary is kept in (ISO 4217). */
+type SalaryCurrency = "EUR" | "USD" | "GBP" | "CHF";
+
 /** What a collector understands; each is a module in src/server/collectors/. */
 type CollectorType = "linkedin-email";
 
@@ -24,6 +30,12 @@ interface JobPosting {
   description: string;
   /** ISO date; empty if the source doesn't say. */
   postedOn: string;
+  workplace: Workplace | "";
+  /** The salary range per year, in whole units of its currency; null if not stated. */
+  salaryMin: number | null;
+  salaryMax: number | null;
+  /** Empty if no salary is stated. */
+  salaryCurrency: SalaryCurrency | "";
   status: PostingStatus;
 }
 
@@ -38,7 +50,16 @@ interface JobPostingRecord extends JobPosting {
 /** What the desk edits of a posting; the rest comes from its source. */
 type PostingEdit = Pick<
   JobPosting,
-  "company" | "title" | "location" | "description" | "postedOn" | "status"
+  | "company"
+  | "title"
+  | "location"
+  | "description"
+  | "postedOn"
+  | "workplace"
+  | "salaryMin"
+  | "salaryMax"
+  | "salaryCurrency"
+  | "status"
 >;
 
 /** A collector as the desk lists it. Its secret is never read back. */
@@ -75,6 +96,23 @@ const POSTING_SOURCE_LABELS: Record<PostingSource, string> = {
   web: "Web",
 };
 
+const WORKPLACES: readonly Workplace[] = ["remote", "hybrid", "onsite"];
+
+const WORKPLACE_LABELS: Record<Workplace, string> = {
+  remote: "Remote",
+  hybrid: "Hybrid",
+  onsite: "On-site",
+};
+
+const SALARY_CURRENCIES: readonly SalaryCurrency[] = ["EUR", "USD", "GBP", "CHF"];
+
+const SALARY_SYMBOLS: Record<SalaryCurrency, string> = {
+  EUR: "€",
+  USD: "$",
+  GBP: "£",
+  CHF: "CHF ",
+};
+
 const COLLECTOR_TYPES: readonly CollectorType[] = ["linkedin-email"];
 
 /** How the desk names each collector type, and what it takes. */
@@ -92,6 +130,10 @@ export {
   POSTING_SOURCE_LABELS,
   POSTING_STATUSES,
   POSTING_STATUS_LABELS,
+  SALARY_CURRENCIES,
+  SALARY_SYMBOLS,
+  WORKPLACES,
+  WORKPLACE_LABELS,
 };
 export type {
   Collector,
@@ -101,4 +143,6 @@ export type {
   PostingEdit,
   PostingSource,
   PostingStatus,
+  SalaryCurrency,
+  Workplace,
 };

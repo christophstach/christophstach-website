@@ -3,6 +3,9 @@ import {
   POSTING_SOURCE_LABELS,
   POSTING_STATUSES,
   POSTING_STATUS_LABELS,
+  SALARY_CURRENCIES,
+  WORKPLACES,
+  WORKPLACE_LABELS,
 } from "../../../../data/postings";
 import type { JobPostingRecord, PostingEdit, PostingStatus } from "../../../../data/postings";
 import { IconSend, IconTrash } from "../../../../components/icons";
@@ -25,7 +28,12 @@ import styles from "../../../../components/desk/page-postings.module.css";
 import { useDeskRequest } from "../../../../lib/desk/request";
 import { useDraft } from "../../../../lib/desk/draft";
 
-type PostingForm = PostingEdit & { id: string };
+/** The salary's ends as the inputs hold them: digits, or empty if not stated. */
+type PostingForm = Omit<PostingEdit, "salaryMin" | "salaryMax"> & {
+  id: string;
+  salaryMin: string;
+  salaryMax: string;
+};
 
 function toForm(posting: JobPostingRecord): PostingForm {
   return {
@@ -35,7 +43,30 @@ function toForm(posting: JobPostingRecord): PostingForm {
     location: posting.location,
     description: posting.description,
     postedOn: posting.postedOn,
+    workplace: posting.workplace,
+    salaryMin: posting.salaryMin === null ? "" : String(posting.salaryMin),
+    salaryMax: posting.salaryMax === null ? "" : String(posting.salaryMax),
+    salaryCurrency: posting.salaryCurrency,
     status: posting.status,
+  };
+}
+
+/** An input's amount; null if empty. A number input holds digits or nothing. */
+function amountOf(value: string): number | null {
+  return value.trim() === "" ? null : Math.round(Number(value));
+}
+
+function toEdit({ id: _id, ...form }: PostingForm): PostingEdit {
+  const salaryMin = amountOf(form.salaryMin);
+  const salaryMax = amountOf(form.salaryMax);
+  const stated = salaryMin !== null || salaryMax !== null;
+
+  return {
+    ...form,
+    salaryMin,
+    salaryMax,
+    // A currency belongs to a salary; without one, it goes too.
+    salaryCurrency: stated ? form.salaryCurrency : "",
   };
 }
 
@@ -46,10 +77,21 @@ const EMPTY_FORM: PostingForm = {
   location: "",
   description: "",
   postedOn: "",
+  workplace: "",
+  salaryMin: "",
+  salaryMax: "",
+  salaryCurrency: "",
   status: "new",
 };
 
-type TextKey = "company" | "title" | "location" | "description" | "postedOn";
+type TextKey =
+  | "company"
+  | "title"
+  | "location"
+  | "description"
+  | "postedOn"
+  | "salaryMin"
+  | "salaryMax";
 
 export default function PostingEditor() {
   const params = useParams<{ id: string }>();
@@ -93,7 +135,7 @@ export default function PostingEditor() {
 
   async function save(event: SubmitEvent) {
     event.preventDefault();
-    await request.run(() => saveDeskPosting(params.id, snapshot(form)));
+    await request.run(() => saveDeskPosting(params.id, toEdit(snapshot(form))));
   }
 
   /** The quick sort: unsaved changes would be overwritten, so they come first. */
@@ -230,6 +272,80 @@ export default function PostingEditor() {
             <span class="field__label">posted on</span>
             <input {...bind("postedOn")} class="input" type="date" />
           </label>
+          <label class="field">
+            <span class="field__label">workplace</span>
+            <select
+              class="input"
+              onChange={(event) => {
+                const { value } = event.currentTarget;
+                const workplace = WORKPLACES.find((option) => option === value) ?? "";
+
+                setForm((draft) => {
+                  draft.workplace = workplace;
+                });
+              }}
+            >
+              <option value="" selected={form.workplace === ""}>
+                Not stated
+              </option>
+              <For each={WORKPLACES}>
+                {(workplace) => (
+                  <option value={workplace} selected={workplace === form.workplace}>
+                    {WORKPLACE_LABELS[workplace]}
+                  </option>
+                )}
+              </For>
+            </select>
+          </label>
+          <div class="field">
+            <span class="field__label">salary per year</span>
+            <span class={styles.salary}>
+              <input
+                {...bind("salaryMin")}
+                class="input"
+                type="number"
+                min="0"
+                step="1000"
+                placeholder="from"
+                aria-label="salary from"
+              />
+              <input
+                {...bind("salaryMax")}
+                class="input"
+                type="number"
+                min="0"
+                step="1000"
+                placeholder="to"
+                aria-label="salary to"
+              />
+              <select
+                class="input"
+                aria-label="currency"
+                onChange={(event) => {
+                  const { value } = event.currentTarget;
+                  const currency = SALARY_CURRENCIES.find((option) => option === value) ?? "";
+
+                  setForm((draft) => {
+                    draft.salaryCurrency = currency;
+                  });
+                }}
+              >
+                <option value="" selected={form.salaryCurrency === ""}>
+                  –
+                </option>
+                <For each={SALARY_CURRENCIES}>
+                  {(currency) => (
+                    <option value={currency} selected={currency === form.salaryCurrency}>
+                      {currency}
+                    </option>
+                  )}
+                </For>
+              </select>
+            </span>
+            <span class="field__hint">
+              Whole amounts, e.g. 60000; leave both empty if not stated.
+            </span>
+          </div>
           <label class="field">
             <span class="field__label">status</span>
             {/* `selected` on the options: see the CV select in /desk/cvs. */}
