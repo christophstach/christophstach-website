@@ -49,4 +49,16 @@ function salaryBand(salary: Salary): string {
   return top === null ? "" : (SALARY_BANDS.find((band) => top > band.above)?.value ?? "");
 }
 
-export { SALARY_BANDS, formatSalary, salaryBand, salaryTop };
+const shortDay = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/** "2026-11-12" → "12 Nov 2026", short enough for a table column. */
+function formatShortDay(isoDate: string): string {
+  return shortDay.format(new Date(`${isoDate}T00:00:00Z`));
+}
+
+export { SALARY_BANDS, formatSalary, formatShortDay, salaryBand, salaryTop };

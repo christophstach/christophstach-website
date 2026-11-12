@@ -1,5 +1,11 @@
 import { For, Show, createMemo, createSignal, createUniqueId, untrack } from "solid-js";
-import { IconChevronDown, IconChevronUp, IconGripVertical } from "../icons";
+import {
+  IconChevronDown,
+  IconChevronLeft,
+  IconChevronRight,
+  IconChevronUp,
+  IconGripVertical,
+} from "../icons";
 import type { JSX } from "@solidjs/web";
 import styles from "./DeskTable.module.css";
 import { useDragReorder } from "../../lib/drag-reorder";
@@ -52,7 +58,14 @@ interface DeskTableProps<T> {
   noun: readonly [one: string, other: string];
   /** Rows can be moved by hand when the table shows their stored order. */
   reorder?: DeskTableReorder<T> | undefined;
+  /**
+   * Rows per page (default 25). A table that reorders shows every row: a row
+   * can't be dragged onto another page.
+   */
+  pageSize?: number | undefined;
 }
+
+const PAGE_SIZE = 25;
 
 /** Moving rows by hand: drag a row's handle, or press the arrow keys on it. */
 interface DeskTableReorder<T> {
@@ -185,7 +198,30 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
   const narrowed = () => query().trim() !== "" || Object.keys(picked()).length > 0;
   const noun = (count: number) => (count === 1 ? props.noun[0] : props.noun[1]);
 
+  // Pages: 1-based. Search, filters and sorting go back to the first page.
+  const [page, setPage] = createSignal(1);
+  const pageSize = () =>
+    props.reorder === undefined ? Math.max(1, props.pageSize ?? PAGE_SIZE) : Infinity;
+  const pageCount = () => Math.max(1, Math.ceil(shown().length / pageSize()));
+  // A page past the end (rows were deleted, say) shows the last one.
+  const currentPage = () => Math.min(page(), pageCount());
+  const pageStart = () => (currentPage() - 1) * pageSize();
+  const visible = createMemo(() =>
+    pageCount() === 1 ? shown() : shown().slice(pageStart(), pageStart() + pageSize()),
+  );
+  let section: HTMLElement | undefined;
+
+  function goTo(next: number) {
+    setPage(Math.min(Math.max(1, next), pageCount()));
+
+    // Back to the table's top if it scrolled out of view, where the new page starts.
+    if (section !== undefined && section.getBoundingClientRect().top < 0) {
+      section.scrollIntoView({ block: "start" });
+    }
+  }
+
   function choose(filterId: string, value: string | undefined) {
+    setPage(1);
     setPicked((current) => {
       const rest = Object.fromEntries(Object.entries(current).filter(([key]) => key !== filterId));
 
@@ -194,6 +230,7 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
   }
 
   function sortBy(column: DeskTableColumn<T>) {
+    setPage(1);
     setSort((current) =>
       current?.column === column.id
         ? { column: column.id, direction: current.direction === "asc" ? "desc" : "asc" }
@@ -202,6 +239,7 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
   }
 
   function clear() {
+    setPage(1);
     setQuery("");
     setPicked({});
   }
@@ -245,7 +283,13 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
   };
 
   return (
-    <section class={["panel", styles.table]} aria-labelledby={`${id}-title`}>
+    <section
+      ref={(element) => {
+        section = element;
+      }}
+      class={["panel", styles.table]}
+      aria-labelledby={`${id}-title`}
+    >
       <header class="panel__head">
         <h2 id={`${id}-title`} class="panel__title">
           {props.title}
@@ -260,7 +304,10 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
               placeholder={`Search ${props.noun[1]}`}
               aria-label={`Search ${props.noun[1]}`}
               aria-controls={`${id}-grid`}
-              onInput={(event) => setQuery(event.currentTarget.value)}
+              onInput={(event) => {
+                setPage(1);
+                setQuery(event.currentTarget.value);
+              }}
               onKeyDown={(event) => {
                 if (event.key === "Escape" && query() !== "") {
                   event.preventDefault();
@@ -316,6 +363,7 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
                 onChange={(event) => {
                   const [column = "", direction] = event.currentTarget.value.split(":");
 
+                  setPage(1);
                   setSort(
                     direction === "asc" || direction === "desc" ? { column, direction } : undefined,
                   );
@@ -402,7 +450,7 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
           </thead>
 
           <tbody>
-            <For each={shown()} keyed={(row) => props.rowKey(row)}>
+            <For each={visible()} keyed={(row) => props.rowKey(row)}>
               {(row) => (
                 <tr
                   class={[
@@ -505,6 +553,9 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
 
       <footer class={styles.table__foot}>
         <p role="status">
+          <Show when={pageCount() > 1}>
+            {`${pageStart() + 1}–${pageStart() + visible().length} · `}
+          </Show>
           {narrowed()
             ? `${shown().length} of ${props.rows.length} ${noun(props.rows.length)}`
             : `${props.rows.length} ${noun(props.rows.length)}`}
@@ -513,6 +564,31 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
           <button type="button" class="text-link" onClick={clear}>
             Clear search and filters
           </button>
+        </Show>
+        <Show when={pageCount() > 1}>
+          <nav class={styles.table__pages} aria-label={`Pages of ${props.title}`}>
+            <button
+              type="button"
+              class={styles.table__page}
+              disabled={currentPage() === 1}
+              aria-label="Previous page"
+              onClick={() => goTo(currentPage() - 1)}
+            >
+              <IconChevronLeft size={16} />
+            </button>
+            <span aria-live="polite">
+              page {currentPage()} of {pageCount()}
+            </span>
+            <button
+              type="button"
+              class={styles.table__page}
+              disabled={currentPage() === pageCount()}
+              aria-label="Next page"
+              onClick={() => goTo(currentPage() + 1)}
+            >
+              <IconChevronRight size={16} />
+            </button>
+          </nav>
         </Show>
       </footer>
     </section>

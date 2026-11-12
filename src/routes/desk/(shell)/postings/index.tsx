@@ -6,7 +6,13 @@ import {
   WORKPLACES,
   WORKPLACE_LABELS,
 } from "../../../../data/postings";
-import { SALARY_BANDS, formatSalary, salaryBand, salaryTop } from "../../../../lib/posting";
+import {
+  SALARY_BANDS,
+  formatSalary,
+  formatShortDay,
+  salaryBand,
+  salaryTop,
+} from "../../../../lib/posting";
 import type { Collector, JobPostingRecord, PostingStatus } from "../../../../data/postings";
 import { Show, createMemo, createSignal } from "solid-js";
 import { getDeskCollectors, getDeskPostings } from "../../../../lib/desk/queries";
@@ -17,7 +23,7 @@ import type { DeskTableColumn, DeskTableFilter } from "../../../../components/de
 import { IconPlus } from "../../../../components/icons";
 import type { RouteDefinition } from "@solidjs/router";
 import { addDeskPostingByUrl } from "../../../../lib/desk/postings";
-import { formatDay, formatRelative } from "../../../../lib/format";
+import { formatRelative } from "../../../../lib/format";
 import { paths } from "../../../../router";
 import styles from "../../../../components/desk/page-postings.module.css";
 import { useDeskRequest } from "../../../../lib/desk/request";
@@ -47,14 +53,16 @@ const COLUMNS: DeskTableColumn<JobPostingRecord>[] = [
   {
     id: "location",
     header: "location",
-    cell: (posting) => posting.location || "–",
+    // The place over the workplace; a long place wraps, so the table fits its panel.
+    cell: (posting) => (
+      <span class={styles.place}>
+        <span>{posting.location || "–"}</span>
+        {posting.workplace === "" ? null : (
+          <span class={styles.place__mode}>{WORKPLACE_LABELS[posting.workplace]}</span>
+        )}
+      </span>
+    ),
     sort: (posting) => posting.location,
-  },
-  {
-    id: "workplace",
-    header: "workplace",
-    cell: (posting) => (posting.workplace === "" ? "–" : WORKPLACE_LABELS[posting.workplace]),
-    sort: (posting) => (posting.workplace === "" ? "" : WORKPLACES.indexOf(posting.workplace)),
   },
   {
     id: "salary",
@@ -67,7 +75,7 @@ const COLUMNS: DeskTableColumn<JobPostingRecord>[] = [
   {
     id: "posted",
     header: "posted",
-    cell: (posting) => (posting.postedOn === "" ? "–" : formatDay(posting.postedOn, "en")),
+    cell: (posting) => (posting.postedOn === "" ? "–" : formatShortDay(posting.postedOn)),
     sort: (posting) => posting.postedOn,
     firstDirection: "desc",
   },
