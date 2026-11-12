@@ -16,7 +16,7 @@ import {
   salaryTop,
 } from "../../../../lib/posting";
 import type { Collector, JobPostingRecord, PostingStatus } from "../../../../data/postings";
-import { Show, createMemo, createSignal } from "solid-js";
+import { For, Show, createMemo, createSignal } from "solid-js";
 import {
   COMPANY_FIELDS,
   COMPANY_FIELD_LABELS,
@@ -24,7 +24,7 @@ import {
   COMPANY_FUNDING_LABELS,
 } from "../../../../data/companies";
 import { getDeskCollectors, getDeskCompanies, getDeskPostings } from "../../../../lib/desk/queries";
-import { companiesByKey, companyFacts, countryName } from "../../../../lib/company";
+import { companiesByKey, companyLabels, countryName } from "../../../../lib/company";
 import type { CompanyRecord } from "../../../../data/companies";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import { DeskMeta } from "../../../../components/desk/DeskMeta";
@@ -66,16 +66,19 @@ type Duplicates = ReadonlyMap<string, readonly JobPostingRecord[]>;
 /** The described companies by their matching key. */
 type Companies = ReadonlyMap<string, CompanyRecord>;
 
+/** No labels: a posting whose company isn't described yet. */
+const NO_COMPANY = { batch: "", field: "", headquarters: "", funding: "" } as const;
+
 /** The company described for a posting, if any. */
 function companyOf(companies: Companies, posting: JobPostingRecord): CompanyRecord | undefined {
   return companies.get(companyKey(posting.company));
 }
 
-/** "AI · United States · VC-backed" for a posting's described company; empty if none. */
-function companyFactsOf(companies: Companies, posting: JobPostingRecord): string {
-  const company = companyOf(companies, posting);
-
-  return company === undefined ? "" : companyFacts(company);
+/** Its company's labels, for the search: "YC W25 Y Combinator, batch W25 AI …". */
+function labelWords(companies: Companies, posting: JobPostingRecord): string {
+  return companyLabels(companyOf(companies, posting) ?? NO_COMPANY)
+    .map((label) => `${label.text} ${label.title}`)
+    .join(" ");
 }
 
 /** The star in a row: favourite or not, and what toggles it. */
@@ -114,9 +117,17 @@ const columns = (
       <span class={styles.name}>
         <span class={styles.name__main}>{posting.title || posting.externalId}</span>
         <span class={styles.name__sub}>
-          {[posting.company, companyFactsOf(companies, posting)]
-            .filter((part) => part !== "")
-            .join(" · ") || "–"}
+          {posting.company || "–"}
+          <For each={companyLabels(companyOf(companies, posting) ?? NO_COMPANY)}>
+            {(label) => (
+              <span
+                class={[styles.label, { [styles["label--strong"] ?? ""]: label.strong }]}
+                title={label.title}
+              >
+                {label.text}
+              </span>
+            )}
+          </For>
           {duplicates.has(posting.id) ? (
             <span class={["role-tag", styles.duplicate]}>
               duplicate? {(duplicates.get(posting.id)?.length ?? 0) + 1}×
@@ -127,7 +138,7 @@ const columns = (
     ),
     sort: (posting) => posting.title,
     search: (posting) =>
-      `${posting.title} ${posting.company} ${posting.location} ${companyFactsOf(companies, posting)}`,
+      `${posting.title} ${posting.company} ${posting.location} ${labelWords(companies, posting)}`,
   },
   {
     id: "location",
@@ -255,6 +266,15 @@ function filters(
         { value: "", label: "Added by hand" },
       ],
       value: (posting) => posting.collectorId,
+    },
+    {
+      id: "yc",
+      label: "y combinator",
+      options: [
+        { value: "yes", label: "YC company" },
+        { value: "no", label: "Not YC" },
+      ],
+      value: (posting) => ((companyOf(companies, posting)?.batch ?? "") === "" ? "no" : "yes"),
     },
     {
       id: "field",

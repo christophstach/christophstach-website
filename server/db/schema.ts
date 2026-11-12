@@ -12,6 +12,7 @@ import {
 import { relations, sql } from "drizzle-orm";
 import type { ApplicationContact, ApplicationEvent } from "../../src/data/applications";
 import type { CvLayout } from "../../src/data/cv-print-layout";
+import type { CompanySource } from "../../src/data/companies";
 
 // Column names are snake_case in the database: drizzle.config.ts and useDb()
 // both pass casing "snake_case", so the properties here stay camelCase.
@@ -282,6 +283,15 @@ const companies = pgTable("companies", {
     .default(""),
   website: text().notNull().default(""),
   note: text().notNull().default(""),
+  /** Its Y Combinator batch, e.g. "W25"; empty if none. Found, not typed. */
+  batch: text().notNull().default(""),
+  /** Where the facts were found: the YC list, Wikidata, its ads. */
+  sources: jsonb()
+    .$type<CompanySource[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  /** When the free sources were last asked; null until the first time. */
+  checkedAt: timestamp({ withTimezone: true }),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });

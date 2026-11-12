@@ -31,22 +31,27 @@ interface Company {
   note: string;
 }
 
-/** A company as the desk lists it. */
-interface CompanyRecord extends Company {
-  /** ISO timestamp of the last save. */
-  updatedAt: string;
+/** Where a company's facts were found. */
+type CompanySourceKind = "yc" | "wikidata" | "ad";
+
+/** One place a company's facts come from: its YC page, its Wikidata item, or one of its ads. */
+interface CompanySource {
+  kind: CompanySourceKind;
+  /** The page; for an ad, the posting's desk id. */
+  url: string;
+  /** What it says, e.g. "YC W25" or a sentence from the ad. */
+  text: string;
 }
 
-/** What a lookup suggests for a company; nothing is saved until the desk saves it. */
-interface CompanySuggestion {
-  field: CompanyField | "";
-  headquarters: string;
-  funding: CompanyFunding | "";
-  website: string;
-  /** Two or three sentences on what it does and how it's funded. */
-  summary: string;
-  /** Pages the suggestion rests on. */
-  sources: string[];
+/** A company as the desk lists it, with what the free sources found. */
+interface CompanyRecord extends Company {
+  /** Its Y Combinator batch, e.g. "W25"; empty if none. */
+  batch: string;
+  sources: CompanySource[];
+  /** ISO timestamp of the last check of the sources; empty if never. */
+  checkedAt: string;
+  /** ISO timestamp of the last save. */
+  updatedAt: string;
 }
 
 const COMPANY_FIELDS: readonly CompanyField[] = [
@@ -115,4 +120,11 @@ export {
   COMPANY_FUNDINGS,
   COMPANY_FUNDING_LABELS,
 };
-export type { Company, CompanyField, CompanyFunding, CompanyRecord, CompanySuggestion };
+export type {
+  Company,
+  CompanyField,
+  CompanyFunding,
+  CompanyRecord,
+  CompanySource,
+  CompanySourceKind,
+};

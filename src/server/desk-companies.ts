@@ -1,6 +1,6 @@
 import "server-only";
 import { COMPANY_FIELDS, COMPANY_FUNDINGS } from "../data/companies";
-import type { Company, CompanySuggestion } from "../data/companies";
+import type { Company } from "../data/companies";
 import {
   createCompany,
   deleteCompany,
@@ -11,8 +11,7 @@ import {
 import { emptyOrMatching, parseInput, requireSlug, text, trimmed } from "./input";
 import { literal, object } from "zod/mini";
 import { companyKey } from "../lib/posting";
-import { listPostings } from "./postings";
-import { lookUpCompany } from "./company-lookup";
+import { checkCompanies } from "./company-check";
 import { requireUser } from "./auth";
 import { slugify } from "../lib/cover-letter";
 
@@ -65,6 +64,7 @@ async function createDeskCompany(name: unknown): Promise<string> {
     website: "",
     note: "",
   });
+  await checkCompanies({ deadline: Date.now() + 20_000, keys: new Set([companyKey(parsed)]) });
 
   return id;
 }
@@ -83,22 +83,17 @@ async function deleteDeskCompany(id: string) {
   await deleteCompany(id);
 }
 
-/**
- * Suggests the company's field, headquarters and funding from a web search,
- * with its stored name and website and a few of its postings as context.
- */
-async function lookUpDeskCompany(id: string): Promise<CompanySuggestion> {
+/** Asks the free sources about the company again, even if they were asked lately. */
+async function recheckDeskCompany(id: string) {
   await requireUser();
 
   const company = await requireCompany(id);
-  const key = companyKey(company.name);
-  const postings = (await listPostings()).filter((posting) => companyKey(posting.company) === key);
 
-  return lookUpCompany({
-    name: company.name,
-    website: company.website,
-    postings: postings.map(({ title, location }) => ({ title, location })),
+  await checkCompanies({
+    deadline: Date.now() + 20_000,
+    keys: new Set([companyKey(company.name)]),
+    force: true,
   });
 }
 
-export { createDeskCompany, deleteDeskCompany, lookUpDeskCompany, saveDeskCompany };
+export { createDeskCompany, deleteDeskCompany, recheckDeskCompany, saveDeskCompany };

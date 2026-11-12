@@ -46,8 +46,6 @@ const schema = {
     // Vercel Cron sends it to the scheduled page check (/api/desk/page-checks).
     // Unset, that endpoint answers 404.
     CRON_SECRET: optionalSetting(string().check(minLength(16))),
-    // Claude API key for the desk's company lookup. Unset, the lookup says so.
-    ANTHROPIC_API_KEY: optionalSetting(string().check(minLength(1))),
     // Postgres (Neon). Optional at boot; the database code throws when it's
     // missing at use. Migrations prefer the unpooled URL.
     DATABASE_URL: optionalSetting(string().check(minLength(1))),

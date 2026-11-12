@@ -1,6 +1,6 @@
 // The desk's company writes and the lookup, as server functions. Arguments are
 // typed for the caller and parsed again on the server.
-import type { Company, CompanySuggestion } from "../../data/companies";
+import type { Company } from "../../data/companies";
 
 /** Starts describing a company by its name; answers its id. */
 export async function createDeskCompany(name: string): Promise<string> {
@@ -27,15 +27,11 @@ export async function deleteDeskCompany(id: string): Promise<void> {
   await desk.deleteDeskCompany(id);
 }
 
-/**
- * Suggests the company's field, headquarters and funding from a web search.
- * Not a query: the router refetches queries after every server function, and
- * this one costs a request to Claude.
- */
-export async function lookUpDeskCompany(id: string): Promise<CompanySuggestion> {
+/** Asks the free sources (YC, Wikidata, the ads) about the company again. */
+export async function recheckDeskCompany(id: string): Promise<void> {
   "use server";
 
   const desk = await import("../../server/desk-companies");
 
-  return desk.lookUpDeskCompany(id);
+  await desk.recheckDeskCompany(id);
 }

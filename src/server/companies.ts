@@ -1,6 +1,6 @@
 import "server-only";
 import { COMPANY_FIELDS, COMPANY_FUNDINGS } from "../data/companies";
-import type { Company, CompanyRecord } from "../data/companies";
+import type { Company, CompanyRecord, CompanySource } from "../data/companies";
 import { and, asc, eq, ne } from "drizzle-orm";
 import { HttpError } from "./http";
 import { companies } from "../../server/db/schema";
@@ -21,6 +21,9 @@ function toCompany(row: CompanyRow): CompanyRecord {
     funding: COMPANY_FUNDINGS.find((funding) => funding === row.funding) ?? "",
     website: row.website,
     note: row.note,
+    batch: row.batch,
+    sources: row.sources,
+    checkedAt: row.checkedAt?.toISOString() ?? "",
     updatedAt: row.updatedAt.toISOString(),
   };
 }
@@ -104,6 +107,24 @@ async function saveCompany(company: Company) {
   }
 }
 
+/** What the free sources found for a company; see company-facts.ts. */
+interface FoundFacts {
+  field: Company["field"];
+  headquarters: string;
+  funding: Company["funding"];
+  website: string;
+  batch: string;
+  sources: CompanySource[];
+}
+
+/** Stores what the sources found and when; leaves the save time alone. */
+async function storeFacts(id: string, facts: FoundFacts) {
+  await useDb()
+    .update(companies)
+    .set({ ...facts, checkedAt: new Date() })
+    .where(eq(companies.id, id));
+}
+
 async function deleteCompany(id: string) {
   const deleted = await useDb()
     .delete(companies)
@@ -115,4 +136,13 @@ async function deleteCompany(id: string) {
   }
 }
 
-export { createCompany, deleteCompany, findCompany, listCompanies, requireCompany, saveCompany };
+export {
+  createCompany,
+  deleteCompany,
+  findCompany,
+  listCompanies,
+  requireCompany,
+  saveCompany,
+  storeFacts,
+};
+export type { FoundFacts };

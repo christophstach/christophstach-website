@@ -211,6 +211,13 @@
       "when": 1794477435460,
       "tag": "0029_companies",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794486425666,
+      "tag": "0030_company_facts",
+      "breakpoints": true
     }
   ]
 }

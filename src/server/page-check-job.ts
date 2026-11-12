@@ -1,4 +1,6 @@
 import "server-only";
+import { checkCompanies } from "./company-check";
+import type { CompanyCheckRun } from "./company-check";
 import { HttpError } from "./http";
 import { env } from "virtual:solid-env/server";
 import { letterPages } from "./desk-letters";
@@ -8,7 +10,8 @@ import { serverSessionCookie } from "./session";
 import { storedPages } from "./desk-cvs";
 import { timingSafeEqual } from "node:crypto";
 
-// The scheduled page check: measures every CV and cover letter that
+// The scheduled page check: describes the postings' new companies (see
+// company-check.ts), then measures every CV and cover letter that
 // has no page check on this build (all of them after a deploy, and any written
 // straight to the database), without anyone opening the desk. Vercel Cron
 // calls it with CRON_SECRET; it is the one desk endpoint without requireUser().
@@ -33,6 +36,8 @@ function requireCronSecret(request: Request) {
 }
 
 interface PageCheckRun {
+  /** The companies described from free sources in this run; see company-check.ts. */
+  companies: CompanyCheckRun;
   /** e.g. "cv/frontend", "letter/acme-frontend". */
   checked: string[];
   failed: { name: string; error: string }[];
@@ -72,7 +77,9 @@ async function checkMissingPages(request: Request): Promise<PageCheckRun> {
         run: () => letterPages(chrome, letter.id),
       })),
   ];
-  const result: PageCheckRun = { checked: [], failed: [], left: [] };
+  // Companies first: quick, and the pages get what time is left.
+  const companies = await checkCompanies({ deadline: started + 15_000 });
+  const result: PageCheckRun = { companies, checked: [], failed: [], left: [] };
 
   async function runOne(job: Job) {
     if (Date.now() - started > BUDGET_MS) {

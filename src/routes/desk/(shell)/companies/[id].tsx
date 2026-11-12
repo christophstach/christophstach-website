@@ -5,21 +5,16 @@ import {
   COMPANY_FUNDINGS,
   COMPANY_FUNDING_LABELS,
 } from "../../../../data/companies";
-import type {
-  Company,
-  CompanyField,
-  CompanyFunding,
-  CompanyRecord,
-  CompanySuggestion,
-} from "../../../../data/companies";
+import type { Company, CompanyRecord, CompanySource } from "../../../../data/companies";
 import { For, Show, createMemo, createSignal, snapshot } from "solid-js";
-import { IconTrash, IconWorld } from "../../../../components/icons";
+import { IconRefresh, IconTrash } from "../../../../components/icons";
 import { companyFacts, countryName } from "../../../../lib/company";
 import {
   deleteDeskCompany,
-  lookUpDeskCompany,
+  recheckDeskCompany,
   saveDeskCompany,
 } from "../../../../lib/desk/companies";
+import { formatRelative } from "../../../../lib/format";
 import { getDeskCompanies, getDeskPostings } from "../../../../lib/desk/queries";
 import { useNavigate, useParams } from "@solidjs/router";
 import { DeskFormSection } from "../../../../components/desk/DeskFormSection";
@@ -44,18 +39,21 @@ const EMPTY_FORM: Company = {
 };
 
 /** The form's fields of a stored company. */
-function toForm({ updatedAt: _updatedAt, ...company }: CompanyRecord): Company {
+function toForm({
+  updatedAt: _updatedAt,
+  batch: _batch,
+  sources: _sources,
+  checkedAt: _checkedAt,
+  ...company
+}: CompanyRecord): Company {
   return company;
 }
 
-/** A field's name; a dash for unknown. */
-function fieldLabel(field: CompanyField | ""): string {
-  return field === "" ? "–" : COMPANY_FIELD_LABELS[field];
-}
-
-function fundingLabel(funding: CompanyFunding | ""): string {
-  return funding === "" ? "–" : COMPANY_FUNDING_LABELS[funding];
-}
+const SOURCE_NAMES: Record<CompanySource["kind"], string> = {
+  yc: "Y Combinator",
+  wikidata: "Wikidata",
+  ad: "Its ad",
+};
 
 /** The countries to pick from: the common ones, and the stored or suggested one if it isn't. */
 function countryOptions(current: string): string[] {
@@ -89,8 +87,6 @@ export default function CompanyEditor() {
     EMPTY_FORM,
   );
   const request = useDeskRequest();
-  const lookup = useDeskRequest();
-  const [suggestion, setSuggestion] = createSignal<CompanySuggestion>();
   const own = createMemo(() => {
     const key = companyKey(stored().name);
 
@@ -118,48 +114,16 @@ export default function CompanyEditor() {
     );
   }
 
-  async function lookUp() {
-    setSuggestion(undefined);
-
-    let found: CompanySuggestion | undefined;
-
-    if (
-      await lookup.run(async () => {
-        found = await lookUpDeskCompany(params.id);
-      })
-    ) {
-      setSuggestion(found);
-    }
-  }
-
-  /** Fills the form with what the lookup found; empty answers keep what's there. */
-  function useSuggestion(found: CompanySuggestion) {
-    setForm((draft) => {
-      if (found.field !== "") {
-        draft.field = found.field;
-      }
-
-      if (found.headquarters !== "") {
-        draft.headquarters = found.headquarters;
-      }
-
-      if (found.funding !== "") {
-        draft.funding = found.funding;
-      }
-
-      if (found.website !== "") {
-        draft.website = found.website;
-      }
-
-      if (found.summary !== "" && draft.note.trim() === "") {
-        draft.note = found.summary;
-      }
-    });
-    setSuggestion(undefined);
+  async function recheck() {
+    await request.run(() => recheckDeskCompany(params.id));
   }
 
   async function remove() {
-    if (!confirm(`Delete "${saved().name}"? Its postings stay; they're only not described.`)) {
+    if (
+      !confirm(
+        `Delete "${saved().name}"? Its postings stay. While they name it, the next check describes it anew from the sources.`,
+      )
+    ) {
       return;
     }
 
@@ -185,21 +149,13 @@ export default function CompanyEditor() {
           <p class="desk-head__sub">{companyFacts(saved()) || "Not described yet."}</p>
         </div>
 
-        <div class={styles.actions}>
-          <button
-            type="button"
-            class="button button--outline"
-            disabled={lookup.busy()}
-            onClick={() => void lookUp()}
-          >
-            <IconWorld size={16} />
-            {lookup.busy() ? "Looking up…" : "Look up"}
-          </button>
-          <DeskMenu
-            label="Company actions"
-            actions={[{ label: "Delete", icon: IconTrash, run: () => void remove(), danger: true }]}
-          />
-        </div>
+        <DeskMenu
+          label="Company actions"
+          actions={[
+            { label: "Check again", icon: IconRefresh, run: () => void recheck() },
+            { label: "Delete", icon: IconTrash, run: () => void remove(), danger: true },
+          ]}
+        />
       </header>
 
       <Show when={request.error() !== "" && !dirty()}>
@@ -207,73 +163,51 @@ export default function CompanyEditor() {
           {request.error()}
         </p>
       </Show>
-      <Show when={lookup.error()}>
-        {(error) => (
-          <p class="desk-error" role="alert">
-            {error()}
-          </p>
-        )}
-      </Show>
-      <Show when={lookup.busy()}>
-        <p class={styles.hint} role="status">
-          Claude is searching the web for {saved().name}; that takes up to a minute.
-        </p>
-      </Show>
 
       <div class="panels">
-        <Show when={suggestion()}>
-          {(found) => (
-            <DeskFormSection
-              title="lookup"
-              description="What a web search by Claude suggests. Check the sources: nothing is saved until you save."
-            >
-              <dl class={["field", "field--wide", styles.facts]}>
-                <dt>field</dt>
-                <dd>{fieldLabel(found().field)}</dd>
-                <dt>headquarters</dt>
-                <dd>{found().headquarters === "" ? "–" : countryName(found().headquarters)}</dd>
-                <dt>funding</dt>
-                <dd>{fundingLabel(found().funding)}</dd>
-                <dt>website</dt>
-                <dd>{found().website || "–"}</dd>
-                <dt>summary</dt>
-                <dd>{found().summary || "–"}</dd>
-                <dt>sources</dt>
-                <dd>
-                  <Show when={found().sources.length > 0} fallback="–">
-                    <ul class={styles.sources}>
-                      <For each={found().sources}>
-                        {(source) => (
-                          <li>
-                            <a href={source} class="text-link" target="_blank" rel="noreferrer">
-                              {source}
+        <DeskFormSection
+          title="found"
+          description="What the free sources say: the Y Combinator list, Wikidata and its ads. It fills only empty fields, so what you type stays."
+        >
+          <dl class={["field", "field--wide", styles.facts]}>
+            <dt>checked</dt>
+            <dd>
+              {request.busy()
+                ? "checking…"
+                : stored().checkedAt === ""
+                  ? "not yet: the next run checks it"
+                  : formatRelative(stored().checkedAt)}
+            </dd>
+            <dt>yc batch</dt>
+            <dd>{stored().batch || "–"}</dd>
+            <dt>sources</dt>
+            <dd>
+              <Show when={stored().sources.length > 0} fallback="nothing found">
+                <ul class={styles.sources}>
+                  <For each={stored().sources}>
+                    {(source) => (
+                      <li>
+                        <Show
+                          when={source.kind === "ad"}
+                          fallback={
+                            <a href={source.url} class="text-link" target="_blank" rel="noreferrer">
+                              {SOURCE_NAMES[source.kind]}
                             </a>
-                          </li>
-                        )}
-                      </For>
-                    </ul>
-                  </Show>
-                </dd>
-              </dl>
-              <div class={["field--wide", styles.actions]}>
-                <button
-                  type="button"
-                  class="button button--primary"
-                  onClick={() => useSuggestion(found())}
-                >
-                  Use these
-                </button>
-                <button
-                  type="button"
-                  class="button button--outline"
-                  onClick={() => setSuggestion(undefined)}
-                >
-                  Dismiss
-                </button>
-              </div>
-            </DeskFormSection>
-          )}
-        </Show>
+                          }
+                        >
+                          <a href={paths.desk.postings(source.url)()} class="text-link">
+                            {SOURCE_NAMES[source.kind]}
+                          </a>
+                          : “{source.text}”
+                        </Show>
+                      </li>
+                    )}
+                  </For>
+                </ul>
+              </Show>
+            </dd>
+          </dl>
+        </DeskFormSection>
 
         <DeskFormSection
           title="company"

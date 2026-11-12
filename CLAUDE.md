@@ -97,7 +97,8 @@ calls `requireUser()` first (`src/server/auth.ts`); the page guard doesn't cover
 exception is the scheduled page check (`/api/desk/page-checks`, `src/server/page-check-job.ts`):
 Vercel Cron calls it daily and a GitHub Action (`.github/workflows/page-checks.yml`) every 15
 minutes and after each production deploy, both with `CRON_SECRET`, and it seals a session only for its own Chrome
-to measure every CV and letter without a page check on this build.
+to measure every CV and letter without a page check on this build; first it describes the
+postings' new companies (`checkCompanies`).
 
 **Content is data, not markup.** CV content lives in the database, typed by the interfaces in
 `src/data/cv.ts` (`TimelineEntry`, `EntryRecord`, `SkillGroup`, `Profile`, `CvContent`). The
@@ -208,11 +209,17 @@ instead. Sample mails go in `tools/samples/`, which git ignores: they're private
 `/desk/companies`): field, headquarters (an ISO country code), funding, website and a note,
 typed in `src/data/companies.ts`. A posting has no link to its company: it matches by name
 (`companyKey` in `src/lib/posting.ts`, without legal forms like GmbH), unique per company, so
-`/desk/companies` also lists the postings' companies not yet described. The postings list
-shows a company's facts and filters by them. "Look up" (`src/server/company-lookup.ts`) asks
-Claude with web search for a suggestion and its sources; it only fills the form, nothing is
-saved until you save. It needs `ANTHROPIC_API_KEY`, and has to finish inside the function's
-60 s, so it is a plain server function with a 50 s timeout and no retries.
+`/desk/companies` also lists the postings' companies not yet described. They describe
+themselves, for free (`src/server/company-check.ts`): every name a posting gives gets a row,
+checked once and again after 30 days against the Y Combinator list (the unofficial yc-oss
+JSON: batch, country, industry), Wikidata (one SPARQL query searches 15 names: country,
+stock exchange, parent, website) and the ads' own text ("YC W25", "Series A", known
+investors), readers in `src/server/company-facts/`. Found facts only fill empty fields, so
+typed ones stay; `batch` and `sources` are only ever found. Checks run after a collector
+run, when a posting is added or saved, from the company's "Check again", and in the scheduled
+job (`/api/desk/page-checks`), which takes what the others left. The postings list shows a
+company's labels ("YC W25", "VC", "AI", "US"; `companyLabels` in `src/lib/company.ts`) and
+filters by them.
 
 **Cover letters** are private to the desk, each the one letter of an application (`cover_letters`,
 `src/server/cover-letters.ts`, edited at `/desk/cover-letters/<id>`). Name and contact come

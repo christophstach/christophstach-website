@@ -1,4 +1,5 @@
 import "server-only";
+import { checkCompaniesQuietly } from "./company-check";
 import { COLLECTOR_TYPES, POSTING_STATUSES } from "../data/postings";
 import { jobTermsShape, salaryInOrder } from "./job-terms";
 import type { CollectorType, PostingEdit } from "../data/postings";
@@ -23,6 +24,7 @@ import { applicationIds, linkPosting, saveApplication } from "./applications";
 import type { Application } from "../data/applications";
 import { readUrl } from "./collectors";
 import { requireUser } from "./auth";
+import { companyKey } from "../lib/posting";
 import { slugify } from "../lib/cover-letter";
 
 // The desk's posting and collector writes. Each checks the session first and
@@ -67,6 +69,12 @@ async function addDeskPostingByUrl(url: unknown): Promise<string> {
 
   // A posting the desk has already keeps its id and status.
   await addPostings([found], null);
+  await checkCompaniesQuietly({
+    deadline: Date.now() + 15_000,
+    keys: new Set([companyKey(found.company)]),
+    // Its ad may say more now than when the company was last checked.
+    force: true,
+  });
 
   return postingId(found);
 }
@@ -77,6 +85,12 @@ async function saveDeskPosting(id: string, edit: unknown): Promise<PostingEdit> 
   const parsed = parseInput(editSchema, edit);
 
   await savePosting(id, parsed);
+  await checkCompaniesQuietly({
+    deadline: Date.now() + 15_000,
+    keys: new Set([companyKey(parsed.company)]),
+    // Its ad may say more now than when the company was last checked.
+    force: true,
+  });
 
   return parsed;
 }
