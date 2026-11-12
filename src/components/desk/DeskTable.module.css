@@ -478,3 +478,30 @@
     padding: 0;
   }
 }
+
+/* A small control at the row's start, e.g. a star, right after the tick. */
+.table__head--control,
+.table__cell--control {
+  inline-size: 0;
+  padding-inline: var(--space-2) 0;
+}
+
+@container desk-table (max-width: 56rem) {
+  /* Rows stack, so the control sits in the row's top corner, left of the tick. */
+  .table__row:has(.table__cell--control) {
+    position: relative;
+    padding-inline-end: calc(var(--space-10) + var(--space-6));
+  }
+
+  .table__cell--control {
+    position: absolute;
+    inset-block-start: var(--space-4);
+    inset-inline-end: var(--space-4);
+    inline-size: auto;
+    padding: 0;
+  }
+
+  .table__row:has(.table__cell--check) .table__cell--control {
+    inset-inline-end: calc(var(--space-4) + var(--space-6));
+  }
+}
