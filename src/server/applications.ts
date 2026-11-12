@@ -3,8 +3,8 @@ import type { Application, ApplicationRecord, SentSummary } from "../data/applic
 import { applications, coverLetters } from "../../server/db/schema";
 import { asc, desc, eq } from "drizzle-orm";
 import { HttpError } from "./http";
+import { SALARY_CURRENCIES } from "../data/postings";
 import { readSentCopy } from "../data/sent-copy";
-import { reopenPosting } from "./postings";
 import { requireLinkedCv } from "./cvs";
 import { useDb } from "./db";
 
@@ -18,6 +18,10 @@ function toApplication(row: ApplicationRow): Application {
     jobUrl: row.jobUrl,
     jobDescription: row.jobDescription,
     location: row.location,
+    workplace: row.workplace,
+    salaryMin: row.salaryMin,
+    salaryMax: row.salaryMax,
+    salaryCurrency: SALARY_CURRENCIES.find((code) => code === row.salaryCurrency) ?? "",
     source: row.source,
     status: row.status,
     cvId: row.cvId ?? "",
@@ -113,20 +117,16 @@ async function saveApplication(application: Application, { create }: { create: b
 
 /**
  * Deletes an application and, with it, its cover letter. The posting it was
- * made from goes back among the favourites.
+ * made from no longer counts as applied to.
  */
 async function deleteApplication(id: string) {
   const deleted = await useDb()
     .delete(applications)
     .where(eq(applications.id, id))
-    .returning({ id: applications.id, postingId: applications.postingId });
+    .returning({ id: applications.id });
 
   if (deleted[0] === undefined) {
     throw notFound(id);
-  }
-
-  if (deleted[0].postingId !== null) {
-    await reopenPosting(deleted[0].postingId);
   }
 }
 

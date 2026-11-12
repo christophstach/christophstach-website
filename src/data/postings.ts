@@ -1,8 +1,10 @@
+import type { ApplicationStatus } from "./applications";
+
 /** Where a job ad is posted. */
 type PostingSource = "linkedin" | "web";
 
 /** Where a posting stands in the inbox. */
-type PostingStatus = "new" | "favourite" | "dismissed" | "applied";
+type PostingStatus = "new" | "favourite" | "dismissed";
 
 /** Where the work is done; empty if the ad does not say. */
 type Workplace = "remote" | "hybrid" | "onsite";
@@ -13,8 +15,18 @@ type SalaryCurrency = "EUR" | "USD" | "GBP" | "CHF";
 /** What a collector understands; each is a module in src/server/collectors/. */
 type CollectorType = "linkedin-email";
 
+/** Where the work is done and what it pays, as postings and applications keep it. */
+interface JobTerms {
+  workplace: Workplace | "";
+  /** The salary range per year, in whole units of its currency; null if not stated. */
+  salaryMin: number | null;
+  salaryMax: number | null;
+  /** Empty if no salary is stated. */
+  salaryCurrency: SalaryCurrency | "";
+}
+
 /** A job ad in the desk's inbox, private to the desk. */
-interface JobPosting {
+interface JobPosting extends JobTerms {
   /** URL slug, e.g. /desk/postings/linkedin-4012345678. */
   id: string;
   /** The collector that found it; empty if added by hand. */
@@ -30,19 +42,15 @@ interface JobPosting {
   description: string;
   /** ISO date; empty if the source doesn't say. */
   postedOn: string;
-  workplace: Workplace | "";
-  /** The salary range per year, in whole units of its currency; null if not stated. */
-  salaryMin: number | null;
-  salaryMax: number | null;
-  /** Empty if no salary is stated. */
-  salaryCurrency: SalaryCurrency | "";
   status: PostingStatus;
 }
 
 /** A posting as the desk lists it. */
 interface JobPostingRecord extends JobPosting {
-  /** The application created from it; empty if none. */
+  /** The application created from it; empty if none. Having one means it was applied to. */
   applicationId: string;
+  /** That application's status; empty if there is none. */
+  applicationStatus: ApplicationStatus | "";
   /** ISO timestamp of when it was found. */
   createdAt: string;
 }
@@ -80,13 +88,12 @@ interface Collector {
   postings: number;
 }
 
-const POSTING_STATUSES: readonly PostingStatus[] = ["new", "favourite", "dismissed", "applied"];
+const POSTING_STATUSES: readonly PostingStatus[] = ["new", "favourite", "dismissed"];
 
 const POSTING_STATUS_LABELS: Record<PostingStatus, string> = {
   new: "New",
   favourite: "Favourite",
   dismissed: "Dismissed",
-  applied: "Applied",
 };
 
 const POSTING_SOURCES: readonly PostingSource[] = ["linkedin", "web"];
@@ -140,6 +147,7 @@ export type {
   CollectorType,
   JobPosting,
   JobPostingRecord,
+  JobTerms,
   PostingEdit,
   PostingSource,
   PostingStatus,

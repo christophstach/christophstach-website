@@ -235,7 +235,7 @@ const jobPostings = pgTable(
     salaryMax: integer(),
     /** ISO 4217 code, e.g. EUR; empty if no salary is stated. */
     salaryCurrency: text().notNull().default(""),
-    status: text({ enum: ["new", "favourite", "dismissed", "applied"] })
+    status: text({ enum: ["new", "favourite", "dismissed"] })
       .notNull()
       .default("new"),
     /** What it was read from (a mail's text, a page's JSON-LD), to read again later. */
@@ -256,14 +256,23 @@ const applications = pgTable("applications", {
   jobDescription: text().notNull().default(""),
   /** Where the job is: a city, remote or hybrid. */
   location: text().notNull().default(""),
+  /** Where the work is done; empty if not stated. */
+  workplace: text({ enum: ["", "remote", "hybrid", "onsite"] })
+    .notNull()
+    .default(""),
+  /** The salary range per year, in whole units of its currency; null if not stated. */
+  salaryMin: integer(),
+  salaryMax: integer(),
+  /** ISO 4217 code, e.g. EUR; empty if no salary is stated. */
+  salaryCurrency: text().notNull().default(""),
   source: text({ enum: ["portal", "linkedin", "recruiter", "referral", "direct", "other"] })
     .notNull()
     .default("other"),
   status: text({
-    enum: ["saved", "applied", "interviewing", "offer", "accepted", "rejected", "withdrawn"],
+    enum: ["preparing", "applied", "interviewing", "offer", "accepted", "rejected", "withdrawn"],
   })
     .notNull()
-    .default("saved"),
+    .default("preparing"),
   /** The CV sent with it. */
   cvId: text().references(() => cvs.id, { onDelete: "set null", onUpdate: "cascade" }),
   /** The posting it was created from; its job fields were copied from it. */

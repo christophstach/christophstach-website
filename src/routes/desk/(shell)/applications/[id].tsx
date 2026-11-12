@@ -15,7 +15,10 @@ import {
 } from "../../../../lib/desk/applications";
 import { getDeskApplications, getDeskCvs } from "../../../../lib/desk/queries";
 import { useNavigate, useParams } from "@solidjs/router";
+import { fromTermsForm, toTermsForm } from "../../../../lib/posting";
 import { DeskFormSection } from "../../../../components/desk/DeskFormSection";
+import { DeskJobTerms } from "../../../../components/desk/DeskJobTerms";
+import type { JobTermsForm } from "../../../../lib/posting";
 import { DeskMenu } from "../../../../components/desk/DeskMenu";
 import { DeskMeta } from "../../../../components/desk/DeskMeta";
 import { DeskSaveBar } from "../../../../components/desk/DeskSaveBar";
@@ -31,8 +34,11 @@ import styles from "../../../../components/desk/page-applications-id.module.css"
 import { useDeskRequest } from "../../../../lib/desk/request";
 import { useDraft } from "../../../../lib/desk/draft";
 
+/** The application as its form holds it; workplace and salary as in JobTermsForm. */
+type ApplicationForm = Omit<Application, keyof JobTermsForm> & JobTermsForm;
+
 /** The form's state: the application without what the list adds, its lists copied. */
-function toForm(application: Application): Application {
+function toForm(application: Application): ApplicationForm {
   return {
     id: application.id,
     company: application.company,
@@ -40,6 +46,7 @@ function toForm(application: Application): Application {
     jobUrl: application.jobUrl,
     jobDescription: application.jobDescription,
     location: application.location,
+    ...toTermsForm(application),
     source: application.source,
     status: application.status,
     cvId: application.cvId,
@@ -52,15 +59,19 @@ function toForm(application: Application): Application {
   };
 }
 
-const EMPTY_FORM: Application = toForm({
+const EMPTY_FORM: ApplicationForm = toForm({
   id: "",
   company: "",
   jobTitle: "",
   jobUrl: "",
   jobDescription: "",
   location: "",
+  workplace: "",
+  salaryMin: null,
+  salaryMax: null,
+  salaryCurrency: "",
   source: "other",
-  status: "saved",
+  status: "preparing",
   cvId: "",
   appliedOn: "",
   nextStep: "",
@@ -136,7 +147,11 @@ export default function ApplicationEditor() {
 
   async function save(event: SubmitEvent) {
     event.preventDefault();
-    await request.run(() => saveDeskApplication(snapshot(form), { create: false }));
+    const draft = snapshot(form);
+
+    await request.run(() =>
+      saveDeskApplication({ ...draft, ...fromTermsForm(draft) }, { create: false }),
+    );
   }
 
   /** Freezes the CV and letters as they print now; unsaved changes would be left out. */
@@ -265,8 +280,16 @@ export default function ApplicationEditor() {
           </label>
           <label class="field">
             <span class="field__label">location</span>
-            <input {...bind("location")} class="input" placeholder="Berlin, remote, hybrid…" />
+            <input {...bind("location")} class="input" placeholder="Berlin, Munich…" />
           </label>
+          <DeskJobTerms
+            terms={form}
+            onChange={(patch) => {
+              setForm((draft) => {
+                Object.assign(draft, patch);
+              });
+            }}
+          />
           <label class="field">
             <span class="field__label">source</span>
             <select

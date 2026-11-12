@@ -1,6 +1,6 @@
 import "server-only";
 import type { JobPosting, JobPostingRecord, PostingEdit } from "../data/postings";
-import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { SALARY_CURRENCIES } from "../data/postings";
@@ -50,18 +50,25 @@ async function listPostings(): Promise<JobPostingRecord[]> {
   const [rows, linked] = await Promise.all([
     useDb().select().from(jobPostings).orderBy(desc(jobPostings.createdAt), desc(jobPostings.id)),
     useDb()
-      .select({ id: applications.id, postingId: applications.postingId })
+      .select({
+        id: applications.id,
+        status: applications.status,
+        postingId: applications.postingId,
+      })
       .from(applications)
       .where(isNotNull(applications.postingId)),
   ]);
-  const applicationOf = new Map(linked.map((row) => [row.postingId, row.id]));
+  const applicationOf = new Map(linked.map((row) => [row.postingId, row]));
 
-  return rows.map((row) =>
-    Object.assign(toPosting(row), {
-      applicationId: applicationOf.get(row.id) ?? "",
-      createdAt: row.createdAt.toISOString(),
-    }),
-  );
+  return rows.map((row): JobPostingRecord => {
+    const application = applicationOf.get(row.id);
+    const linkedTo: Pick<JobPostingRecord, "applicationId" | "applicationStatus"> =
+      application === undefined
+        ? { applicationId: "", applicationStatus: "" }
+        : { applicationId: application.id, applicationStatus: application.status };
+
+    return Object.assign(toPosting(row), linkedTo, { createdAt: row.createdAt.toISOString() });
+  });
 }
 
 async function findPosting(id: string): Promise<JobPosting | undefined> {
@@ -175,14 +182,6 @@ async function deletePosting(id: string) {
   }
 }
 
-/** Puts a posting back among the favourites once its application is gone. */
-async function reopenPosting(id: string) {
-  await useDb()
-    .update(jobPostings)
-    .set({ status: "favourite", updatedAt: new Date() })
-    .where(and(eq(jobPostings.id, id), eq(jobPostings.status, "applied")));
-}
-
 /** A posting's stored input, for a collector to read again. */
 async function postingsWithRaw(collectorId: string) {
   return useDb()
@@ -224,7 +223,6 @@ export {
   listPostings,
   postingId,
   postingsWithRaw,
-  reopenPosting,
   requirePosting,
   savePosting,
   setPostingsStatus,

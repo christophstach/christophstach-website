@@ -1,6 +1,7 @@
 import "server-only";
-import { COLLECTOR_TYPES, POSTING_STATUSES, SALARY_CURRENCIES, WORKPLACES } from "../data/postings";
-import type { CollectorType, PostingEdit, PostingStatus } from "../data/postings";
+import { COLLECTOR_TYPES, POSTING_STATUSES } from "../data/postings";
+import { jobTermsShape, salaryInOrder } from "./job-terms";
+import type { CollectorType, PostingEdit } from "../data/postings";
 import {
   addPostings,
   deletePosting,
@@ -9,18 +10,7 @@ import {
   savePosting,
   setPostingsStatus,
 } from "./postings";
-import {
-  array,
-  boolean,
-  int,
-  literal,
-  maximum,
-  minimum,
-  nullable,
-  object,
-  refine,
-  string,
-} from "zod/mini";
+import { array, boolean, literal, object, string } from "zod/mini";
 import {
   createCollector,
   deleteCollector,
@@ -41,12 +31,6 @@ import { slugify } from "../lib/cover-letter";
 const NOT_POSTING = "Not a posting.";
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
 
-/** A yearly salary, in whole units of its currency. */
-const salary = int("A salary is a whole number.").check(
-  minimum(0, "A salary isn't negative."),
-  maximum(100_000_000, "That salary is too large."),
-);
-
 const editSchema = object(
   {
     company: trimmed(NOT_POSTING),
@@ -54,20 +38,11 @@ const editSchema = object(
     location: trimmed(NOT_POSTING),
     description: trimmed(NOT_POSTING),
     postedOn: emptyOrMatching(ISO_DATE, NOT_POSTING),
-    workplace: literal(["", ...WORKPLACES], NOT_POSTING),
-    salaryMin: nullable(salary),
-    salaryMax: nullable(salary),
-    salaryCurrency: literal(["", ...SALARY_CURRENCIES], NOT_POSTING),
+    ...jobTermsShape(NOT_POSTING),
     status: literal(POSTING_STATUSES, NOT_POSTING),
   },
   NOT_POSTING,
-).check(
-  refine(
-    (edit) =>
-      edit.salaryMin === null || edit.salaryMax === null || edit.salaryMin <= edit.salaryMax,
-    "The salary's lower end is above its upper one.",
-  ),
-);
+).check(salaryInOrder);
 
 const statusSchema = object({
   ids: array(string(NOT_POSTING), NOT_POSTING),
@@ -133,8 +108,8 @@ async function freeApplicationId(slug: string): Promise<string> {
 }
 
 /**
- * Makes an application from a posting: its job fields copied, the posting
- * marked "applied". Answers the application's id.
+ * Makes an application from a posting, its job fields copied. The link marks
+ * the posting as applied to. Answers the application's id.
  */
 async function applyToDeskPosting(id: string): Promise<string> {
   await requireUser();
@@ -149,8 +124,12 @@ async function applyToDeskPosting(id: string): Promise<string> {
     jobUrl: posting.url,
     jobDescription: posting.description,
     location: posting.location,
+    workplace: posting.workplace,
+    salaryMin: posting.salaryMin,
+    salaryMax: posting.salaryMax,
+    salaryCurrency: posting.salaryCurrency,
     source: posting.source === "linkedin" ? "linkedin" : "direct",
-    status: "saved",
+    status: "preparing",
     cvId: "",
     appliedOn: "",
     nextStep: "",
@@ -162,7 +141,6 @@ async function applyToDeskPosting(id: string): Promise<string> {
 
   await saveApplication(application, { create: true });
   await linkPosting(applicationId, posting.id);
-  await setPostingsStatus([posting.id], "applied" satisfies PostingStatus);
 
   return applicationId;
 }

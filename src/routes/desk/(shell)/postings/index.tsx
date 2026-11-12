@@ -28,13 +28,27 @@ import { formatRelative } from "../../../../lib/format";
 import { paths } from "../../../../router";
 import styles from "../../../../components/desk/page-postings.module.css";
 import { useDeskRequest } from "../../../../lib/desk/request";
+import { APPLICATION_STATUSES } from "../../../../data/applications";
+import { statusTone } from "../../../../lib/application";
 
-/** New postings stand out; the rest read as plain status. */
-function postingStatus(status: PostingStatus) {
+/**
+ * Where a posting stands: its application's status once it has one ("Preparing",
+ * "Interviewing", …), else its own. New postings stand out.
+ */
+function postingStatus(posting: JobPostingRecord) {
+  if (posting.applicationStatus !== "") {
+    return statusTone(posting.applicationStatus);
+  }
+
   return {
-    tone: status === "new" ? ("ok" as const) : ("none" as const),
-    text: POSTING_STATUS_LABELS[status],
+    tone: posting.status === "new" ? ("ok" as const) : ("none" as const),
+    text: POSTING_STATUS_LABELS[posting.status],
   };
+}
+
+/** For the status filter: postings with an application count as applied. */
+function postingState(posting: JobPostingRecord): PostingStatus | "applied" {
+  return posting.applicationId === "" ? posting.status : "applied";
 }
 
 /** Each posting's likely duplicates (same company and title); see findDuplicates. */
@@ -50,14 +64,13 @@ const columns = (duplicates: Duplicates, star: Star): DeskTableColumn<JobPosting
   {
     id: "favourite",
     header: "favourite",
-    // Applied postings keep their status, so their star stays put.
     cell: (posting) => (
       <button
         type="button"
         class={[styles.star, { [styles["star--on"] ?? ""]: posting.status === "favourite" }]}
         aria-pressed={posting.status === "favourite" ? "true" : "false"}
         aria-label={`Favourite: ${posting.title || posting.externalId}`}
-        disabled={star.busy() || posting.status === "applied"}
+        disabled={star.busy()}
         onClick={() => star.toggle(posting)}
       >
         <IconStar size={16} />
@@ -118,11 +131,15 @@ const columns = (duplicates: Duplicates, star: Star): DeskTableColumn<JobPosting
     id: "status",
     header: "status",
     cell: (posting) => (
-      <span class={`desk-status desk-status--${postingStatus(posting.status).tone}`}>
-        {postingStatus(posting.status).text}
+      <span class={`desk-status desk-status--${postingStatus(posting).tone}`}>
+        {postingStatus(posting).text}
       </span>
     ),
-    sort: (posting) => POSTING_STATUSES.indexOf(posting.status),
+    // Applied ones last, by their application's status.
+    sort: (posting) =>
+      posting.applicationStatus === ""
+        ? POSTING_STATUSES.indexOf(posting.status)
+        : POSTING_STATUSES.length + APPLICATION_STATUSES.indexOf(posting.applicationStatus),
   },
   {
     id: "found",
@@ -142,11 +159,14 @@ function filters(
     {
       id: "status",
       label: "status",
-      options: POSTING_STATUSES.map((status) => ({
-        value: status,
-        label: POSTING_STATUS_LABELS[status],
-      })),
-      value: (posting) => posting.status,
+      options: [
+        ...POSTING_STATUSES.map((status) => ({
+          value: status,
+          label: POSTING_STATUS_LABELS[status],
+        })),
+        { value: "applied", label: "Applied" },
+      ],
+      value: postingState,
     },
     {
       id: "duplicates",
@@ -268,25 +288,9 @@ export default function Postings() {
   const adding = () => search.new !== undefined;
   const request = useDeskRequest();
 
-  /**
-   * Sets the status of the ticked postings. Ones already applied to keep
-   * theirs, so their link to the application stays.
-   */
+  /** Sets the status of the ticked postings; an application keeps its link either way. */
   function setStatus(status: PostingStatus) {
-    return (ids: string[]) => {
-      const applied = new Set(
-        postings()
-          .filter((posting) => posting.status === "applied")
-          .map((posting) => posting.id),
-      );
-
-      return request.run(() =>
-        setDeskPostingsStatus(
-          ids.filter((id) => !applied.has(id)),
-          status,
-        ),
-      );
-    };
+    return (ids: string[]) => request.run(() => setDeskPostingsStatus(ids, status));
   }
 
   return (
