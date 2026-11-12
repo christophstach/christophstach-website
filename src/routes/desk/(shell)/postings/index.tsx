@@ -8,6 +8,7 @@ import {
 } from "../../../../data/postings";
 import {
   SALARY_BANDS,
+  companyKey,
   findDuplicates,
   formatSalary,
   formatShortDay,
@@ -16,7 +17,15 @@ import {
 } from "../../../../lib/posting";
 import type { Collector, JobPostingRecord, PostingStatus } from "../../../../data/postings";
 import { Show, createMemo, createSignal } from "solid-js";
-import { getDeskCollectors, getDeskPostings } from "../../../../lib/desk/queries";
+import {
+  COMPANY_FIELDS,
+  COMPANY_FIELD_LABELS,
+  COMPANY_FUNDINGS,
+  COMPANY_FUNDING_LABELS,
+} from "../../../../data/companies";
+import { getDeskCollectors, getDeskCompanies, getDeskPostings } from "../../../../lib/desk/queries";
+import { companiesByKey, companyFacts, countryName } from "../../../../lib/company";
+import type { CompanyRecord } from "../../../../data/companies";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import { DeskMeta } from "../../../../components/desk/DeskMeta";
 import { DeskTable } from "../../../../components/desk/DeskTable";
@@ -54,13 +63,32 @@ function postingState(posting: JobPostingRecord): PostingStatus | "applied" {
 /** Each posting's likely duplicates (same company and title); see findDuplicates. */
 type Duplicates = ReadonlyMap<string, readonly JobPostingRecord[]>;
 
+/** The described companies by their matching key. */
+type Companies = ReadonlyMap<string, CompanyRecord>;
+
+/** The company described for a posting, if any. */
+function companyOf(companies: Companies, posting: JobPostingRecord): CompanyRecord | undefined {
+  return companies.get(companyKey(posting.company));
+}
+
+/** "AI · United States · VC-backed" for a posting's described company; empty if none. */
+function companyFactsOf(companies: Companies, posting: JobPostingRecord): string {
+  const company = companyOf(companies, posting);
+
+  return company === undefined ? "" : companyFacts(company);
+}
+
 /** The star in a row: favourite or not, and what toggles it. */
 interface Star {
   toggle: (posting: JobPostingRecord) => void;
   busy: () => boolean;
 }
 
-const columns = (duplicates: Duplicates, star: Star): DeskTableColumn<JobPostingRecord>[] => [
+const columns = (
+  duplicates: Duplicates,
+  companies: Companies,
+  star: Star,
+): DeskTableColumn<JobPostingRecord>[] => [
   {
     id: "favourite",
     header: "favourite",
@@ -86,7 +114,9 @@ const columns = (duplicates: Duplicates, star: Star): DeskTableColumn<JobPosting
       <span class={styles.name}>
         <span class={styles.name__main}>{posting.title || posting.externalId}</span>
         <span class={styles.name__sub}>
-          {posting.company || "–"}
+          {[posting.company, companyFactsOf(companies, posting)]
+            .filter((part) => part !== "")
+            .join(" · ") || "–"}
           {duplicates.has(posting.id) ? (
             <span class={["role-tag", styles.duplicate]}>
               duplicate? {(duplicates.get(posting.id)?.length ?? 0) + 1}×
@@ -96,7 +126,8 @@ const columns = (duplicates: Duplicates, star: Star): DeskTableColumn<JobPosting
       </span>
     ),
     sort: (posting) => posting.title,
-    search: (posting) => `${posting.title} ${posting.company} ${posting.location}`,
+    search: (posting) =>
+      `${posting.title} ${posting.company} ${posting.location} ${companyFactsOf(companies, posting)}`,
   },
   {
     id: "location",
@@ -150,10 +181,19 @@ const columns = (duplicates: Duplicates, star: Star): DeskTableColumn<JobPosting
   },
 ];
 
-/** The filters: status, workplace, salary, duplicates, source, and which collector found it. */
+/** The countries the described companies sit in, by name. */
+function headquarters(companies: Companies): string[] {
+  return [
+    ...new Set([...companies.values()].flatMap((company) => company.headquarters || [])),
+  ].toSorted((one, other) => countryName(one).localeCompare(countryName(other)));
+}
+
+/** The filters: status, workplace, salary, duplicates, source, the company's field,
+ * headquarters and funding, and which collector found it. */
 function filters(
   collectors: Collector[],
   duplicates: Duplicates,
+  companies: Companies,
 ): DeskTableFilter<JobPostingRecord>[] {
   return [
     {
@@ -215,6 +255,36 @@ function filters(
         { value: "", label: "Added by hand" },
       ],
       value: (posting) => posting.collectorId,
+    },
+    {
+      id: "field",
+      label: "company field",
+      options: [
+        ...COMPANY_FIELDS.map((field) => ({ value: field, label: COMPANY_FIELD_LABELS[field] })),
+        { value: "", label: "Unknown" },
+      ],
+      value: (posting) => companyOf(companies, posting)?.field ?? "",
+    },
+    {
+      id: "headquarters",
+      label: "headquarters",
+      options: [
+        ...headquarters(companies).map((code) => ({ value: code, label: countryName(code) })),
+        { value: "", label: "Unknown" },
+      ],
+      value: (posting) => companyOf(companies, posting)?.headquarters ?? "",
+    },
+    {
+      id: "funding",
+      label: "funding",
+      options: [
+        ...COMPANY_FUNDINGS.map((funding) => ({
+          value: funding,
+          label: COMPANY_FUNDING_LABELS[funding],
+        })),
+        { value: "", label: "Unknown" },
+      ],
+      value: (posting) => companyOf(companies, posting)?.funding ?? "",
     },
   ];
 }
@@ -284,6 +354,8 @@ export default function Postings() {
   const [search] = useSearchParams();
   const postings = createMemo(() => getDeskPostings());
   const collectors = createMemo(() => getDeskCollectors());
+  const described = createMemo(() => getDeskCompanies());
+  const companies = createMemo(() => companiesByKey(described()));
   const duplicates = createMemo(() => findDuplicates(postings()));
   const adding = () => search.new !== undefined;
   const request = useDeskRequest();
@@ -338,7 +410,7 @@ export default function Postings() {
           rowKey={(posting) => posting.id}
           rowHref={(posting) => paths.desk.postings(posting.id)()}
           initialSort={{ column: "found", direction: "desc" }}
-          columns={columns(duplicates(), {
+          columns={columns(duplicates(), companies(), {
             toggle: (posting) =>
               void request.run(() =>
                 setDeskPostingsStatus(
@@ -348,7 +420,7 @@ export default function Postings() {
               ),
             busy: request.busy,
           })}
-          filters={filters(collectors(), duplicates())}
+          filters={filters(collectors(), duplicates(), companies())}
           select={{
             label: (posting) => `Tick ${posting.title || posting.externalId}`,
             actions: [
@@ -374,5 +446,6 @@ export const route = {
   preload: () => {
     void getDeskPostings();
     void getDeskCollectors();
+    void getDeskCompanies();
   },
 } satisfies RouteDefinition;
