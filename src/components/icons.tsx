@@ -110,6 +110,14 @@ export function IconChevronUp(props: IconProps): JSX.Element {
   return <TablerIcon {...props} path="m6 15l6-6l6 6" />;
 }
 
+export function IconChevronLeft(props: IconProps): JSX.Element {
+  return <TablerIcon {...props} path="m15 6l-6 6l6 6" />;
+}
+
+export function IconChevronRight(props: IconProps): JSX.Element {
+  return <TablerIcon {...props} path="m9 6l6 6l-6 6" />;
+}
+
 export function IconCopy(props: IconProps): JSX.Element {
   return (
     <TablerIcon

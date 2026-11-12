@@ -169,7 +169,7 @@ are data in `src/data/desk.ts`. Desk reads are queries in `src/lib/desk/queries.
 follows the stored value, reconciled by id, compared by content so refetches don't reset
 typing; it asks before leaving with unsaved changes. Change store arrays in place (`setItems` in
 `src/lib/desk/picks.ts`) and key lists by a stable field. Shared desk components:
-`DeskTable` (overview lists: search, filters, sorting, opt-in reorder), `DeskFormSection`,
+`DeskTable` (overview lists: search, filters, sorting, pages of 25, opt-in reorder), `DeskFormSection`,
 `DeskSaveBar`, `DeskMenu`, `DeskLinkRows`, `DeskCvRows` (a CV's picks).
 
 **Applications** are private to the desk (`applications`, `src/server/applications.ts`, edited
