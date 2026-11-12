@@ -22,6 +22,7 @@ import { DeskMenu } from "../../../../components/desk/DeskMenu";
 import { DeskMeta } from "../../../../components/desk/DeskMeta";
 import { DeskSaveBar } from "../../../../components/desk/DeskSaveBar";
 import type { RouteDefinition } from "@solidjs/router";
+import { findDuplicates, workplaceLabel } from "../../../../lib/posting";
 import { formatRelative } from "../../../../lib/format";
 import { paths } from "../../../../router";
 import styles from "../../../../components/desk/page-postings.module.css";
@@ -118,6 +119,7 @@ export default function PostingEditor() {
     EMPTY_FORM,
   );
   const request = useDeskRequest();
+  const duplicates = createMemo(() => findDuplicates(postings()).get(params.id) ?? []);
   const collector = () =>
     collectors().find((candidate) => candidate.id === stored().collectorId)?.label ??
     "Added by hand";
@@ -255,6 +257,39 @@ export default function PostingEditor() {
       </Show>
 
       <div class="panels">
+        <Show when={duplicates().length > 0}>
+          <section class="panel" aria-labelledby="panel-duplicates">
+            <header class="panel__head">
+              <h2 id="panel-duplicates" class="panel__title">
+                likely duplicates
+              </h2>
+              <p class={["panel__end", styles.hint]}>
+                Same company and title: a repost, or the job in another city.
+              </p>
+            </header>
+            <ul class="panel__rows">
+              <For each={duplicates()} keyed={(other) => other.id}>
+                {(other) => (
+                  <li>
+                    <a href={paths.desk.postings(other().id)} class="panel-row">
+                      <span class="panel-row__label">{other().title}</span>
+                      <span class="panel-row__meta">
+                        <span>
+                          {[other().location, workplaceLabel(other().workplace)]
+                            .filter((part) => part !== "")
+                            .join(" · ") || "–"}
+                        </span>
+                        <span>{POSTING_STATUS_LABELS[other().status]}</span>
+                        <span>found {formatRelative(other().createdAt)}</span>
+                      </span>
+                    </a>
+                  </li>
+                )}
+              </For>
+            </ul>
+          </section>
+        </Show>
+
         <DeskFormSection title="ad" description="The job, as its source describes it.">
           <label class="field">
             <span class="field__label">job title</span>
