@@ -68,6 +68,8 @@ interface SentSummary {
 interface ApplicationRecord extends Application {
   /** Its cover letter, at most one; null if it has none. */
   letter: { id: string; label: string } | null;
+  /** The posting it was made from; empty if none. */
+  postingId: string;
   /** What it sent; null until it was marked as sent. */
   sent: SentSummary | null;
   /** ISO timestamp of the last save. */

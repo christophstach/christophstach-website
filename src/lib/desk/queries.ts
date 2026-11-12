@@ -58,6 +58,22 @@ export const getDeskProjects = query(async () => {
   return desk.deskProjects();
 }, "desk-projects");
 
+export const getDeskPostings = query(async () => {
+  "use server";
+
+  const desk = await import("../../server/desk-read");
+
+  return desk.deskPostings();
+}, "desk-postings");
+
+export const getDeskCollectors = query(async () => {
+  "use server";
+
+  const desk = await import("../../server/desk-read");
+
+  return desk.deskCollectors();
+}, "desk-collectors");
+
 export const getDeskUser = query(async () => {
   "use server";
 

@@ -296,6 +296,17 @@ export default function ApplicationEditor() {
           <label class="field field--wide">
             <span class="field__label">url</span>
             <input {...bind("jobUrl")} class="input" type="url" placeholder="https://…" />
+            <Show when={stored().postingId}>
+              {(postingId) => (
+                <span class="field__hint">
+                  Made from{" "}
+                  <a href={paths.desk.postings(postingId())} class="text-link">
+                    a posting
+                  </a>
+                  .
+                </span>
+              )}
+            </Show>
           </label>
           <label class="field field--wide">
             <span class="field__label">description</span>

@@ -17,3 +17,6 @@ node_modules
 
 # Claude Code: local, machine-specific
 .claude
+
+# Sample mails for the collectors; private, never committed.
+/tools/samples/

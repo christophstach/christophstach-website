@@ -165,7 +165,7 @@ session only for `DESK_GITHUB_USER_ID`. The session is h3's sealed cookie, from 
 redirects anonymous `/desk/**` requests to `/login`, before anything renders. Sidebar sections
 are data in `src/data/desk.ts`. Desk reads are queries in `src/lib/desk/queries.ts` (keys
 `desk-cvs`, `desk-applications`, `desk-cover-letters`, `desk-cv-content`, `desk-projects`, `desk-profile`,
-`desk-user`). Editors keep their form in `useDraft` (`src/lib/desk/draft.ts`): a store that
+`desk-user`, `desk-postings`, `desk-collectors`). Editors keep their form in `useDraft` (`src/lib/desk/draft.ts`): a store that
 follows the stored value, reconciled by id, compared by content so refetches don't reset
 typing; it asks before leaving with unsaved changes. Change store arrays in place (`setItems` in
 `src/lib/desk/picks.ts`) and key lists by a stable field. Shared desk components:
@@ -181,6 +181,19 @@ deleting it deletes the letter. "Mark as sent" freezes the CV and letter as they
 into `applications.sent` (`src/server/sent-copies.ts`; the copy keeps a list of letters, at most
 one); it's read through the zod schema in `src/data/sent-copy.ts`, since the renderers may
 change after it was stored, and printed from `/desk/sent-print/<id>` and `/desk/sent-print/<id>/<letter>`.
+
+**Postings** are job ads to apply to (`job_postings`, `src/server/postings.ts`, the inbox at
+`/desk/postings`), unique by source and external id, so a job found twice is stored once.
+**Collectors** bring them in (`collectors`, `src/server/collector-store.ts`, at
+`/desk/collectors`): each has a type, and a secret shown once and stored only as its SHA-256.
+Push collectors POST to `/api/collectors/<id>` with `Authorization: Bearer <secret>`; that
+endpoint checks the secret instead of `requireUser()`. Each type's reader is in
+`src/server/collectors/` (`PUSH_COLLECTORS`): `linkedin-email` reads LinkedIn's job alert mails,
+sent by the Gmail script `tools/linkedin-alerts.gs`, and keeps the mail as `raw` so "Read again"
+can parse it anew. "Add by URL" (`readUrl`) reads a page's JSON-LD `JobPosting`; it never fetches
+LinkedIn, whose links keep only the job id. "Create application" copies a posting into an
+application (`applications.posting_id`) and marks it applied; deleting the application reopens
+it. Sample mails go in `tools/samples/`, which git ignores: they're private.
 
 **Cover letters** are private to the desk, each the one letter of an application (`cover_letters`,
 `src/server/cover-letters.ts`, edited at `/desk/cover-letters/<id>`). Name and contact come

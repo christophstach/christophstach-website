@@ -4,6 +4,7 @@ import { applications, coverLetters } from "../../server/db/schema";
 import { asc, desc, eq } from "drizzle-orm";
 import { HttpError } from "./http";
 import { readSentCopy } from "../data/sent-copy";
+import { reopenPosting } from "./postings";
 import { requireLinkedCv } from "./cvs";
 import { useDb } from "./db";
 
@@ -69,6 +70,7 @@ async function listApplications(): Promise<ApplicationRecord[]> {
         letters
           .filter((letter) => letter.applicationId === row.id)
           .map(({ id, label }) => ({ id, label }))[0] ?? null,
+      postingId: row.postingId ?? "",
       sent: sentSummary(row.sent),
       updatedAt: row.updatedAt.toISOString(),
     }),
@@ -109,16 +111,42 @@ async function saveApplication(application: Application, { create }: { create: b
   }
 }
 
-/** Deletes an application and, with it, its cover letter. */
+/**
+ * Deletes an application and, with it, its cover letter. The posting it was
+ * made from goes back among the interesting ones.
+ */
 async function deleteApplication(id: string) {
   const deleted = await useDb()
     .delete(applications)
     .where(eq(applications.id, id))
-    .returning({ id: applications.id });
+    .returning({ id: applications.id, postingId: applications.postingId });
 
-  if (deleted.length === 0) {
+  if (deleted[0] === undefined) {
     throw notFound(id);
+  }
+
+  if (deleted[0].postingId !== null) {
+    await reopenPosting(deleted[0].postingId);
   }
 }
 
-export { deleteApplication, findApplication, listApplications, saveApplication };
+/** Every application's id. */
+async function applicationIds(): Promise<string[]> {
+  const rows = await useDb().select({ id: applications.id }).from(applications);
+
+  return rows.map((row) => row.id);
+}
+
+/** Notes the posting an application was made from. */
+async function linkPosting(id: string, postingId: string) {
+  await useDb().update(applications).set({ postingId }).where(eq(applications.id, id));
+}
+
+export {
+  applicationIds,
+  deleteApplication,
+  findApplication,
+  linkPosting,
+  listApplications,
+  saveApplication,
+};

@@ -1,0 +1,104 @@
+/* The postings and collectors pages: their create forms, table cells and
+   the collector's setup panel. */
+
+.create {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+}
+
+.create__title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+}
+
+.create__fields {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 48rem) {
+  .create__fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.create__error {
+  font-size: var(--text-sm);
+  color: var(--color-signal);
+}
+
+.create__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* A posting or collector in a table: its name over a second line. */
+.name {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.name__main {
+  font-weight: var(--font-semibold);
+  color: var(--color-heading);
+}
+
+.name__sub {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* The posting's quick actions under its head. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* The secret, shown once: monospace, selectable, wrapping anywhere. */
+.secret {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.steps {
+  display: grid;
+  gap: var(--space-2);
+  padding-left: var(--space-5);
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.facts dt {
+  color: var(--color-text-muted);
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

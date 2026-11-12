@@ -200,6 +200,15 @@ export function IconLayoutSidebarLeftExpand(props: IconProps): JSX.Element {
   );
 }
 
+export function IconInbox(props: IconProps): JSX.Element {
+  return (
+    <TablerIcon
+      {...props}
+      path="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z M4 13h3l3 3h4l3-3h3"
+    />
+  );
+}
+
 export function IconLogout(props: IconProps): JSX.Element {
   return (
     <TablerIcon
@@ -220,6 +229,24 @@ export function IconMail(props: IconProps): JSX.Element {
 
 export function IconPlus(props: IconProps): JSX.Element {
   return <TablerIcon {...props} path="M12 5v14m-7-7h14" />;
+}
+
+export function IconRefresh(props: IconProps): JSX.Element {
+  return (
+    <TablerIcon
+      {...props}
+      path="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4 M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"
+    />
+  );
+}
+
+export function IconRss(props: IconProps): JSX.Element {
+  return (
+    <TablerIcon
+      {...props}
+      path="M4 19a1 1 0 1 0 2 0a1 1 0 1 0-2 0 M4 4a16 16 0 0 1 16 16 M4 11a9 9 0 0 1 9 9"
+    />
+  );
 }
 
 export function IconSend(props: IconProps): JSX.Element {

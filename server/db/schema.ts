@@ -7,6 +7,7 @@ import {
   real,
   text,
   timestamp,
+  unique,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 import type { ApplicationContact, ApplicationEvent } from "../../src/data/applications";
@@ -175,6 +176,67 @@ const projects = pgTable("projects", {
 });
 
 /** One job applied for, or about to be, private to the desk. */
+/**
+ * A source that sends job postings to the desk, e.g. the LinkedIn job alert
+ * mails a script in Gmail forwards. Private to the desk. What each type
+ * understands is its module in src/server/collectors/.
+ */
+const collectors = pgTable("collectors", {
+  /** URL slug, e.g. /desk/collectors/linkedin-alerts and /api/collectors/linkedin-alerts. */
+  id: text().primaryKey(),
+  type: text({ enum: ["linkedin-email"] }).notNull(),
+  label: text().notNull(),
+  /** A paused collector refuses what is sent to it. */
+  active: boolean().notNull().default(true),
+  /** SHA-256 (hex) of the secret it is sent with; the secret itself is shown once. */
+  secretHash: text().notNull(),
+  /** The last time something was sent to it, and what came of it. */
+  lastRunAt: timestamp({ withTimezone: true }),
+  lastFound: integer().notNull().default(0),
+  lastAdded: integer().notNull().default(0),
+  /** Why the last run failed; empty if it didn't. */
+  lastError: text().notNull().default(""),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * A job ad found by a collector or added by URL: the desk's inbox, private.
+ * One per ad: a source's id for it is unique.
+ */
+const jobPostings = pgTable(
+  "job_postings",
+  {
+    /** URL slug, e.g. /desk/postings/linkedin-4012345678. */
+    id: text().primaryKey(),
+    /** The collector that found it; null if added by hand. */
+    collectorId: text().references(() => collectors.id, {
+      onDelete: "set null",
+      onUpdate: "cascade",
+    }),
+    /** Where the ad is posted. */
+    source: text({ enum: ["linkedin", "web"] }).notNull(),
+    /** The source's id for it: LinkedIn's job id, or the page's URL. */
+    externalId: text().notNull(),
+    url: text().notNull(),
+    company: text().notNull().default(""),
+    title: text().notNull().default(""),
+    location: text().notNull().default(""),
+    /** Plain text; empty where the source has none (LinkedIn's mails). */
+    description: text().notNull().default(""),
+    /** ISO date; empty if the source doesn't say. */
+    postedOn: text().notNull().default(""),
+    status: text({ enum: ["new", "interesting", "dismissed", "applied"] })
+      .notNull()
+      .default("new"),
+    /** What it was read from (a mail's text, a page's JSON-LD), to read again later. */
+    raw: text().notNull().default(""),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique().on(table.source, table.externalId)],
+);
+
 const applications = pgTable("applications", {
   /** URL slug, e.g. /desk/applications/acme-frontend. */
   id: text().primaryKey(),
@@ -195,6 +257,11 @@ const applications = pgTable("applications", {
     .default("saved"),
   /** The CV sent with it. */
   cvId: text().references(() => cvs.id, { onDelete: "set null", onUpdate: "cascade" }),
+  /** The posting it was created from; its job fields were copied from it. */
+  postingId: text().references(() => jobPostings.id, {
+    onDelete: "set null",
+    onUpdate: "cascade",
+  }),
   /** ISO date; empty until it is sent. */
   appliedOn: text().notNull().default(""),
   /** What to do next, and by when (ISO date); both may be empty. */
@@ -273,6 +340,7 @@ const cvEntryPicksRelations = relations(cvEntryPicks, ({ one }) => ({
 
 export {
   applications,
+  collectors,
   coverLetters,
   cvEntries,
   cvProfile,
@@ -280,6 +348,7 @@ export {
   cvEntryPicksRelations,
   cvs,
   cvsRelations,
+  jobPostings,
   projects,
   skillGroups,
 };
