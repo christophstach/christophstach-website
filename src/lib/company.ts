@@ -142,5 +142,30 @@ function companiesByKey<Described extends Pick<Company, "name">>(
   return new Map(companies.map((company) => [companyKey(company.name), company]));
 }
 
-export { companiesByKey, companyFacts, companyLabels, countryCode, countryName };
+/** The funding filter's option for Y Combinator companies. */
+const YC_FUNDING_OPTION = { value: "yc", label: "Y Combinator" } as const;
+
+/**
+ * A company's values for a funding filter: its funding, and "yc" for a YC
+ * company, which is also venture-backed. Unknown ("") without a company.
+ */
+function fundingValues(
+  company: Pick<CompanyRecord, "batch" | "funding"> | undefined,
+): readonly string[] {
+  if (company === undefined || company.batch === "") {
+    return [company?.funding ?? ""];
+  }
+
+  return [YC_FUNDING_OPTION.value, company.funding || "vc"];
+}
+
+export {
+  YC_FUNDING_OPTION,
+  companiesByKey,
+  companyFacts,
+  companyLabels,
+  countryCode,
+  countryName,
+  fundingValues,
+};
 export type { CompanyLabel };

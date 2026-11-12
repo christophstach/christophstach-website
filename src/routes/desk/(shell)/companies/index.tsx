@@ -5,7 +5,12 @@ import {
   COMPANY_FUNDING_LABELS,
 } from "../../../../data/companies";
 import { Show, createMemo, createSignal } from "solid-js";
-import { companiesByKey, countryName } from "../../../../lib/company";
+import {
+  YC_FUNDING_OPTION,
+  companiesByKey,
+  countryName,
+  fundingValues,
+} from "../../../../lib/company";
 import { getDeskCompanies, getDeskPostings } from "../../../../lib/desk/queries";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import type { CompanyRecord } from "../../../../data/companies";
@@ -127,6 +132,7 @@ function filters(rows: readonly CompanyRow[]): DeskTableFilter<CompanyRow>[] {
         { value: "no", label: "Not yet" },
       ],
       value: (row) => (row.company === undefined ? "no" : "yes"),
+      more: true,
     },
     {
       id: "field",
@@ -150,13 +156,14 @@ function filters(rows: readonly CompanyRow[]): DeskTableFilter<CompanyRow>[] {
       id: "funding",
       label: "funding",
       options: [
+        YC_FUNDING_OPTION,
         ...COMPANY_FUNDINGS.map((funding) => ({
           value: funding,
           label: COMPANY_FUNDING_LABELS[funding],
         })),
         { value: "", label: "Unknown" },
       ],
-      value: (row) => row.company?.funding ?? "",
+      value: (row) => fundingValues(row.company),
     },
   ];
 }
