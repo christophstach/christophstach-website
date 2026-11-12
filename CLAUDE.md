@@ -97,8 +97,9 @@ calls `requireUser()` first (`src/server/auth.ts`); the page guard doesn't cover
 exception is the scheduled page check (`/api/desk/page-checks`, `src/server/page-check-job.ts`):
 Vercel Cron calls it daily and a GitHub Action (`.github/workflows/page-checks.yml`) every 15
 minutes and after each production deploy, both with `CRON_SECRET`, and it seals a session only for its own Chrome
-to measure every CV and letter without a page check on this build; first it describes the
-postings' new companies (`checkCompanies`).
+to measure every CV and letter without a page check on this build; first it reads the company
+job boards that are due (`runDueCollectors`), then describes the postings' new companies
+(`checkCompanies`).
 
 **Content is data, not markup.** CV content lives in the database, typed by the interfaces in
 `src/data/cv.ts` (`TimelineEntry`, `EntryRecord`, `SkillGroup`, `Profile`, `CvContent`). The
@@ -195,9 +196,17 @@ change after it was stored, and printed from `/desk/sent-print/<id>` and `/desk/
 **Postings** are job ads to apply to (`job_postings`, `src/server/postings.ts`, the inbox at
 `/desk/postings`), unique by source and external id, so a job found twice is stored once.
 **Collectors** bring them in (`collectors`, `src/server/collector-store.ts`, at
-`/desk/collectors`): each has a type, and a secret shown once and stored only as its SHA-256.
-Push collectors POST to `/api/collectors/<id>` with `Authorization: Bearer <secret>`; that
-endpoint checks the secret instead of `requireUser()`. Each type's reader is in
+`/desk/collectors`): each has a type, push (sent to) or pull (run by the desk). A push collector
+has a secret shown once and stored only as its SHA-256, and gets a POST to
+`/api/collectors/<id>` with `Authorization: Bearer <secret>`; that endpoint checks the secret
+instead of `requireUser()`. The pull type `ats-board` reads one company's public job board
+(Greenhouse, Lever, Ashby or Personio; readers in `src/server/collectors/ats/`, careers
+addresses in `src/lib/ats-board.ts`), configured by the `board` jsonb (`AtsBoard`: provider,
+board name, company, title and location filters). It has no secret; the scheduled job runs each
+active one every 6 hours, and "Run now" any time. A run stores the jobs that pass the filters
+(external id `<board>:<job id>`, the job's JSON or XML as `raw`) and dismisses the collector's
+"new" postings the board no longer lists (`dismissClosed`), never favourites or ones with an
+application. Each push type's reader is in
 `src/server/collectors/` (`PUSH_COLLECTORS`): `linkedin-email` reads LinkedIn's job alert mails,
 sent by the Gmail script `tools/linkedin-alerts.gs`, and keeps the mail as `raw` so "Read again"
 can parse it anew. Its plain body gives title, company and location; only the HTML body has each

@@ -244,6 +244,10 @@ export function IconMail(props: IconProps): JSX.Element {
   );
 }
 
+export function IconPlayerPlay(props: IconProps): JSX.Element {
+  return <TablerIcon {...props} path="M7 4v16l13-8z" />;
+}
+
 export function IconPlus(props: IconProps): JSX.Element {
   return <TablerIcon {...props} path="M12 5v14m-7-7h14" />;
 }

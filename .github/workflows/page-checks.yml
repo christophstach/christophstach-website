@@ -1,7 +1,8 @@
-# Measures the pages of every CV and cover letter that has no page
-# check on the live build (src/server/page-check-job.ts), so nobody has to open
-# the desk for it. Vercel Hobby runs its own cron (vite.config.ts) only once a
-# day; this runs every 15 minutes and right after each production deploy.
+# Reads the company job boards that are due, then measures the pages of every
+# CV and cover letter that has no page check on the live build
+# (src/server/page-check-job.ts), so nobody has to open the desk for it.
+# Vercel Hobby runs its own cron (vite.config.ts) only once a day; this runs
+# every 15 minutes and right after each production deploy.
 # Needs the repository secret CRON_SECRET, the same value as on Vercel.
 name: Page checks
 

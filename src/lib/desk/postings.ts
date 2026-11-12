@@ -1,6 +1,6 @@
 // The desk's posting and collector writes, as server functions. Arguments are
 // typed for the caller and parsed again on the server.
-import type { CollectorType, PostingEdit, PostingStatus } from "../../data/postings";
+import type { AtsBoard, CollectorType, PostingEdit, PostingStatus } from "../../data/postings";
 
 /** Reads the job ad at an address into the inbox; answers its posting's id. */
 export async function addDeskPostingByUrl(url: string): Promise<string> {
@@ -44,10 +44,13 @@ export async function applyToDeskPosting(id: string): Promise<string> {
   return desk.applyToDeskPosting(id);
 }
 
-/** Makes a collector; answers its secret, which only this answer shows. */
+/**
+ * Makes a collector; answers its secret, which only this answer shows, or ""
+ * for one the desk runs itself. A job board collector takes its board.
+ */
 export async function createDeskCollector(
   id: string,
-  collector: { type: CollectorType; label: string },
+  collector: { type: CollectorType; label: string; board?: AtsBoard },
 ): Promise<string> {
   "use server";
 
@@ -58,13 +61,24 @@ export async function createDeskCollector(
 
 export async function updateDeskCollector(
   id: string,
-  change: { label: string; active: boolean },
+  change: { label: string; active: boolean; board?: AtsBoard },
 ): Promise<void> {
   "use server";
 
   const desk = await import("../../server/desk-postings");
 
   await desk.updateDeskCollector(id, change);
+}
+
+/** Reads a job board collector's board now; answers what it found. */
+export async function runDeskCollector(
+  id: string,
+): Promise<{ found: number; added: number; closed: number }> {
+  "use server";
+
+  const desk = await import("../../server/desk-postings");
+
+  return desk.runDeskCollector(id);
 }
 
 /** Replaces a collector's secret; answers the new one. */

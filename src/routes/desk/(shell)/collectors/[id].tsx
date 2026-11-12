@@ -1,16 +1,25 @@
-import { COLLECTOR_TYPE_LABELS } from "../../../../data/postings";
+import {
+  ATS_PROVIDER_LABELS,
+  COLLECTOR_TYPE_LABELS,
+  isPullCollector,
+} from "../../../../data/postings";
+import { NEW_BOARD_FORM, boardForm, toBoard } from "../../../../lib/desk/board-form";
+import type { BoardForm } from "../../../../lib/desk/board-form";
 import type { Collector } from "../../../../data/postings";
 import { Show, createMemo, createSignal, onCleanup, snapshot } from "solid-js";
 import {
   deleteDeskCollector,
   renewDeskCollectorSecret,
   rereadDeskCollector,
+  runDeskCollector,
   updateDeskCollector,
 } from "../../../../lib/desk/postings";
+import { DeskBoardFields } from "../../../../components/desk/DeskBoardFields";
+import { boardUrl } from "../../../../lib/ats-board";
 import { forgetSecret, secretOf, showSecret } from "../../../../lib/desk/collector-secret";
 import { getRequestEvent, isServer } from "@solidjs/web";
 import { useNavigate, useParams } from "@solidjs/router";
-import { IconRefresh, IconTrash } from "../../../../components/icons";
+import { IconPlayerPlay, IconRefresh, IconTrash } from "../../../../components/icons";
 import { DeskFormSection } from "../../../../components/desk/DeskFormSection";
 import { DeskMenu } from "../../../../components/desk/DeskMenu";
 import { DeskMeta } from "../../../../components/desk/DeskMeta";
@@ -28,9 +37,11 @@ interface CollectorForm {
   id: string;
   label: string;
   active: boolean;
+  /** A job board collector's board; the blank form for the others, never sent. */
+  board: BoardForm;
 }
 
-const EMPTY_FORM: CollectorForm = { id: "", label: "", active: true };
+const EMPTY_FORM: CollectorForm = { id: "", label: "", active: true, board: NEW_BOARD_FORM };
 
 /** The site's own origin, on the server from the request. */
 function origin(): string {
@@ -64,12 +75,23 @@ export default function CollectorEditor() {
     throw Object.assign(new Error(`No collector "${params.id}".`), { status: 404 });
   });
   const { form, setForm, saved, dirty, reset, leave } = useDraft(
-    () => ({ id: stored().id, label: stored().label, active: stored().active }),
+    (): CollectorForm => ({
+      id: stored().id,
+      label: stored().label,
+      active: stored().active,
+      board: boardForm(stored().board),
+    }),
     EMPTY_FORM,
   );
   const request = useDeskRequest();
+  const pull = () => isPullCollector(stored().type);
   const secret = () => secretOf(params.id);
   const endpoint = () => `${origin()}${collectorEndpointPath(params.id)}`;
+  const careersPage = () => {
+    const board = stored().board;
+
+    return board === null ? "" : boardUrl(board);
+  };
 
   // The secret shows on this visit only.
   onCleanup(forgetSecret);
@@ -77,9 +99,39 @@ export default function CollectorEditor() {
   async function save(event: SubmitEvent) {
     event.preventDefault();
 
-    const { label, active } = snapshot(form);
+    const { label, active, board } = snapshot(form);
 
-    await request.run(() => updateDeskCollector(params.id, { label: label.trim(), active }));
+    await request.run(async () => {
+      if (!pull()) {
+        await updateDeskCollector(params.id, { label: label.trim(), active });
+
+        return;
+      }
+
+      const parsed = toBoard(board);
+
+      if (parsed === undefined) {
+        throw new Error("The address names no Greenhouse, Lever, Ashby or Personio board.");
+      }
+
+      await updateDeskCollector(params.id, { label: label.trim(), active, board: parsed });
+    });
+  }
+
+  async function run() {
+    let result = { found: 0, added: 0, closed: 0 };
+
+    setNotice("");
+
+    if (
+      await request.run(async () => {
+        result = await runDeskCollector(params.id);
+      })
+    ) {
+      setNotice(
+        `${result.found} ${result.found === 1 ? "job passes" : "jobs pass"} the filters, ${result.added} new. ${result.closed === 0 ? "No posting closed." : `Dismissed ${result.closed} new ${result.closed === 1 ? "posting" : "postings"} the board no longer lists.`}`,
+      );
+    }
   }
 
   async function renew() {
@@ -113,7 +165,9 @@ export default function CollectorEditor() {
       })
     ) {
       setNotice(
-        `Read ${count} ${count === 1 ? "posting" : "postings"} again: their title, company and location are the mail's again, and so are workplace and salary where it states them.`,
+        pull()
+          ? `Read ${count} ${count === 1 ? "posting" : "postings"} again from the jobs as the board listed them: title, company and location, and workplace and salary where the board states them.`
+          : `Read ${count} ${count === 1 ? "posting" : "postings"} again: their title, company and location are the mail's again, and so are workplace and salary where it states them.`,
       );
     }
   }
@@ -142,14 +196,21 @@ export default function CollectorEditor() {
             <a href={paths.desk.collectors()}>~/desk/collectors</a> / {params.id}
           </p>
           <h1 class="desk-head__title">{form.label || params.id}</h1>
-          <p class="desk-head__sub">{COLLECTOR_TYPE_LABELS[stored().type].name}</p>
+          <p class="desk-head__sub">
+            {stored().board === null
+              ? COLLECTOR_TYPE_LABELS[stored().type].name
+              : `${COLLECTOR_TYPE_LABELS[stored().type].name} · ${ATS_PROVIDER_LABELS[stored().board?.provider ?? "greenhouse"]}`}
+          </p>
         </div>
 
         <DeskMenu
           label="Collector actions"
           actions={[
+            ...(pull() ? [{ label: "Run now", icon: IconPlayerPlay, run: () => void run() }] : []),
             { label: "Read again", icon: IconRefresh, run: () => void reread() },
-            { label: "New secret", icon: IconRefresh, run: () => void renew() },
+            ...(pull()
+              ? []
+              : [{ label: "New secret", icon: IconRefresh, run: () => void renew() }]),
             { label: "Delete", icon: IconTrash, run: () => void remove(), danger: true },
           ]}
         />
@@ -167,62 +228,94 @@ export default function CollectorEditor() {
       </Show>
 
       <div class="panels">
-        <DeskFormSection
-          title="setup"
-          description="Where the collector sends, and how it signs in."
-        >
-          <div class="field field--wide">
-            <span class="field__label">address</span>
-            <p class={styles.secret}>{endpoint()}</p>
-            <span class="field__hint">
-              It takes a POST with the secret as <code>Authorization: Bearer …</code>.
-            </span>
-          </div>
-          <div class="field field--wide">
-            <span class="field__label">secret</span>
-            <Show
-              when={secret()}
-              fallback={
-                <span class="field__hint">
-                  Shown once, when it's made; the desk keeps only its hash. Lost it? Make a new one
-                  from the menu.
-                </span>
+        <Show
+          when={!pull()}
+          fallback={
+            <DeskFormSection
+              title="board"
+              description="The job board it reads every few hours, and which of its jobs reach the postings."
+              aside={
+                <Show when={careersPage()}>
+                  {(url) => (
+                    <a href={url()} class="text-link" target="_blank" rel="noopener noreferrer">
+                      Open the board
+                    </a>
+                  )}
+                </Show>
               }
             >
-              {(value) => (
-                <>
-                  <p class={styles.secret}>{value()}</p>
-                  <span class="field__hint">
-                    Copy it now: it won't show again once you leave this page.
-                  </span>
-                </>
-              )}
-            </Show>
-          </div>
-          <Show when={stored().type === "linkedin-email"}>
+              <DeskBoardFields
+                form={form.board}
+                onInput={(field, value) => {
+                  setForm((draft) => {
+                    draft.board[field] = value;
+                  });
+                }}
+              />
+              <p class="field field--wide field__hint">
+                A new posting the board no longer lists is dismissed; favourites and postings with
+                an application stay.
+              </p>
+            </DeskFormSection>
+          }
+        >
+          <DeskFormSection
+            title="setup"
+            description="Where the collector sends, and how it signs in."
+          >
             <div class="field field--wide">
-              <span class="field__label">in gmail</span>
-              <ol class={styles.steps}>
-                <li>
-                  Open{" "}
-                  <a href="https://script.google.com" class="text-link">
-                    script.google.com
-                  </a>{" "}
-                  signed in to the Gmail account that gets the alerts, and make a new project.
-                </li>
-                <li>Paste tools/linkedin-alerts.gs from the website's repository into it.</li>
-                <li>
-                  Under Project Settings → Script Properties, add <code>DESK_ENDPOINT</code> with
-                  the address above and <code>DESK_SECRET</code> with the secret.
-                </li>
-                <li>
-                  Run <code>install</code> once and allow access to Gmail. It sends new alert mails
-                  every hour and labels the sent ones <code>desk/collected</code>.
-                </li>
-              </ol>
+              <span class="field__label">address</span>
+              <p class={styles.secret}>{endpoint()}</p>
+              <span class="field__hint">
+                It takes a POST with the secret as <code>Authorization: Bearer …</code>.
+              </span>
             </div>
-          </Show>
-        </DeskFormSection>
+            <div class="field field--wide">
+              <span class="field__label">secret</span>
+              <Show
+                when={secret()}
+                fallback={
+                  <span class="field__hint">
+                    Shown once, when it's made; the desk keeps only its hash. Lost it? Make a new
+                    one from the menu.
+                  </span>
+                }
+              >
+                {(value) => (
+                  <>
+                    <p class={styles.secret}>{value()}</p>
+                    <span class="field__hint">
+                      Copy it now: it won't show again once you leave this page.
+                    </span>
+                  </>
+                )}
+              </Show>
+            </div>
+            <Show when={stored().type === "linkedin-email"}>
+              <div class="field field--wide">
+                <span class="field__label">in gmail</span>
+                <ol class={styles.steps}>
+                  <li>
+                    Open{" "}
+                    <a href="https://script.google.com" class="text-link">
+                      script.google.com
+                    </a>{" "}
+                    signed in to the Gmail account that gets the alerts, and make a new project.
+                  </li>
+                  <li>Paste tools/linkedin-alerts.gs from the website's repository into it.</li>
+                  <li>
+                    Under Project Settings → Script Properties, add <code>DESK_ENDPOINT</code> with
+                    the address above and <code>DESK_SECRET</code> with the secret.
+                  </li>
+                  <li>
+                    Run <code>install</code> once and allow access to Gmail. It sends new alert
+                    mails every hour and labels the sent ones <code>desk/collected</code>.
+                  </li>
+                </ol>
+              </div>
+            </Show>
+          </DeskFormSection>
+        </Show>
 
         <DeskFormSection title="collector" description="Its name, and whether it takes postings.">
           <label class="field">
@@ -254,7 +347,9 @@ export default function CollectorEditor() {
                   });
                 }}
               />{" "}
-              Takes postings; a paused one turns them away.
+              {pull()
+                ? "Runs every few hours; a paused one runs only from “Run now”."
+                : "Takes postings; a paused one turns them away."}
             </span>
           </label>
           <dl class={["field", "field--wide", styles.facts]}>

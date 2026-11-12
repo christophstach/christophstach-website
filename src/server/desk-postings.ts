@@ -11,18 +11,20 @@ import {
   savePosting,
   setPostingsStatus,
 } from "./postings";
-import { array, boolean, literal, object, string } from "zod/mini";
+import { array, boolean, exactOptional, literal, object, string } from "zod/mini";
 import {
   createCollector,
   deleteCollector,
   renewSecret,
   rereadCollector,
+  runCollector,
   updateCollector,
 } from "./collector-store";
+import { atsBoardSchema, readUrl } from "./collectors";
+import type { CollectorRun } from "./collector-store";
 import { emptyOrMatching, parseInput, requireSlug, text, trimmed } from "./input";
 import { applicationIds, linkPosting, saveApplication } from "./applications";
 import type { Application } from "../data/applications";
-import { readUrl } from "./collectors";
 import { requireUser } from "./auth";
 import { companyKey } from "../lib/posting";
 import { slugify } from "../lib/cover-letter";
@@ -54,11 +56,13 @@ const statusSchema = object({
 const collectorSchema = object({
   type: literal(COLLECTOR_TYPES, "Pick a collector type."),
   label: text("The collector needs a name."),
+  board: exactOptional(atsBoardSchema),
 });
 
 const collectorChangeSchema = object({
   label: text("The collector needs a name."),
   active: boolean("Active is yes or no."),
+  board: exactOptional(atsBoardSchema),
 });
 
 /** Reads the job ad at an address into the inbox; answers its posting's id, also if it was there. */
@@ -163,14 +167,21 @@ async function applyToDeskPosting(id: string): Promise<string> {
 async function createDeskCollector(id: string, body: unknown): Promise<string> {
   await requireUser();
 
-  const { type, label } = parseInput(collectorSchema, body);
+  const { type, label, board } = parseInput(collectorSchema, body);
 
-  return createCollector(requireSlug(id), type satisfies CollectorType, label);
+  return createCollector(requireSlug(id), type satisfies CollectorType, label, board ?? null);
 }
 
 async function updateDeskCollector(id: string, change: unknown) {
   await requireUser();
   await updateCollector(id, parseInput(collectorChangeSchema, change));
+}
+
+/** Runs a job board collector now; answers what it found. */
+async function runDeskCollector(id: string): Promise<CollectorRun> {
+  await requireUser();
+
+  return runCollector(id);
 }
 
 async function renewDeskCollectorSecret(id: string): Promise<string> {
@@ -198,6 +209,7 @@ export {
   deleteDeskPosting,
   renewDeskCollectorSecret,
   rereadDeskCollector,
+  runDeskCollector,
   saveDeskPosting,
   setDeskPostingsStatus,
   updateDeskCollector,
