@@ -1,5 +1,8 @@
 import "server-only";
-import { array, exactOptional, looseObject, safeParse, string, union } from "zod/mini";
+import { array, exactOptional, looseObject, number, safeParse, string, union } from "zod/mini";
+import { NO_SALARY } from "./salary";
+import type { Salary } from "./salary";
+import { SALARY_CURRENCIES } from "../../data/postings";
 import type { ZodMiniType, output } from "zod/mini";
 import { decodeEntities, htmlToText } from "./text";
 import type { FoundPosting } from "./types";
@@ -14,6 +17,7 @@ import { JOB_LINK } from "./linkedin-email";
 const MAX_BYTES = 3_000_000;
 
 const named = union([string(), looseObject({ name: exactOptional(string()) })]);
+const amount = union([number(), string()]);
 const listOf = <Item extends ZodMiniType>(item: Item) => union([item, array(item)]);
 
 /** The parts of a schema.org JobPosting the desk keeps; anything else may be there too. */
@@ -23,6 +27,24 @@ const jobPostingSchema = looseObject({
   datePosted: exactOptional(string()),
   hiringOrganization: exactOptional(named),
   jobLocationType: exactOptional(listOf(string())),
+  baseSalary: exactOptional(
+    listOf(
+      looseObject({
+        currency: exactOptional(string()),
+        value: exactOptional(
+          union([
+            amount,
+            looseObject({
+              value: exactOptional(amount),
+              minValue: exactOptional(amount),
+              maxValue: exactOptional(amount),
+              unitText: exactOptional(string()),
+            }),
+          ]),
+        ),
+      }),
+    ),
+  ),
   jobLocation: exactOptional(
     listOf(
       looseObject({
@@ -128,9 +150,56 @@ function locationOf(posting: JobPostingLd): string {
           .filter((part) => part !== undefined && part !== "")
           .join(", "),
   );
-  const remote = toList(posting.jobLocationType).includes("TELECOMMUTE") ? ["Remote"] : [];
+  return [...new Set(places)].filter((place) => place !== "").join(" · ");
+}
 
-  return [...new Set([...places, ...remote])].filter((place) => place !== "").join(" · ");
+/** Whether the ad says the job is done remotely; schema.org has no word for hybrid. */
+function isRemote(posting: JobPostingLd): boolean {
+  return toList(posting.jobLocationType).includes("TELECOMMUTE");
+}
+
+/** What a year has of each unit a schema.org salary is given per. */
+const PER_YEAR: Record<string, number> = { YEAR: 1, MONTH: 12 };
+
+function numberOf(value: number | string | undefined): number | null {
+  const parsed = typeof value === "string" ? Number(value.replaceAll(/[\s,]/gu, "")) : value;
+
+  return parsed === undefined || !Number.isFinite(parsed) || parsed <= 0
+    ? null
+    : Math.round(parsed);
+}
+
+/** The ad's baseSalary per year; NO_SALARY if it states none, or per hour or day. */
+function salaryOf(posting: JobPostingLd): Salary {
+  const [salary] = toList(posting.baseSalary);
+  const value = salary?.value;
+
+  if (salary === undefined || value === undefined) {
+    return NO_SALARY;
+  }
+
+  const amounts =
+    typeof value === "object"
+      ? {
+          min: value.minValue ?? value.value,
+          max: value.maxValue ?? value.value,
+          unit: value.unitText,
+        }
+      : { min: value, max: value, unit: undefined };
+  const factor = PER_YEAR[(amounts.unit ?? "YEAR").toUpperCase()];
+  const min = numberOf(amounts.min);
+  const max = numberOf(amounts.max);
+  const currency = SALARY_CURRENCIES.find((code) => code === salary.currency?.toUpperCase());
+
+  if (factor === undefined || (min === null && max === null)) {
+    return NO_SALARY;
+  }
+
+  return {
+    salaryMin: min === null ? null : min * factor,
+    salaryMax: max === null ? null : max * factor,
+    salaryCurrency: currency ?? "",
+  };
 }
 
 /** The address without its fragment and tracking parameters: the ad's id on the web. */
@@ -160,6 +229,8 @@ function linkedinPosting(id: string): FoundPosting {
     location: "",
     description: "",
     postedOn: "",
+    workplace: "",
+    ...NO_SALARY,
     raw: "",
   };
 }
@@ -228,6 +299,8 @@ async function readUrl(address: string): Promise<FoundPosting> {
       location: "",
       description: htmlToText(metaContent(page.html, "og:description")),
       postedOn: "",
+      workplace: "",
+      ...NO_SALARY,
       raw: "",
     };
   }
@@ -242,6 +315,8 @@ async function readUrl(address: string): Promise<FoundPosting> {
     // The description is HTML, sometimes escaped once more.
     description: htmlToText(decodeEntities(posting.description ?? "")),
     postedOn: /^\d{4}-\d{2}-\d{2}/u.exec(posting.datePosted ?? "")?.[0] ?? "",
+    workplace: isRemote(posting) ? "remote" : "",
+    ...salaryOf(posting),
     raw: JSON.stringify(node),
   };
 }

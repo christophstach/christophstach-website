@@ -113,7 +113,7 @@ export default function CollectorEditor() {
       })
     ) {
       setNotice(
-        `Read ${count} ${count === 1 ? "posting" : "postings"} again: their title, company and location are the mail's again.`,
+        `Read ${count} ${count === 1 ? "posting" : "postings"} again: their title, company and location are the mail's again, and so are workplace and salary where it states them.`,
       );
     }
   }
