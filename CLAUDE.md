@@ -173,8 +173,11 @@ typing; it asks before leaving with unsaved changes. Change store arrays in plac
 `DeskSaveBar`, `DeskMenu`, `DeskLinkRows`, `DeskCvRows` (a CV's picks).
 
 **Applications** are private to the desk (`applications`, `src/server/applications.ts`, edited
-at `/desk/applications/<id>`): the job, its status and next step, contacts and history (jsonb
-lists, ids unique within the application), and the CV sent with it. Status and source are the
+at `/desk/applications/<id>`): the job (with workplace and salary, the `JobTerms` it shares with
+postings: `src/server/job-terms.ts`, `DeskJobTerms.tsx`), its status and next step, contacts and
+history (jsonb lists, ids unique within the application), and the CV sent with it. An
+application exists once you prepare one ("preparing" until sent); parking a job is a favourite
+posting. Status and source are the
 fixed lists in `src/data/applications.ts`; `src/lib/application.ts` says when a next step is due.
 An application has at most one cover letter (unique `cover_letters.application_id`), and
 deleting it deletes the letter. "Mark as sent" freezes the CV and letter as they print then
@@ -197,8 +200,9 @@ posted per city, a new id: the desk marks postings with the same company and tit
 duplicates (`findDuplicates` in `src/lib/posting.ts`), never merges them. A posting found again
 keeps its edits and only fills the fields it lacks. "Add by URL" (`readUrl`) reads a page's JSON-LD `JobPosting`; it never fetches
 LinkedIn, whose links keep only the job id. "Create application" copies a posting into an
-application (`applications.posting_id`) and marks it applied; deleting the application reopens
-it. Sample mails go in `tools/samples/`, which git ignores: they're private.
+application (`applications.posting_id`). That link is what marks a posting as applied to: its
+own status is only new, favourite or dismissed, and the inbox shows the application's status
+instead. Sample mails go in `tools/samples/`, which git ignores: they're private.
 
 **Cover letters** are private to the desk, each the one letter of an application (`cover_letters`,
 `src/server/cover-letters.ts`, edited at `/desk/cover-letters/<id>`). Name and contact come
