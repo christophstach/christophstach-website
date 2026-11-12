@@ -204,6 +204,13 @@
       "when": 1794475146104,
       "tag": "0028_application_terms",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1794477435460,
+      "tag": "0029_companies",
+      "breakpoints": true
     }
   ]
 }

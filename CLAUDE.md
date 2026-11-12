@@ -165,7 +165,7 @@ session only for `DESK_GITHUB_USER_ID`. The session is h3's sealed cookie, from 
 redirects anonymous `/desk/**` requests to `/login`, before anything renders. Sidebar sections
 are data in `src/data/desk.ts`. Desk reads are queries in `src/lib/desk/queries.ts` (keys
 `desk-cvs`, `desk-applications`, `desk-cover-letters`, `desk-cv-content`, `desk-projects`, `desk-profile`,
-`desk-user`, `desk-postings`, `desk-collectors`). Editors keep their form in `useDraft` (`src/lib/desk/draft.ts`): a store that
+`desk-user`, `desk-postings`, `desk-collectors`, `desk-companies`). Editors keep their form in `useDraft` (`src/lib/desk/draft.ts`): a store that
 follows the stored value, reconciled by id, compared by content so refetches don't reset
 typing; it asks before leaving with unsaved changes. Change store arrays in place (`setItems` in
 `src/lib/desk/picks.ts`) and key lists by a stable field. Shared desk components:
@@ -203,6 +203,16 @@ LinkedIn, whose links keep only the job id. "Create application" copies a postin
 application (`applications.posting_id`). That link is what marks a posting as applied to: its
 own status is only new, favourite or dismissed, and the inbox shows the application's status
 instead. Sample mails go in `tools/samples/`, which git ignores: they're private.
+
+**Companies** describe who the postings come from (`companies`, `src/server/companies.ts`, at
+`/desk/companies`): field, headquarters (an ISO country code), funding, website and a note,
+typed in `src/data/companies.ts`. A posting has no link to its company: it matches by name
+(`companyKey` in `src/lib/posting.ts`, without legal forms like GmbH), unique per company, so
+`/desk/companies` also lists the postings' companies not yet described. The postings list
+shows a company's facts and filters by them. "Look up" (`src/server/company-lookup.ts`) asks
+Claude with web search for a suggestion and its sources; it only fills the form, nothing is
+saved until you save. It needs `ANTHROPIC_API_KEY`, and has to finish inside the function's
+60 s, so it is a plain server function with a 50 s timeout and no retries.
 
 **Cover letters** are private to the desk, each the one letter of an application (`cover_letters`,
 `src/server/cover-letters.ts`, edited at `/desk/cover-letters/<id>`). Name and contact come

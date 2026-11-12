@@ -3,6 +3,7 @@ import { listEntries, listSkillGroups, loadProfile } from "./cv-content";
 import { listApplications } from "./applications";
 import { listCoverLetters } from "./cover-letters";
 import { listCollectors } from "./collector-store";
+import { listCompanies } from "./companies";
 import { listPostings } from "./postings";
 import { listProjects } from "./projects";
 import { listCvs } from "./cvs";
@@ -56,6 +57,12 @@ async function deskPostings() {
   return listPostings();
 }
 
+async function deskCompanies() {
+  await requireUser();
+
+  return listCompanies();
+}
+
 async function deskCollectors() {
   await requireUser();
 
@@ -65,6 +72,7 @@ async function deskCollectors() {
 export {
   deskApplications,
   deskCollectors,
+  deskCompanies,
   deskContent,
   deskCoverLetters,
   deskCvs,

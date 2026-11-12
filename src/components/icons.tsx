@@ -102,6 +102,15 @@ export function IconFileTypePdf(props: IconProps): JSX.Element {
   );
 }
 
+export function IconBuilding(props: IconProps): JSX.Element {
+  return (
+    <TablerIcon
+      {...props}
+      path="M3 21h18 M9 8h1 M9 12h1 M9 16h1 M14 8h1 M14 12h1 M14 16h1 M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"
+    />
+  );
+}
+
 export function IconChevronDown(props: IconProps): JSX.Element {
   return <TablerIcon {...props} path="m6 9l6 6l6-6" />;
 }

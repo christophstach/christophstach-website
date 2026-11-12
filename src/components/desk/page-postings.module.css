@@ -1,4 +1,4 @@
-/* The postings and collectors pages: their create forms, table cells and
+/* The postings, collectors and companies pages: their create forms, table cells and
    the collector's setup panel. */
 
 .create {
@@ -161,4 +161,15 @@
   content: "";
   position: absolute;
   inset: calc(var(--space-2) * -1);
+}
+
+/* A company's lookup sources and its postings: one link a line. */
+.sources {
+  display: grid;
+  gap: var(--space-1);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
 }

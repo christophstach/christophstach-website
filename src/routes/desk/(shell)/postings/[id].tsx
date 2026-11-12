@@ -12,7 +12,8 @@ import {
   saveDeskPosting,
   setDeskPostingsStatus,
 } from "../../../../lib/desk/postings";
-import { getDeskCollectors, getDeskPostings } from "../../../../lib/desk/queries";
+import { getDeskCollectors, getDeskCompanies, getDeskPostings } from "../../../../lib/desk/queries";
+import { companiesByKey, companyFacts } from "../../../../lib/company";
 import { useNavigate, useParams } from "@solidjs/router";
 import { DeskFormSection } from "../../../../components/desk/DeskFormSection";
 import { DeskMenu } from "../../../../components/desk/DeskMenu";
@@ -20,6 +21,7 @@ import { DeskMeta } from "../../../../components/desk/DeskMeta";
 import { DeskSaveBar } from "../../../../components/desk/DeskSaveBar";
 import type { RouteDefinition } from "@solidjs/router";
 import {
+  companyKey,
   findDuplicates,
   fromTermsForm,
   toTermsForm,
@@ -74,6 +76,7 @@ export default function PostingEditor() {
   const navigate = useNavigate();
   const postings = createMemo(() => getDeskPostings());
   const collectors = createMemo(() => getDeskCollectors());
+  const companies = createMemo(() => getDeskCompanies());
   const [removing, setRemoving] = createSignal(false);
   // While deleting, the refetched list no longer has it: keep the last one.
   const stored = createMemo((previous?: JobPostingRecord) => {
@@ -98,6 +101,8 @@ export default function PostingEditor() {
   const collector = () =>
     collectors().find((candidate) => candidate.id === stored().collectorId)?.label ??
     "Added by hand";
+  // The company described in the desk, by the stored name.
+  const company = createMemo(() => companiesByKey(companies()).get(companyKey(stored().company)));
 
   const bind = (key: TextKey) => ({
     value: form[key],
@@ -284,6 +289,27 @@ export default function PostingEditor() {
           <label class="field">
             <span class="field__label">company</span>
             <input {...bind("company")} class="input" />
+            <Show when={stored().company.trim() !== ""}>
+              <span class="field__hint">
+                <Show
+                  when={company()}
+                  fallback={
+                    <a
+                      href={paths.desk.companies({ new: "1", name: stored().company.trim() })}
+                      class="text-link"
+                    >
+                      Describe the company
+                    </a>
+                  }
+                >
+                  {(described) => (
+                    <a href={paths.desk.companies(described().id)()} class="text-link">
+                      {companyFacts(described()) || "The company"}
+                    </a>
+                  )}
+                </Show>
+              </span>
+            </Show>
           </label>
           <label class="field">
             <span class="field__label">location</span>
@@ -357,5 +383,6 @@ export const route = {
   preload: () => {
     void getDeskPostings();
     void getDeskCollectors();
+    void getDeskCompanies();
   },
 } satisfies RouteDefinition;
