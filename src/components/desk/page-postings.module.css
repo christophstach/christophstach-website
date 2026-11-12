@@ -173,3 +173,24 @@
   font-size: var(--text-sm);
   overflow-wrap: anywhere;
 }
+
+/* A company's labels after its name in the postings: "YC W25", "AI", "US".
+   Funding stands out; the rest is quiet. */
+.label {
+  display: inline-block;
+  margin-inline-start: var(--space-2);
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.label--strong {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  background-color: var(--color-accent-subtle-bg);
+  color: var(--color-accent-subtle-text);
+}

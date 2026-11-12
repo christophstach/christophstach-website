@@ -1,4 +1,5 @@
 import "server-only";
+import { checkCompaniesQuietly } from "./company-check";
 import type { Collector, CollectorType } from "../data/postings";
 import { addPostings, postingsWithRaw, updateFound } from "./postings";
 import { asc, count, eq } from "drizzle-orm";
@@ -148,6 +149,9 @@ async function receive(id: string, request: Request): Promise<CollectorRun> {
 
     const found = PUSH_COLLECTORS[row.type].read(body);
     const added = await addPostings(found, id);
+
+    // Describes the companies of new postings; a source that fails never fails the run.
+    await checkCompaniesQuietly({ deadline: Date.now() + 20_000 });
 
     await useDb()
       .update(collectors)
