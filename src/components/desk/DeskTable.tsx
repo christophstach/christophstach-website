@@ -63,6 +63,21 @@ interface DeskTableProps<T> {
    * can't be dragged onto another page.
    */
   pageSize?: number | undefined;
+  /** Rows can be ticked and acted on together, e.g. dismissing a few postings. */
+  select?: DeskTableSelect<T> | undefined;
+}
+
+/** Ticking rows, and what can be done to the ticked ones. */
+interface DeskTableSelect<T> {
+  /** Names a row on its checkbox, e.g. "Select Backend". */
+  label: (row: T) => string;
+  actions: readonly DeskTableAction[];
+}
+
+interface DeskTableAction {
+  label: string;
+  /** Gets the ticked rows' ids; answers whether it worked, which clears the ticks. */
+  run: (ids: string[]) => Promise<boolean>;
 }
 
 const PAGE_SIZE = 25;
@@ -220,8 +235,73 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
     }
   }
 
-  function choose(filterId: string, value: string | undefined) {
+  // Ticked rows, by id. Search and filters clear them: a ticked row they hide
+  // would still be acted on, out of sight.
+  const [ticked, setTicked] = createSignal<ReadonlySet<string>>(new Set());
+  const [acting, setActing] = createSignal(false);
+  const selectable = () => props.select !== undefined;
+  // Rows that are gone (deleted, say) drop out.
+  const tickedIds = createMemo(() =>
+    props.rows.map((row) => props.rowKey(row)).filter((key) => ticked().has(key)),
+  );
+  const pageKeys = () => visible().map((row) => props.rowKey(row));
+  const pageTicked = () => pageKeys().length > 0 && pageKeys().every((key) => ticked().has(key));
+
+  function tick(key: string) {
+    setTicked((current) => {
+      const next = new Set(current);
+
+      if (!next.delete(key)) {
+        next.add(key);
+      }
+
+      return next;
+    });
+  }
+
+  function tickPage() {
+    const keys = pageKeys();
+    const all = pageTicked();
+
+    setTicked((current) => {
+      const next = new Set(current);
+
+      for (const key of keys) {
+        if (all) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+      }
+
+      return next;
+    });
+  }
+
+  function tickAllShown() {
+    setTicked(new Set(shown().map((row) => props.rowKey(row))));
+  }
+
+  async function act(action: DeskTableAction) {
+    setActing(true);
+
+    try {
+      if (await action.run(tickedIds())) {
+        setTicked(new Set<string>());
+      }
+    } finally {
+      setActing(false);
+    }
+  }
+
+  /** Search or filters changed: back to the first page, without ticks. */
+  function narrowAgain() {
     setPage(1);
+    setTicked(new Set<string>());
+  }
+
+  function choose(filterId: string, value: string | undefined) {
+    narrowAgain();
     setPicked((current) => {
       const rest = Object.fromEntries(Object.entries(current).filter(([key]) => key !== filterId));
 
@@ -239,7 +319,7 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
   }
 
   function clear() {
-    setPage(1);
+    narrowAgain();
     setQuery("");
     setPicked({});
   }
@@ -305,7 +385,7 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
               aria-label={`Search ${props.noun[1]}`}
               aria-controls={`${id}-grid`}
               onInput={(event) => {
-                setPage(1);
+                narrowAgain();
                 setQuery(event.currentTarget.value);
               }}
               onKeyDown={(event) => {
@@ -403,10 +483,53 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
         </p>
       </Show>
 
+      <Show when={props.select !== undefined && tickedIds().length > 0 ? props.select : undefined}>
+        {(select) => (
+          <div class={styles.table__bulk} role="group" aria-label={`Ticked ${props.noun[1]}`}>
+            <p class={styles["table__bulk-count"]} aria-live="polite">
+              {`${tickedIds().length} ${noun(tickedIds().length)} ticked`}
+            </p>
+            <Show when={tickedIds().length < shown().length}>
+              <button type="button" class="text-link" onClick={tickAllShown}>
+                {`Tick all ${shown().length}`}
+              </button>
+            </Show>
+            <button type="button" class="text-link" onClick={() => setTicked(new Set<string>())}>
+              Untick all
+            </button>
+            <div class={styles["table__bulk-actions"]}>
+              <For each={select().actions} keyed={(action) => action.label}>
+                {(action) => (
+                  <button
+                    type="button"
+                    class="button button--outline"
+                    disabled={acting()}
+                    onClick={() => void act(action())}
+                  >
+                    {action().label}
+                  </button>
+                )}
+              </For>
+            </div>
+          </div>
+        )}
+      </Show>
+
       <div class={styles.table__scroll}>
         <table id={`${id}-grid`} class={styles.table__grid}>
           <thead>
             <tr>
+              <Show when={selectable()}>
+                <th scope="col" class={[styles.table__head, styles["table__head--check"]]}>
+                  <input
+                    type="checkbox"
+                    checked={pageTicked()}
+                    disabled={visible().length === 0}
+                    aria-label={`Tick the ${props.noun[1]} on this page`}
+                    onChange={tickPage}
+                  />
+                </th>
+              </Show>
               <Show when={props.reorder !== undefined}>
                 <th scope="col" class={styles.table__head} aria-label="move" />
               </Show>
@@ -479,6 +602,18 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
                     drag.end();
                   }}
                 >
+                  <Show when={props.select}>
+                    {(select) => (
+                      <td class={[styles.table__cell, styles["table__cell--check"]]}>
+                        <input
+                          type="checkbox"
+                          checked={ticked().has(props.rowKey(row()))}
+                          aria-label={select().label(row())}
+                          onChange={() => tick(props.rowKey(row()))}
+                        />
+                      </td>
+                    )}
+                  </Show>
                   <Show when={props.reorder}>
                     {(reorder) => (
                       <td class={[styles.table__cell, styles["table__cell--grip"]]}>

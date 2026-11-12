@@ -23,7 +23,7 @@ import { DeskTable } from "../../../../components/desk/DeskTable";
 import type { DeskTableColumn, DeskTableFilter } from "../../../../components/desk/DeskTable";
 import { IconPlus } from "../../../../components/icons";
 import type { RouteDefinition } from "@solidjs/router";
-import { addDeskPostingByUrl } from "../../../../lib/desk/postings";
+import { addDeskPostingByUrl, setDeskPostingsStatus } from "../../../../lib/desk/postings";
 import { formatRelative } from "../../../../lib/format";
 import { paths } from "../../../../router";
 import styles from "../../../../components/desk/page-postings.module.css";
@@ -242,6 +242,28 @@ export default function Postings() {
   const collectors = createMemo(() => getDeskCollectors());
   const duplicates = createMemo(() => findDuplicates(postings()));
   const adding = () => search.new !== undefined;
+  const request = useDeskRequest();
+
+  /**
+   * Sets the status of the ticked postings. Ones already applied to keep
+   * theirs, so their link to the application stays.
+   */
+  function setStatus(status: PostingStatus) {
+    return (ids: string[]) => {
+      const applied = new Set(
+        postings()
+          .filter((posting) => posting.status === "applied")
+          .map((posting) => posting.id),
+      );
+
+      return request.run(() =>
+        setDeskPostingsStatus(
+          ids.filter((id) => !applied.has(id)),
+          status,
+        ),
+      );
+    };
+  }
 
   return (
     <div class="desk-page">
@@ -290,7 +312,22 @@ export default function Postings() {
           initialSort={{ column: "found", direction: "desc" }}
           columns={columns(duplicates())}
           filters={filters(collectors(), duplicates())}
+          select={{
+            label: (posting) => `Tick ${posting.title || posting.externalId}`,
+            actions: [
+              { label: "Dismiss", run: setStatus("dismissed") },
+              { label: "Mark interesting", run: setStatus("interesting") },
+              { label: "Back to new", run: setStatus("new") },
+            ],
+          }}
         />
+        <Show when={request.error()}>
+          {(error) => (
+            <p class={styles.create__error} role="alert">
+              {error()}
+            </p>
+          )}
+        </Show>
       </Show>
     </div>
   );
