@@ -123,3 +123,10 @@
 .place__mode {
   color: var(--color-text);
 }
+
+/* "duplicate? 2×" after a posting's company in the table. */
+.duplicate {
+  margin-inline-start: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}

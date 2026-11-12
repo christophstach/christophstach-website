@@ -8,6 +8,7 @@ import {
 } from "../../../../data/postings";
 import {
   SALARY_BANDS,
+  findDuplicates,
   formatSalary,
   formatShortDay,
   salaryBand,
@@ -36,7 +37,10 @@ function postingStatus(status: PostingStatus) {
   };
 }
 
-const COLUMNS: DeskTableColumn<JobPostingRecord>[] = [
+/** Each posting's likely duplicates (same company and title); see findDuplicates. */
+type Duplicates = ReadonlyMap<string, readonly JobPostingRecord[]>;
+
+const columns = (duplicates: Duplicates): DeskTableColumn<JobPostingRecord>[] => [
   {
     id: "posting",
     header: "posting",
@@ -44,7 +48,14 @@ const COLUMNS: DeskTableColumn<JobPostingRecord>[] = [
     cell: (posting) => (
       <span class={styles.name}>
         <span class={styles.name__main}>{posting.title || posting.externalId}</span>
-        <span class={styles.name__sub}>{posting.company || "–"}</span>
+        <span class={styles.name__sub}>
+          {posting.company || "–"}
+          {duplicates.has(posting.id) ? (
+            <span class={["role-tag", styles.duplicate]}>
+              duplicate? {(duplicates.get(posting.id)?.length ?? 0) + 1}×
+            </span>
+          ) : null}
+        </span>
       </span>
     ),
     sort: (posting) => posting.title,
@@ -98,8 +109,11 @@ const COLUMNS: DeskTableColumn<JobPostingRecord>[] = [
   },
 ];
 
-/** The filters: status, source, and which collector found it. */
-function filters(collectors: Collector[]): DeskTableFilter<JobPostingRecord>[] {
+/** The filters: status, workplace, salary, duplicates, source, and which collector found it. */
+function filters(
+  collectors: Collector[],
+  duplicates: Duplicates,
+): DeskTableFilter<JobPostingRecord>[] {
   return [
     {
       id: "status",
@@ -109,6 +123,15 @@ function filters(collectors: Collector[]): DeskTableFilter<JobPostingRecord>[] {
         label: POSTING_STATUS_LABELS[status],
       })),
       value: (posting) => posting.status,
+    },
+    {
+      id: "duplicates",
+      label: "duplicates",
+      options: [
+        { value: "yes", label: "Likely duplicates" },
+        { value: "no", label: "Unique" },
+      ],
+      value: (posting) => (duplicates.has(posting.id) ? "yes" : "no"),
     },
     {
       id: "workplace",
@@ -217,6 +240,7 @@ export default function Postings() {
   const [search] = useSearchParams();
   const postings = createMemo(() => getDeskPostings());
   const collectors = createMemo(() => getDeskCollectors());
+  const duplicates = createMemo(() => findDuplicates(postings()));
   const adding = () => search.new !== undefined;
 
   return (
@@ -264,8 +288,8 @@ export default function Postings() {
           rowKey={(posting) => posting.id}
           rowHref={(posting) => paths.desk.postings(posting.id)()}
           initialSort={{ column: "found", direction: "desc" }}
-          columns={COLUMNS}
-          filters={filters(collectors())}
+          columns={columns(duplicates())}
+          filters={filters(collectors(), duplicates())}
         />
       </Show>
     </div>

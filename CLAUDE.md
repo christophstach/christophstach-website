@@ -192,7 +192,9 @@ endpoint checks the secret instead of `requireUser()`. Each type's reader is in
 sent by the Gmail script `tools/linkedin-alerts.gs`, and keeps the mail as `raw` so "Read again"
 can parse it anew. Its plain body gives title, company and location; only the HTML body has each
 job's workplace and salary (yearly, `src/server/collectors/salary.ts`). The mail's day becomes
-the posting date; a job in several alerts keeps the earliest. A posting found again
+the posting date; a job in several alerts keeps the earliest. LinkedIn gives a reposted job, or one
+posted per city, a new id: the desk marks postings with the same company and title as likely
+duplicates (`findDuplicates` in `src/lib/posting.ts`), never merges them. A posting found again
 keeps its edits and only fills the fields it lacks. "Add by URL" (`readUrl`) reads a page's JSON-LD `JobPosting`; it never fetches
 LinkedIn, whose links keep only the job id. "Create application" copies a posting into an
 application (`applications.posting_id`) and marks it applied; deleting the application reopens
