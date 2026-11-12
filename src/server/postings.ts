@@ -29,6 +29,17 @@ function toPosting(row: PostingRow): JobPosting {
     salaryMax: row.salaryMax,
     salaryCurrency: SALARY_CURRENCIES.find((code) => code === row.salaryCurrency) ?? "",
     status: row.status,
+    score:
+      row.score === null || row.scoredAt === null
+        ? null
+        : {
+            score: row.score,
+            reasons: row.scoreReasons,
+            concerns: row.scoreConcerns,
+            cvId: row.scoreCvId,
+            model: row.scoreModel,
+            scoredAt: row.scoredAt.toISOString(),
+          },
   };
 }
 

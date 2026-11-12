@@ -53,6 +53,22 @@ interface JobTerms {
   salaryCurrency: SalaryCurrency | "";
 }
 
+/** How well a posting fits, as the scoring model judged it (src/server/posting-score.ts). */
+interface PostingScore {
+  /** 0–100. */
+  score: number;
+  /** Why it fits: a few short lines. */
+  reasons: string[];
+  /** What speaks against it. */
+  concerns: string[];
+  /** The CV the model would send; empty if none fits better than another. */
+  cvId: string;
+  /** e.g. "reflection/beam-free". */
+  model: string;
+  /** ISO timestamp. */
+  scoredAt: string;
+}
+
 /** A job ad in the desk's inbox, private to the desk. */
 interface JobPosting extends JobTerms {
   /** URL slug, e.g. /desk/postings/linkedin-4012345678. */
@@ -71,6 +87,8 @@ interface JobPosting extends JobTerms {
   /** ISO date; empty if the source doesn't say. */
   postedOn: string;
   status: PostingStatus;
+  /** How well it fits; null until scored. */
+  score: PostingScore | null;
 }
 
 /** A posting as the desk lists it. */
@@ -208,6 +226,7 @@ export type {
   JobPostingRecord,
   JobTerms,
   PostingEdit,
+  PostingScore,
   PostingSource,
   PostingStatus,
   SalaryCurrency,

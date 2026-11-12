@@ -250,11 +250,38 @@ const jobPostings = pgTable(
       .default("new"),
     /** What it was read from (a mail's text, a page's JSON-LD), to read again later. */
     raw: text().notNull().default(""),
+    /** How well the job fits, 0–100, from the scoring model; null until scored. */
+    score: integer(),
+    /** Why it fits, and what speaks against it: short lines from the model. */
+    scoreReasons: jsonb()
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    scoreConcerns: jsonb()
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    /** The CV the model would send; empty if none fits better than another. */
+    scoreCvId: text().notNull().default(""),
+    /** The model that scored it, e.g. "reflection/beam-free", and when. */
+    scoreModel: text().notNull().default(""),
+    scoredAt: timestamp({ withTimezone: true }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique().on(table.source, table.externalId)],
 );
+
+/**
+ * What the job search is after, in your own words: places, salary, roles,
+ * companies. One row, private to the desk; the scoring model reads it with
+ * the CV content.
+ */
+const jobSearch = pgTable("job_search", {
+  id: integer().primaryKey().default(1),
+  notes: text().notNull().default(""),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
 
 /**
  * A company the postings come from, described once for all of them. Postings
@@ -427,6 +454,7 @@ export {
   cvs,
   cvsRelations,
   jobPostings,
+  jobSearch,
   projects,
   skillGroups,
 };

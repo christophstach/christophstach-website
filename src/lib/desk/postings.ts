@@ -106,3 +106,38 @@ export async function rereadDeskCollector(id: string): Promise<number> {
 
   return desk.rereadDeskCollector(id);
 }
+
+/** How a scoring run went: what it scored, why it stopped, what is left. */
+export interface DeskScoreRun {
+  model: string;
+  scored: string[];
+  error: string;
+  left: number;
+}
+
+/** Scores one posting now, also if it has a score. */
+export async function scoreDeskPosting(id: string): Promise<DeskScoreRun> {
+  "use server";
+
+  const desk = await import("../../server/desk-postings");
+
+  return desk.scoreDeskPosting(id);
+}
+
+/** Scores the postings due for it, for about a minute. */
+export async function scoreDeskPostings(): Promise<DeskScoreRun> {
+  "use server";
+
+  const desk = await import("../../server/desk-postings");
+
+  return desk.scoreDeskPostings();
+}
+
+/** Writes what the desk looks for; older scores count as stale. */
+export async function saveDeskJobSearch(notes: string): Promise<void> {
+  "use server";
+
+  const desk = await import("../../server/desk-postings");
+
+  await desk.saveDeskJobSearch(notes);
+}

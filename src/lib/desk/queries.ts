@@ -82,6 +82,15 @@ export const getDeskCompanies = query(async () => {
   return desk.deskCompanies();
 }, "desk-companies");
 
+/** What the desk looks for (the scoring model's brief), and that model. */
+export const getDeskJobSearch = query(async () => {
+  "use server";
+
+  const desk = await import("../../server/desk-postings");
+
+  return desk.deskJobSearch();
+}, "desk-job-search");
+
 export const getDeskUser = query(async () => {
   "use server";
 

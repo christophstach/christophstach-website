@@ -99,7 +99,7 @@ Vercel Cron calls it daily and a GitHub Action (`.github/workflows/page-checks.y
 minutes and after each production deploy, both with `CRON_SECRET`, and it seals a session only for its own Chrome
 to measure every CV and letter without a page check on this build; first it reads the company
 job boards that are due (`runDueCollectors`), then describes the postings' new companies
-(`checkCompanies`).
+(`checkCompanies`), then scores the postings due for it (`scorePostings`).
 
 **Content is data, not markup.** CV content lives in the database, typed by the interfaces in
 `src/data/cv.ts` (`TimelineEntry`, `EntryRecord`, `SkillGroup`, `Profile`, `CvContent`). The
@@ -167,7 +167,7 @@ session only for `DESK_GITHUB_USER_ID`. The session is h3's sealed cookie, from 
 redirects anonymous `/desk/**` requests to `/login`, before anything renders. Sidebar sections
 are data in `src/data/desk.ts`. Desk reads are queries in `src/lib/desk/queries.ts` (keys
 `desk-cvs`, `desk-applications`, `desk-cover-letters`, `desk-cv-content`, `desk-projects`, `desk-profile`,
-`desk-user`, `desk-postings`, `desk-collectors`, `desk-companies`). Editors keep their form in `useDraft` (`src/lib/desk/draft.ts`): a store that
+`desk-user`, `desk-postings`, `desk-collectors`, `desk-companies`, `desk-job-search`). Editors keep their form in `useDraft` (`src/lib/desk/draft.ts`): a store that
 follows the stored value, reconciled by id, compared by content so refetches don't reset
 typing; it asks before leaving with unsaved changes. Change store arrays in place (`setItems` in
 `src/lib/desk/picks.ts`) and key lists by a stable field. Shared desk components:
@@ -235,6 +235,18 @@ run, when a posting is added or saved, from the company's "Check again", and in 
 job (`/api/desk/page-checks`), which takes what the others left. The postings list shows a
 company's labels ("YC W25", "VC", "AI", "US"; `companyLabels` in `src/lib/company.ts`) and
 filters by them.
+
+**Scores** say how well a posting fits (`job_postings.score*`, `src/server/posting-score.ts`):
+a language model reads the CV content, the search notes (one row of `job_search`,
+`src/server/job-search.ts`, edited at `/desk/postings/scoring`, query key `desk-job-search`) and
+the CV list, and answers 0–100, up to three reasons and concerns, and the CV to send, which
+"Create application" then picks. It runs through the Vercel AI SDK (`ai`) and AI Gateway with
+`JOB_SCORE_MODEL` (default `reflection/beam-free`), and only while the Gateway's public price
+list shows every endpoint of that model at 0: no API key, which could be charged; on Vercel the
+Gateway signs in with the deployment's OIDC token (locally `vercel env pull`). Due are postings
+not dismissed, not applied to, and unscored or scored before the notes last changed; the
+scheduled job scores them newest first, one at a time, "Score now" and a posting's "Score
+again" on demand. A run stops at the first failure.
 
 **Cover letters** are private to the desk, each the one letter of an application (`cover_letters`,
 `src/server/cover-letters.ts`, edited at `/desk/cover-letters/<id>`). Name and contact come

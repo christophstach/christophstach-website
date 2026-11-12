@@ -164,13 +164,37 @@ function fromTermsForm(form: JobTermsForm): JobTerms {
 }
 
 /** "Remote", "Hybrid", "On-site"; empty if not stated. */
+/** How the desk groups fit scores: 75+ fits well, under 50 hardly; "none" is unscored. */
+type FitTone = "high" | "mid" | "low" | "none";
+
+const FIT_TONES: readonly { value: FitTone; label: string }[] = [
+  { value: "high", label: "Fits well (75+)" },
+  { value: "mid", label: "Maybe (50–74)" },
+  { value: "low", label: "Hardly (under 50)" },
+  { value: "none", label: "Not scored" },
+];
+
+function fitTone(posting: Pick<JobPosting, "score">): FitTone {
+  if (posting.score === null) {
+    return "none";
+  }
+
+  if (posting.score.score >= 75) {
+    return "high";
+  }
+
+  return posting.score.score >= 50 ? "mid" : "low";
+}
+
 function workplaceLabel(workplace: Workplace | ""): string {
   return workplace === "" ? "" : WORKPLACE_LABELS[workplace];
 }
 
 export {
+  FIT_TONES,
   SALARY_BANDS,
   companyKey,
+  fitTone,
   workplaceLabel,
   findDuplicates,
   formatSalary,
@@ -181,4 +205,4 @@ export {
   salaryTop,
   toTermsForm,
 };
-export type { JobTermsForm };
+export type { FitTone, JobTermsForm };

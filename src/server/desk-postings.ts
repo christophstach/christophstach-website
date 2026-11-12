@@ -28,6 +28,10 @@ import type { Application } from "../data/applications";
 import { requireUser } from "./auth";
 import { companyKey } from "../lib/posting";
 import { slugify } from "../lib/cover-letter";
+import { loadJobSearch, saveJobSearch } from "./job-search";
+import { scoreModel, scorePostings } from "./posting-score";
+import type { ScoreRun } from "./posting-score";
+import { listCvs } from "./cvs";
 
 // The desk's posting and collector writes. Each checks the session first and
 // parses its input.
@@ -135,6 +139,9 @@ async function applyToDeskPosting(id: string): Promise<string> {
   const posting = await requirePosting(id);
   const slug = slugify(`${posting.company} ${posting.title}`) || posting.id;
   const applicationId = await freeApplicationId(slug);
+  // The CV its score suggests, while that CV still exists.
+  const { cvs } = await listCvs();
+  const cvId = cvs.some((cv) => cv.id === posting.score?.cvId) ? (posting.score?.cvId ?? "") : "";
   const application: Application = {
     id: applicationId,
     company: posting.company || "Unknown company",
@@ -148,7 +155,7 @@ async function applyToDeskPosting(id: string): Promise<string> {
     salaryCurrency: posting.salaryCurrency,
     source: posting.source === "linkedin" ? "linkedin" : "direct",
     status: "preparing",
-    cvId: "",
+    cvId,
     appliedOn: "",
     nextStep: "",
     nextStepOn: "",
@@ -161,6 +168,33 @@ async function applyToDeskPosting(id: string): Promise<string> {
   await linkPosting(applicationId, posting.id);
 
   return applicationId;
+}
+
+/** Scores one posting now, also if it has a score; answers how the run went. */
+async function scoreDeskPosting(id: string): Promise<ScoreRun> {
+  await requireUser();
+  await requirePosting(id);
+
+  return scorePostings({ deadline: Date.now() + 50_000, ids: [id] });
+}
+
+/** Scores the postings due for it, for about a minute; the scheduled job takes the rest. */
+async function scoreDeskPostings(): Promise<ScoreRun> {
+  await requireUser();
+
+  return scorePostings({ deadline: Date.now() + 50_000 });
+}
+
+/** What the desk looks for, and the model that scores against it. */
+async function deskJobSearch() {
+  await requireUser();
+
+  return { ...(await loadJobSearch()), model: scoreModel() };
+}
+
+async function saveDeskJobSearch(notes: unknown) {
+  await requireUser();
+  await saveJobSearch(parseInput(string("Notes are text."), notes).trim());
 }
 
 /** Makes a collector; answers its secret, shown once. */
@@ -207,10 +241,14 @@ export {
   createDeskCollector,
   deleteDeskCollector,
   deleteDeskPosting,
+  deskJobSearch,
   renewDeskCollectorSecret,
   rereadDeskCollector,
   runDeskCollector,
+  saveDeskJobSearch,
   saveDeskPosting,
+  scoreDeskPosting,
+  scoreDeskPostings,
   setDeskPostingsStatus,
   updateDeskCollector,
 };
