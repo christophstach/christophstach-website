@@ -425,6 +425,14 @@
   padding-inline: var(--space-5) 0;
 }
 
+/* The tick and the control (1rem each) sit centred on the primary cell's first line. */
+.table__cell--check,
+.table__cell--control {
+  padding-block-start: calc(
+    var(--space-3) + (var(--text-base) * var(--leading-relaxed) - 1rem) / 2
+  );
+}
+
 .table__head--check {
   vertical-align: middle;
 }
