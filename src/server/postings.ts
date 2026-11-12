@@ -1,6 +1,7 @@
 import "server-only";
 import type { JobPosting, JobPostingRecord, PostingEdit } from "../data/postings";
 import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { SALARY_CURRENCIES } from "../data/postings";
 import { applications, jobPostings } from "../../server/db/schema";
@@ -84,6 +85,14 @@ function fillEmpty(column: AnyPgColumn, name: string) {
   return sql`coalesce(nullif(${column}, ''), excluded.${sql.identifier(name)})`;
 }
 
+/**
+ * The earlier of two ISO days, either may be empty. A job in several alerts
+ * was posted by the first; Gmail sends the newest mails first.
+ */
+function earliestDay(stored: AnyPgColumn, read: SQL) {
+  return sql`coalesce(least(nullif(${stored}, ''), nullif(${read}, '')), '')`;
+}
+
 /** A salary column that takes the new read's only while no salary is stored. */
 function fillSalary(column: AnyPgColumn, name: string) {
   return sql`case when ${jobPostings.salaryMin} is null and ${jobPostings.salaryMax} is null
@@ -116,6 +125,7 @@ async function addPostings(found: FoundPosting[], collectorId: string | null): P
         company: fillEmpty(jobPostings.company, "company"),
         location: fillEmpty(jobPostings.location, "location"),
         workplace: fillEmpty(jobPostings.workplace, "workplace"),
+        postedOn: earliestDay(jobPostings.postedOn, sql`excluded.posted_on`),
         salaryMin: fillSalary(jobPostings.salaryMin, "salary_min"),
         salaryMax: fillSalary(jobPostings.salaryMax, "salary_max"),
         salaryCurrency: fillSalary(jobPostings.salaryCurrency, "salary_currency"),
@@ -192,6 +202,9 @@ async function updateFound(id: string, found: FoundPosting) {
       // What the input doesn't state stays: a mail kept without its HTML body
       // has no workplace or salary, which needn't mean the ad has none.
       ...(found.workplace === "" ? {} : { workplace: found.workplace }),
+      ...(found.postedOn === ""
+        ? {}
+        : { postedOn: earliestDay(jobPostings.postedOn, sql`${found.postedOn}`) }),
       ...(found.salaryMin === null && found.salaryMax === null
         ? {}
         : {

@@ -191,7 +191,8 @@ endpoint checks the secret instead of `requireUser()`. Each type's reader is in
 `src/server/collectors/` (`PUSH_COLLECTORS`): `linkedin-email` reads LinkedIn's job alert mails,
 sent by the Gmail script `tools/linkedin-alerts.gs`, and keeps the mail as `raw` so "Read again"
 can parse it anew. Its plain body gives title, company and location; only the HTML body has each
-job's workplace and salary (yearly, `src/server/collectors/salary.ts`). A posting found again
+job's workplace and salary (yearly, `src/server/collectors/salary.ts`). The mail's day becomes
+the posting date; a job in several alerts keeps the earliest. A posting found again
 keeps its edits and only fills the fields it lacks. "Add by URL" (`readUrl`) reads a page's JSON-LD `JobPosting`; it never fetches
 LinkedIn, whose links keep only the job id. "Create application" copies a posting into an
 application (`applications.posting_id`) and marks it applied; deleting the application reopens
