@@ -24,12 +24,22 @@ import {
   COMPANY_FUNDING_LABELS,
 } from "../../../../data/companies";
 import { getDeskCollectors, getDeskCompanies, getDeskPostings } from "../../../../lib/desk/queries";
-import { companiesByKey, companyLabels, countryName } from "../../../../lib/company";
+import {
+  YC_FUNDING_OPTION,
+  companiesByKey,
+  companyLabels,
+  countryName,
+  fundingValues,
+} from "../../../../lib/company";
 import type { CompanyRecord } from "../../../../data/companies";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import { DeskMeta } from "../../../../components/desk/DeskMeta";
 import { DeskTable } from "../../../../components/desk/DeskTable";
-import type { DeskTableColumn, DeskTableFilter } from "../../../../components/desk/DeskTable";
+import type {
+  DeskTableColumn,
+  DeskTableFilter,
+  DeskTableTabs,
+} from "../../../../components/desk/DeskTable";
 import { IconPlus, IconStar } from "../../../../components/icons";
 import type { RouteDefinition } from "@solidjs/router";
 import { addDeskPostingByUrl, setDeskPostingsStatus } from "../../../../lib/desk/postings";
@@ -55,7 +65,7 @@ function postingStatus(posting: JobPostingRecord) {
   };
 }
 
-/** For the status filter: postings with an application count as applied. */
+/** For the status tabs: postings with an application count as applied. */
 function postingState(posting: JobPostingRecord): PostingStatus | "applied" {
   return posting.applicationId === "" ? posting.status : "applied";
 }
@@ -199,26 +209,28 @@ function headquarters(companies: Companies): string[] {
   ].toSorted((one, other) => countryName(one).localeCompare(countryName(other)));
 }
 
-/** The filters: status, workplace, salary, duplicates, source, the company's field,
- * headquarters and funding, and which collector found it. */
+/** The status tabs: postings with an application count as applied. */
+const STATUS_TABS: DeskTableTabs<JobPostingRecord> = {
+  label: "status",
+  options: [
+    { value: "new", label: POSTING_STATUS_LABELS.new },
+    { value: "favourite", label: POSTING_STATUS_LABELS.favourite },
+    { value: "applied", label: "Applied" },
+    { value: "dismissed", label: POSTING_STATUS_LABELS.dismissed },
+  ],
+  value: postingState,
+  initial: "new",
+  all: "All",
+};
+
+/** The filters: workplace, salary, the company's field, headquarters and funding;
+ * behind "More filters" duplicates, source and which collector found it. */
 function filters(
   collectors: Collector[],
   duplicates: Duplicates,
   companies: Companies,
 ): DeskTableFilter<JobPostingRecord>[] {
   return [
-    {
-      id: "status",
-      label: "status",
-      options: [
-        ...POSTING_STATUSES.map((status) => ({
-          value: status,
-          label: POSTING_STATUS_LABELS[status],
-        })),
-        { value: "applied", label: "Applied" },
-      ],
-      value: postingState,
-    },
     {
       id: "duplicates",
       label: "duplicates",
@@ -227,6 +239,7 @@ function filters(
         { value: "no", label: "Unique" },
       ],
       value: (posting) => (duplicates.has(posting.id) ? "yes" : "no"),
+      more: true,
     },
     {
       id: "workplace",
@@ -257,6 +270,7 @@ function filters(
         label: POSTING_SOURCE_LABELS[source],
       })),
       value: (posting) => posting.source,
+      more: true,
     },
     {
       id: "collector",
@@ -266,15 +280,7 @@ function filters(
         { value: "", label: "Added by hand" },
       ],
       value: (posting) => posting.collectorId,
-    },
-    {
-      id: "yc",
-      label: "y combinator",
-      options: [
-        { value: "yes", label: "YC company" },
-        { value: "no", label: "Not YC" },
-      ],
-      value: (posting) => ((companyOf(companies, posting)?.batch ?? "") === "" ? "no" : "yes"),
+      more: true,
     },
     {
       id: "field",
@@ -298,13 +304,14 @@ function filters(
       id: "funding",
       label: "funding",
       options: [
+        YC_FUNDING_OPTION,
         ...COMPANY_FUNDINGS.map((funding) => ({
           value: funding,
           label: COMPANY_FUNDING_LABELS[funding],
         })),
         { value: "", label: "Unknown" },
       ],
-      value: (posting) => companyOf(companies, posting)?.funding ?? "",
+      value: (posting) => fundingValues(companyOf(companies, posting)),
     },
   ];
 }
@@ -440,6 +447,7 @@ export default function Postings() {
               ),
             busy: request.busy,
           })}
+          tabs={STATUS_TABS}
           filters={filters(collectors(), duplicates(), companies())}
           select={{
             label: (posting) => `Tick ${posting.title || posting.externalId}`,
