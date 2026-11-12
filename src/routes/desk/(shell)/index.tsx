@@ -5,6 +5,7 @@ import {
   getDeskContent,
   getDeskCoverLetters,
   getDeskCvs,
+  getDeskPostings,
   getDeskProjects,
 } from "../../../lib/desk/queries";
 import { letterStatus, pageStatus } from "../../../lib/cv-layout";
@@ -100,6 +101,8 @@ function ApplicationsPanel() {
       )
       .slice(0, LATEST_APPLICATIONS);
   const hasMore = () => applications().length > shown().length;
+  const postings = createMemo(() => getDeskPostings());
+  const newPostings = () => postings().filter((posting) => posting.status === "new").length;
 
   return (
     <section class="panel" aria-labelledby="panel-applications">
@@ -119,6 +122,15 @@ function ApplicationsPanel() {
           New application
         </a>
       </header>
+
+      <Show when={newPostings() > 0}>
+        <p class={styles.notice}>
+          <a href={paths.desk.postings()} class="text-link">
+            {newPostings()} new {newPostings() === 1 ? "posting" : "postings"}
+          </a>{" "}
+          to sort out.
+        </p>
+      </Show>
 
       <Show when={shown().length > 0} fallback={<p class="panel__empty">No open applications.</p>}>
         <ul class="panel__rows">
@@ -214,6 +226,7 @@ function LettersPanel() {
 export const route = {
   preload: () => {
     void getDeskApplications();
+    void getDeskPostings();
     void getDeskCvs();
     void getDeskCoverLetters();
     void getDeskContent();
