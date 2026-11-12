@@ -1,6 +1,6 @@
 import "server-only";
 import type { JobPosting, JobPostingRecord, PostingEdit } from "../data/postings";
-import { desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { SALARY_CURRENCIES } from "../data/postings";
@@ -29,6 +29,17 @@ function toPosting(row: PostingRow): JobPosting {
     salaryMax: row.salaryMax,
     salaryCurrency: SALARY_CURRENCIES.find((code) => code === row.salaryCurrency) ?? "",
     status: row.status,
+    score:
+      row.score === null || row.scoredAt === null
+        ? null
+        : {
+            score: row.score,
+            reasons: row.scoreReasons,
+            concerns: row.scoreConcerns,
+            cvId: row.scoreCvId,
+            model: row.scoreModel,
+            scoredAt: row.scoredAt.toISOString(),
+          },
   };
 }
 
@@ -182,6 +193,38 @@ async function deletePosting(id: string) {
   }
 }
 
+/**
+ * Dismisses a collector's new postings that its source no longer lists: a
+ * job board lists every open job, so a job missing from it was closed.
+ * Favourites stay, and so does a posting an application was made from.
+ * Answers how many it dismissed. An empty list closes nothing: a board that
+ * suddenly lists no job more likely broke than closed them all.
+ */
+async function dismissClosed(collectorId: string, openExternalIds: string[]): Promise<number> {
+  if (openExternalIds.length === 0) {
+    return 0;
+  }
+
+  const applied = useDb()
+    .select({ postingId: applications.postingId })
+    .from(applications)
+    .where(isNotNull(applications.postingId));
+  const closed = await useDb()
+    .update(jobPostings)
+    .set({ status: "dismissed", updatedAt: new Date() })
+    .where(
+      and(
+        eq(jobPostings.collectorId, collectorId),
+        eq(jobPostings.status, "new"),
+        notInArray(jobPostings.externalId, openExternalIds),
+        notInArray(jobPostings.id, applied),
+      ),
+    )
+    .returning({ id: jobPostings.id });
+
+  return closed.length;
+}
+
 /** A posting's stored input, for a collector to read again. */
 async function postingsWithRaw(collectorId: string) {
   return useDb()
@@ -219,6 +262,7 @@ async function updateFound(id: string, found: FoundPosting) {
 export {
   addPostings,
   deletePosting,
+  dismissClosed,
   findPosting,
   listPostings,
   postingId,

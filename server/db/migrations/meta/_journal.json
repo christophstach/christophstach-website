@@ -218,6 +218,20 @@
       "when": 1794486425666,
       "tag": "0030_company_facts",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1794500392670,
+      "tag": "0031_ats_board_collectors",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1794501563389,
+      "tag": "0032_posting_scores",
+      "breakpoints": true
     }
   ]
 }

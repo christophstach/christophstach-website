@@ -1,17 +1,23 @@
 import "server-only";
 import { checkCompanies } from "./company-check";
 import type { CompanyCheckRun } from "./company-check";
+import type { DueRun } from "./collector-store";
 import { HttpError } from "./http";
 import { env } from "virtual:solid-env/server";
 import { letterPages } from "./desk-letters";
 import { listCoverLetters } from "./cover-letters";
 import { listCvs } from "./cvs";
+import { runDueCollectors } from "./collector-store";
+import { scorePostings } from "./posting-score";
+import type { ScoreRun } from "./posting-score";
 import { serverSessionCookie } from "./session";
 import { storedPages } from "./desk-cvs";
 import { timingSafeEqual } from "node:crypto";
 
-// The scheduled page check: describes the postings' new companies (see
-// company-check.ts), then measures every CV and cover letter that
+// The scheduled page check: reads the company job boards that are due (see
+// collector-store.ts), describes the postings' new companies (see
+// company-check.ts), scores the postings due for it (see posting-score.ts),
+// then measures every CV and cover letter that
 // has no page check on this build (all of them after a deploy, and any written
 // straight to the database), without anyone opening the desk. Vercel Cron
 // calls it with CRON_SECRET; it is the one desk endpoint without requireUser().
@@ -36,8 +42,12 @@ function requireCronSecret(request: Request) {
 }
 
 interface PageCheckRun {
+  /** The job boards read in this run; see collector-store.ts. */
+  collectors: DueRun;
   /** The companies described from free sources in this run; see company-check.ts. */
   companies: CompanyCheckRun;
+  /** The postings scored in this run; see posting-score.ts. */
+  scores: ScoreRun;
   /** e.g. "cv/frontend", "letter/acme-frontend". */
   checked: string[];
   failed: { name: string; error: string }[];
@@ -77,9 +87,20 @@ async function checkMissingPages(request: Request): Promise<PageCheckRun> {
         run: () => letterPages(chrome, letter.id),
       })),
   ];
-  // Companies first: quick, and the pages get what time is left.
-  const companies = await checkCompanies({ deadline: started + 15_000 });
-  const result: PageCheckRun = { companies, checked: [], failed: [], left: [] };
+  // Job boards first, then the companies of what they found: both quick, and
+  // the pages get what time is left.
+  const boards = await runDueCollectors({ deadline: started + 10_000 });
+  const companies = await checkCompanies({ deadline: started + 22_000 });
+  // Then scores for what came in: longer while no page waits for Chrome.
+  const scores = await scorePostings({ deadline: started + (jobs.length === 0 ? 50_000 : 30_000) });
+  const result: PageCheckRun = {
+    collectors: boards,
+    companies,
+    scores,
+    checked: [],
+    failed: [],
+    left: [],
+  };
 
   async function runOne(job: Job) {
     if (Date.now() - started > BUDGET_MS) {

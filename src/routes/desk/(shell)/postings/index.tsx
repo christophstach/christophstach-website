@@ -7,9 +7,11 @@ import {
   WORKPLACE_LABELS,
 } from "../../../../data/postings";
 import {
+  FIT_TONES,
   SALARY_BANDS,
   companyKey,
   findDuplicates,
+  fitTone,
   formatSalary,
   formatShortDay,
   salaryBand,
@@ -40,7 +42,7 @@ import type {
   DeskTableFilter,
   DeskTableTabs,
 } from "../../../../components/desk/DeskTable";
-import { IconPlus, IconStar } from "../../../../components/icons";
+import { IconPlus, IconSparkles, IconStar } from "../../../../components/icons";
 import type { RouteDefinition } from "@solidjs/router";
 import { addDeskPostingByUrl, setDeskPostingsStatus } from "../../../../lib/desk/postings";
 import { formatRelative } from "../../../../lib/format";
@@ -151,6 +153,27 @@ const columns = (
       `${posting.title} ${posting.company} ${posting.location} ${labelWords(companies, posting)}`,
   },
   {
+    id: "fit",
+    header: "fit",
+    cell: (posting) => (
+      <span
+        class={[styles.fit, styles[`fit--${fitTone(posting)}`]]}
+        title={
+          posting.score === null
+            ? "Not scored yet"
+            : [...posting.score.reasons, ...posting.score.concerns.map((line) => `– ${line}`)].join(
+                "\n",
+              )
+        }
+      >
+        {posting.score?.score ?? "–"}
+      </span>
+    ),
+    // Unscored sorts last either way.
+    sort: (posting) => posting.score?.score ?? "",
+    firstDirection: "desc",
+  },
+  {
     id: "location",
     header: "location",
     // The place over the workplace; a long place wraps, so the table fits its panel.
@@ -231,6 +254,12 @@ function filters(
   companies: Companies,
 ): DeskTableFilter<JobPostingRecord>[] {
   return [
+    {
+      id: "fit",
+      label: "fit",
+      options: FIT_TONES,
+      value: fitTone,
+    },
     {
       id: "duplicates",
       label: "duplicates",
@@ -405,10 +434,16 @@ export default function Postings() {
         </div>
 
         <Show when={!adding()}>
-          <a href={paths.desk.postings({ new: "1" })} class="button button--primary">
-            <IconPlus size={16} />
-            Add by URL
-          </a>
+          <div class={styles.actions}>
+            <a href={paths.desk.postings.scoring()} class="button button--outline">
+              <IconSparkles size={16} />
+              Scoring
+            </a>
+            <a href={paths.desk.postings({ new: "1" })} class="button button--primary">
+              <IconPlus size={16} />
+              Add by URL
+            </a>
+          </div>
         </Show>
       </header>
 

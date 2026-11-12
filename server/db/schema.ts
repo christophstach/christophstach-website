@@ -13,6 +13,7 @@ import { relations, sql } from "drizzle-orm";
 import type { ApplicationContact, ApplicationEvent } from "../../src/data/applications";
 import type { CvLayout } from "../../src/data/cv-print-layout";
 import type { CompanySource } from "../../src/data/companies";
+import type { AtsBoard } from "../../src/data/postings";
 
 // Column names are snake_case in the database: drizzle.config.ts and useDb()
 // both pass casing "snake_case", so the properties here stay camelCase.
@@ -178,20 +179,26 @@ const projects = pgTable("projects", {
 
 /** One job applied for, or about to be, private to the desk. */
 /**
- * A source that sends job postings to the desk, e.g. the LinkedIn job alert
- * mails a script in Gmail forwards. Private to the desk. What each type
- * understands is its module in src/server/collectors/.
+ * A source of job postings, private to the desk: one that sends them (the
+ * LinkedIn job alert mails a script in Gmail forwards) or one the desk reads
+ * itself (a company's job board). What each type understands is its module
+ * in src/server/collectors/.
  */
 const collectors = pgTable("collectors", {
   /** URL slug, e.g. /desk/collectors/linkedin-alerts and /api/collectors/linkedin-alerts. */
   id: text().primaryKey(),
-  type: text({ enum: ["linkedin-email"] }).notNull(),
+  type: text({ enum: ["linkedin-email", "ats-board"] }).notNull(),
   label: text().notNull(),
-  /** A paused collector refuses what is sent to it. */
+  /** A paused collector refuses what is sent to it, and isn't run. */
   active: boolean().notNull().default(true),
-  /** SHA-256 (hex) of the secret it is sent with; the secret itself is shown once. */
-  secretHash: text().notNull(),
-  /** The last time something was sent to it, and what came of it. */
+  /**
+   * SHA-256 (hex) of the secret it is sent with; the secret itself is shown
+   * once. Null for a collector the desk runs itself: nothing sends to it.
+   */
+  secretHash: text(),
+  /** The job board an "ats-board" collector reads; null for the others. */
+  board: jsonb().$type<AtsBoard>(),
+  /** The last time something was sent to it or it ran, and what came of it. */
   lastRunAt: timestamp({ withTimezone: true }),
   lastFound: integer().notNull().default(0),
   lastAdded: integer().notNull().default(0),
@@ -216,8 +223,10 @@ const jobPostings = pgTable(
       onUpdate: "cascade",
     }),
     /** Where the ad is posted. */
-    source: text({ enum: ["linkedin", "web"] }).notNull(),
-    /** The source's id for it: LinkedIn's job id, or the page's URL. */
+    source: text({
+      enum: ["linkedin", "web", "greenhouse", "lever", "ashby", "personio"],
+    }).notNull(),
+    /** The source's id for it: LinkedIn's job id, the page's URL, or "<board>:<job id>". */
     externalId: text().notNull(),
     url: text().notNull(),
     company: text().notNull().default(""),
@@ -241,11 +250,38 @@ const jobPostings = pgTable(
       .default("new"),
     /** What it was read from (a mail's text, a page's JSON-LD), to read again later. */
     raw: text().notNull().default(""),
+    /** How well the job fits, 0–100, from the scoring model; null until scored. */
+    score: integer(),
+    /** Why it fits, and what speaks against it: short lines from the model. */
+    scoreReasons: jsonb()
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    scoreConcerns: jsonb()
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    /** The CV the model would send; empty if none fits better than another. */
+    scoreCvId: text().notNull().default(""),
+    /** The model that scored it, e.g. "reflection/beam-free", and when. */
+    scoreModel: text().notNull().default(""),
+    scoredAt: timestamp({ withTimezone: true }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique().on(table.source, table.externalId)],
 );
+
+/**
+ * What the job search is after, in your own words: places, salary, roles,
+ * companies. One row, private to the desk; the scoring model reads it with
+ * the CV content.
+ */
+const jobSearch = pgTable("job_search", {
+  id: integer().primaryKey().default(1),
+  notes: text().notNull().default(""),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
 
 /**
  * A company the postings come from, described once for all of them. Postings
@@ -418,6 +454,7 @@ export {
   cvs,
   cvsRelations,
   jobPostings,
+  jobSearch,
   projects,
   skillGroups,
 };

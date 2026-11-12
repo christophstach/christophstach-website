@@ -1,5 +1,10 @@
 import "server-only";
-import type { CollectorType, PostingSource, SalaryCurrency, Workplace } from "../../data/postings";
+import type {
+  PostingSource,
+  PushCollectorType,
+  SalaryCurrency,
+  Workplace,
+} from "../../data/postings";
 
 /** A job ad as a collector reads it, before it is stored. */
 interface FoundPosting {
@@ -27,7 +32,7 @@ interface FoundPosting {
  * postings. Throws an HttpError (400) for a body it doesn't understand.
  */
 interface PushCollector {
-  type: CollectorType;
+  type: PushCollectorType;
   read: (body: unknown) => FoundPosting[];
   /** Reads one posting's stored raw input again; undefined if it no longer finds it there. */
   reread: (raw: string, externalId: string) => FoundPosting | undefined;

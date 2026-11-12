@@ -1,7 +1,10 @@
 import type { ApplicationStatus } from "./applications";
 
-/** Where a job ad is posted. */
-type PostingSource = "linkedin" | "web";
+/** The applicant tracking systems whose public job boards a collector reads. */
+type AtsProvider = "greenhouse" | "lever" | "ashby" | "personio";
+
+/** Where a job ad is posted: LinkedIn, a page added by URL, or a company's job board. */
+type PostingSource = "linkedin" | "web" | AtsProvider;
 
 /** Where a posting stands in the inbox. */
 type PostingStatus = "new" | "favourite" | "dismissed";
@@ -12,8 +15,33 @@ type Workplace = "remote" | "hybrid" | "onsite";
 /** The currencies a salary is kept in (ISO 4217). */
 type SalaryCurrency = "EUR" | "USD" | "GBP" | "CHF";
 
+/** Collectors something sends postings to, with their secret. */
+type PushCollectorType = "linkedin-email";
+
+/** Collectors the desk runs itself, on a schedule or from "Run now". */
+type PullCollectorType = "ats-board";
+
 /** What a collector understands; each is a module in src/server/collectors/. */
-type CollectorType = "linkedin-email";
+type CollectorType = PushCollectorType | PullCollectorType;
+
+/**
+ * A company's public job board that an "ats-board" collector watches, and
+ * which of its jobs reach the inbox. Filters match words, ignoring case; an
+ * empty list lets every job through.
+ */
+interface AtsBoard {
+  provider: AtsProvider;
+  /** The board's name at the provider, e.g. "acme" in jobs.lever.co/acme. */
+  board: string;
+  /** The company's name on its postings; the boards don't all say it. */
+  company: string;
+  /** A title has one of these, e.g. "engineer", "developer". */
+  titleIncludes: string[];
+  /** A title has none of these, e.g. "working student". */
+  titleExcludes: string[];
+  /** A location has one of these, e.g. "Berlin", "Remote"; a remote job matches "remote". */
+  locations: string[];
+}
 
 /** Where the work is done and what it pays, as postings and applications keep it. */
 interface JobTerms {
@@ -23,6 +51,22 @@ interface JobTerms {
   salaryMax: number | null;
   /** Empty if no salary is stated. */
   salaryCurrency: SalaryCurrency | "";
+}
+
+/** How well a posting fits, as the scoring model judged it (src/server/posting-score.ts). */
+interface PostingScore {
+  /** 0–100. */
+  score: number;
+  /** Why it fits: a few short lines. */
+  reasons: string[];
+  /** What speaks against it. */
+  concerns: string[];
+  /** The CV the model would send; empty if none fits better than another. */
+  cvId: string;
+  /** e.g. "reflection/beam-free". */
+  model: string;
+  /** ISO timestamp. */
+  scoredAt: string;
 }
 
 /** A job ad in the desk's inbox, private to the desk. */
@@ -43,6 +87,8 @@ interface JobPosting extends JobTerms {
   /** ISO date; empty if the source doesn't say. */
   postedOn: string;
   status: PostingStatus;
+  /** How well it fits; null until scored. */
+  score: PostingScore | null;
 }
 
 /** A posting as the desk lists it. */
@@ -86,6 +132,8 @@ interface Collector {
   lastError: string;
   /** How many postings it found, in all. */
   postings: number;
+  /** The board an "ats-board" collector watches; null for the others. */
+  board: AtsBoard | null;
 }
 
 const POSTING_STATUSES: readonly PostingStatus[] = ["new", "favourite", "dismissed"];
@@ -96,11 +144,21 @@ const POSTING_STATUS_LABELS: Record<PostingStatus, string> = {
   dismissed: "Dismissed",
 };
 
-const POSTING_SOURCES: readonly PostingSource[] = ["linkedin", "web"];
+const ATS_PROVIDERS: readonly AtsProvider[] = ["greenhouse", "lever", "ashby", "personio"];
+
+const ATS_PROVIDER_LABELS: Record<AtsProvider, string> = {
+  greenhouse: "Greenhouse",
+  lever: "Lever",
+  ashby: "Ashby",
+  personio: "Personio",
+};
+
+const POSTING_SOURCES: readonly PostingSource[] = ["linkedin", "web", ...ATS_PROVIDERS];
 
 const POSTING_SOURCE_LABELS: Record<PostingSource, string> = {
   linkedin: "LinkedIn",
   web: "Web",
+  ...ATS_PROVIDER_LABELS,
 };
 
 const WORKPLACES: readonly Workplace[] = ["remote", "hybrid", "onsite"];
@@ -120,7 +178,14 @@ const SALARY_SYMBOLS: Record<SalaryCurrency, string> = {
   CHF: "CHF ",
 };
 
-const COLLECTOR_TYPES: readonly CollectorType[] = ["linkedin-email"];
+const PULL_COLLECTOR_TYPES: readonly PullCollectorType[] = ["ats-board"];
+
+const COLLECTOR_TYPES: readonly CollectorType[] = ["linkedin-email", ...PULL_COLLECTOR_TYPES];
+
+/** Whether the desk runs the collector itself, instead of being sent to. */
+function isPullCollector(type: CollectorType): type is PullCollectorType {
+  return PULL_COLLECTOR_TYPES.some((pull) => pull === type);
+}
 
 /** How the desk names each collector type, and what it takes. */
 const COLLECTOR_TYPE_LABELS: Record<CollectorType, { name: string; hint: string }> = {
@@ -128,11 +193,19 @@ const COLLECTOR_TYPE_LABELS: Record<CollectorType, { name: string; hint: string 
     name: "LinkedIn job alert mails",
     hint: "A script in Gmail sends LinkedIn's job alert mails here (tools/linkedin-alerts.gs).",
   },
+  "ats-board": {
+    name: "Company job board",
+    hint: "The desk reads a company's public job board (Greenhouse, Lever, Ashby or Personio) every few hours.",
+  },
 };
 
 export {
+  ATS_PROVIDERS,
+  ATS_PROVIDER_LABELS,
   COLLECTOR_TYPES,
   COLLECTOR_TYPE_LABELS,
+  PULL_COLLECTOR_TYPES,
+  isPullCollector,
   POSTING_SOURCES,
   POSTING_SOURCE_LABELS,
   POSTING_STATUSES,
@@ -143,12 +216,17 @@ export {
   WORKPLACE_LABELS,
 };
 export type {
+  AtsBoard,
+  AtsProvider,
   Collector,
   CollectorType,
+  PullCollectorType,
+  PushCollectorType,
   JobPosting,
   JobPostingRecord,
   JobTerms,
   PostingEdit,
+  PostingScore,
   PostingSource,
   PostingStatus,
   SalaryCurrency,

@@ -5,14 +5,20 @@ import {
   POSTING_STATUS_LABELS,
 } from "../../../../data/postings";
 import type { JobPostingRecord, PostingEdit, PostingStatus } from "../../../../data/postings";
-import { IconSend, IconStar, IconTrash } from "../../../../components/icons";
+import { IconSend, IconSparkles, IconStar, IconTrash } from "../../../../components/icons";
 import {
   applyToDeskPosting,
   deleteDeskPosting,
   saveDeskPosting,
+  scoreDeskPosting,
   setDeskPostingsStatus,
 } from "../../../../lib/desk/postings";
-import { getDeskCollectors, getDeskCompanies, getDeskPostings } from "../../../../lib/desk/queries";
+import {
+  getDeskCollectors,
+  getDeskCompanies,
+  getDeskCvs,
+  getDeskPostings,
+} from "../../../../lib/desk/queries";
 import { companiesByKey, companyFacts } from "../../../../lib/company";
 import { useNavigate, useParams } from "@solidjs/router";
 import { DeskFormSection } from "../../../../components/desk/DeskFormSection";
@@ -23,6 +29,7 @@ import type { RouteDefinition } from "@solidjs/router";
 import {
   companyKey,
   findDuplicates,
+  fitTone,
   fromTermsForm,
   toTermsForm,
   workplaceLabel,
@@ -103,6 +110,12 @@ export default function PostingEditor() {
     "Added by hand";
   // The company described in the desk, by the stored name.
   const company = createMemo(() => companiesByKey(companies()).get(companyKey(stored().company)));
+  const cvs = createMemo(() => getDeskCvs());
+  // The CV its score suggests, while that CV exists.
+  const suggestedCv = createMemo(() =>
+    cvs().cvs.find((cv) => cv.id !== "" && cv.id === stored().score?.cvId),
+  );
+  const [scoring, setScoring] = createSignal(false);
 
   const bind = (key: TextKey) => ({
     value: form[key],
@@ -147,6 +160,19 @@ export default function PostingEditor() {
     ) {
       navigate(paths.desk.applications(applicationId));
     }
+  }
+
+  /** Scores the stored posting; a run that couldn't score says why. */
+  async function score() {
+    setScoring(true);
+    await request.run(async () => {
+      const run = await scoreDeskPosting(params.id);
+
+      if (run.error !== "") {
+        throw new Error(run.error);
+      }
+    });
+    setScoring(false);
   }
 
   async function remove() {
@@ -248,6 +274,84 @@ export default function PostingEditor() {
       </Show>
 
       <div class="panels">
+        <section class="panel" aria-labelledby="panel-fit">
+          <header class="panel__head">
+            <h2 id="panel-fit" class="panel__title">
+              fit
+            </h2>
+            <button
+              type="button"
+              class="button button--outline panel__end"
+              disabled={request.busy()}
+              onClick={() => void score()}
+            >
+              <IconSparkles size={16} />
+              {scoring() ? "Scoring…" : stored().score === null ? "Score" : "Score again"}
+            </button>
+          </header>
+          <div class={["panel__body", styles["fit-panel"]]}>
+            <Show
+              when={stored().score}
+              fallback={
+                <p class={styles.hint}>
+                  Not scored yet. The scheduled job scores new postings against your CV content and{" "}
+                  <a href={paths.desk.postings.scoring()} class="text-link">
+                    search notes
+                  </a>
+                  ; or score it now.
+                </p>
+              }
+            >
+              {(fit) => (
+                <>
+                  <div class={styles["fit-panel__head"]}>
+                    <span
+                      class={[
+                        styles.fit,
+                        styles["fit-panel__big"],
+                        styles[`fit--${fitTone(stored())}`],
+                      ]}
+                    >
+                      {fit().score}
+                    </span>
+                    <Show when={suggestedCv()}>
+                      {(cv) => (
+                        <span>
+                          Send{" "}
+                          <a href={paths.desk.cvs(cv().id)()} class="text-link">
+                            {cv().label}
+                          </a>
+                        </span>
+                      )}
+                    </Show>
+                    <span class={styles["fit-panel__meta"]}>
+                      {fit().model}, {formatRelative(fit().scoredAt)}
+                    </span>
+                  </div>
+                  <div class={styles["fit-panel__lists"]}>
+                    <div>
+                      <p class="section-label">fits</p>
+                      <ul class={styles["fit-panel__list"]}>
+                        <For each={fit().reasons} fallback={<li>Nothing stood out.</li>}>
+                          {(line) => <li>{line}</li>}
+                        </For>
+                      </ul>
+                    </div>
+                    <div>
+                      <p class="section-label">concerns</p>
+                      <ul class={styles["fit-panel__list"]}>
+                        <For each={fit().concerns} fallback={<li>None.</li>}>
+                          {(line) => <li>{line}</li>}
+                        </For>
+                      </ul>
+                    </div>
+                  </div>
+                </>
+              )}
+            </Show>
+          </div>
+        </section>
+
         <Show when={duplicates().length > 0}>
           <section class="panel" aria-labelledby="panel-duplicates">
             <header class="panel__head">
@@ -384,5 +488,6 @@ export const route = {
     void getDeskPostings();
     void getDeskCollectors();
     void getDeskCompanies();
+    void getDeskCvs();
   },
 } satisfies RouteDefinition;

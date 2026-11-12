@@ -1,5 +1,13 @@
-import { COLLECTOR_TYPES, COLLECTOR_TYPE_LABELS } from "../../../../data/postings";
+import {
+  ATS_PROVIDER_LABELS,
+  COLLECTOR_TYPES,
+  COLLECTOR_TYPE_LABELS,
+  isPullCollector,
+} from "../../../../data/postings";
 import type { Collector, CollectorType } from "../../../../data/postings";
+import { NEW_BOARD_FORM, toBoard } from "../../../../lib/desk/board-form";
+import type { BoardForm } from "../../../../lib/desk/board-form";
+import { DeskBoardFields } from "../../../../components/desk/DeskBoardFields";
 import { For, Show, createMemo, createStore } from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import { DeskMeta } from "../../../../components/desk/DeskMeta";
@@ -7,7 +15,7 @@ import { DeskTable } from "../../../../components/desk/DeskTable";
 import type { DeskTableColumn } from "../../../../components/desk/DeskTable";
 import { IconPlus } from "../../../../components/icons";
 import type { RouteDefinition } from "@solidjs/router";
-import { createDeskCollector } from "../../../../lib/desk/postings";
+import { createDeskCollector, runDeskCollector } from "../../../../lib/desk/postings";
 import { formatRelative } from "../../../../lib/format";
 import { getDeskCollectors } from "../../../../lib/desk/queries";
 import { paths } from "../../../../router";
@@ -40,7 +48,11 @@ const COLUMNS: DeskTableColumn<Collector>[] = [
     cell: (collector) => (
       <span class={styles.name}>
         <span class={styles.name__main}>{collector.label}</span>
-        <span class={styles.name__sub}>{COLLECTOR_TYPE_LABELS[collector.type].name}</span>
+        <span class={styles.name__sub}>
+          {collector.board === null
+            ? COLLECTOR_TYPE_LABELS[collector.type].name
+            : `${ATS_PROVIDER_LABELS[collector.board.provider]} board · ${collector.board.board}`}
+        </span>
       </span>
     ),
     sort: (collector) => collector.label,
@@ -75,11 +87,18 @@ const COLUMNS: DeskTableColumn<Collector>[] = [
 function CreateCollector() {
   const navigate = useNavigate();
   const request = useDeskRequest();
-  const [form, setForm] = createStore<{ id: string; label: string; type: CollectorType }>({
+  const [form, setForm] = createStore<{
+    id: string;
+    label: string;
+    type: CollectorType;
+    board: BoardForm;
+  }>({
     id: "",
     label: "",
     type: "linkedin-email",
+    board: { ...NEW_BOARD_FORM },
   });
+  const pull = () => isPullCollector(form.type);
 
   const bind = (key: "id" | "label") => ({
     value: form[key],
@@ -96,14 +115,39 @@ function CreateCollector() {
     event.preventDefault();
 
     const id = form.id.trim();
+    const label = form.label.trim();
     let secret = "";
 
     if (
       await request.run(async () => {
-        secret = await createDeskCollector(id, { type: form.type, label: form.label.trim() });
+        if (!pull()) {
+          secret = await createDeskCollector(id, { type: form.type, label });
+
+          return;
+        }
+
+        const board = toBoard(form.board);
+
+        if (board === undefined) {
+          throw new Error("The address names no Greenhouse, Lever, Ashby or Personio board.");
+        }
+
+        await createDeskCollector(id, { type: form.type, label, board });
+
+        // Its first run, so the page opens with what the board lists. A
+        // failed run is noted on the collector, which exists either way.
+        try {
+          await runDeskCollector(id);
+        } catch {
+          // The collector's page shows why.
+        }
       })
     ) {
-      showSecret(id, secret);
+      // A job board collector has no secret; one sent to shows its secret once.
+      if (secret !== "") {
+        showSecret(id, secret);
+      }
+
       navigate(paths.desk.collectors(id));
     }
   }
@@ -140,7 +184,12 @@ function CreateCollector() {
 
         <label class="field">
           <span class="field__label">name</span>
-          <input {...bind("label")} class="input" required placeholder="LinkedIn alerts" />
+          <input
+            {...bind("label")}
+            class="input"
+            required
+            placeholder={pull() ? "Acme jobs" : "LinkedIn alerts"}
+          />
         </label>
 
         <label class="field">
@@ -150,13 +199,25 @@ function CreateCollector() {
             class="input"
             required
             pattern="[a-z0-9]+(-[a-z0-9]+)*"
-            placeholder="linkedin-alerts"
+            placeholder={pull() ? "acme-jobs" : "linkedin-alerts"}
           />
           <span class="field__hint">
-            The URL slug, part of the address the collector sends to: lowercase letters, digits and
-            hyphens.
+            {pull()
+              ? "The URL slug of its page: lowercase letters, digits and hyphens."
+              : "The URL slug, part of the address the collector sends to: lowercase letters, digits and hyphens."}
           </span>
         </label>
+
+        <Show when={pull()}>
+          <DeskBoardFields
+            form={form.board}
+            onInput={(field, value) => {
+              setForm((draft) => {
+                draft.board[field] = value;
+              });
+            }}
+          />
+        </Show>
       </div>
 
       <Show when={request.error()}>
@@ -192,7 +253,8 @@ export default function Collectors() {
           <p class="desk-head__path">~/desk/collectors</p>
           <h1 class="desk-head__title">Collectors</h1>
           <p class="desk-head__sub">
-            What brings job ads into the postings: each has its own address and secret.
+            What brings job ads into the postings: mails sent here with a secret, and company job
+            boards the desk reads every few hours.
           </p>
         </div>
 
@@ -213,7 +275,8 @@ export default function Collectors() {
         fallback={
           <Show when={!adding()}>
             <p class="panel panel__empty">
-              No collectors yet. Make one for LinkedIn's job alert mails.
+              No collectors yet. Make one for LinkedIn's job alert mails, or for a company's job
+              board.
             </p>
           </Show>
         }

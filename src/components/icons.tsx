@@ -244,6 +244,10 @@ export function IconMail(props: IconProps): JSX.Element {
   );
 }
 
+export function IconPlayerPlay(props: IconProps): JSX.Element {
+  return <TablerIcon {...props} path="M7 4v16l13-8z" />;
+}
+
 export function IconPlus(props: IconProps): JSX.Element {
   return <TablerIcon {...props} path="M12 5v14m-7-7h14" />;
 }
@@ -271,6 +275,15 @@ export function IconSend(props: IconProps): JSX.Element {
     <TablerIcon
       {...props}
       path="M10 14L21 3m0 0l-6.5 18a.55.55 0 0 1-1 0L10 14l-7-3.5a.55.55 0 0 1 0-1z"
+    />
+  );
+}
+
+export function IconSparkles(props: IconProps): JSX.Element {
+  return (
+    <TablerIcon
+      {...props}
+      path="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6z"
     />
   );
 }

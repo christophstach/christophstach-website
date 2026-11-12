@@ -11,21 +11,27 @@ import {
   savePosting,
   setPostingsStatus,
 } from "./postings";
-import { array, boolean, literal, object, string } from "zod/mini";
+import { array, boolean, exactOptional, literal, object, string } from "zod/mini";
 import {
   createCollector,
   deleteCollector,
   renewSecret,
   rereadCollector,
+  runCollector,
   updateCollector,
 } from "./collector-store";
+import { atsBoardSchema, readUrl } from "./collectors";
+import type { CollectorRun } from "./collector-store";
 import { emptyOrMatching, parseInput, requireSlug, text, trimmed } from "./input";
 import { applicationIds, linkPosting, saveApplication } from "./applications";
 import type { Application } from "../data/applications";
-import { readUrl } from "./collectors";
 import { requireUser } from "./auth";
 import { companyKey } from "../lib/posting";
 import { slugify } from "../lib/cover-letter";
+import { loadJobSearch, saveJobSearch } from "./job-search";
+import { scoreModel, scorePostings } from "./posting-score";
+import type { ScoreRun } from "./posting-score";
+import { listCvs } from "./cvs";
 
 // The desk's posting and collector writes. Each checks the session first and
 // parses its input.
@@ -54,11 +60,13 @@ const statusSchema = object({
 const collectorSchema = object({
   type: literal(COLLECTOR_TYPES, "Pick a collector type."),
   label: text("The collector needs a name."),
+  board: exactOptional(atsBoardSchema),
 });
 
 const collectorChangeSchema = object({
   label: text("The collector needs a name."),
   active: boolean("Active is yes or no."),
+  board: exactOptional(atsBoardSchema),
 });
 
 /** Reads the job ad at an address into the inbox; answers its posting's id, also if it was there. */
@@ -131,6 +139,9 @@ async function applyToDeskPosting(id: string): Promise<string> {
   const posting = await requirePosting(id);
   const slug = slugify(`${posting.company} ${posting.title}`) || posting.id;
   const applicationId = await freeApplicationId(slug);
+  // The CV its score suggests, while that CV still exists.
+  const { cvs } = await listCvs();
+  const cvId = cvs.some((cv) => cv.id === posting.score?.cvId) ? (posting.score?.cvId ?? "") : "";
   const application: Application = {
     id: applicationId,
     company: posting.company || "Unknown company",
@@ -144,7 +155,7 @@ async function applyToDeskPosting(id: string): Promise<string> {
     salaryCurrency: posting.salaryCurrency,
     source: posting.source === "linkedin" ? "linkedin" : "direct",
     status: "preparing",
-    cvId: "",
+    cvId,
     appliedOn: "",
     nextStep: "",
     nextStepOn: "",
@@ -159,18 +170,52 @@ async function applyToDeskPosting(id: string): Promise<string> {
   return applicationId;
 }
 
+/** Scores one posting now, also if it has a score; answers how the run went. */
+async function scoreDeskPosting(id: string): Promise<ScoreRun> {
+  await requireUser();
+  await requirePosting(id);
+
+  return scorePostings({ deadline: Date.now() + 50_000, ids: [id] });
+}
+
+/** Scores the postings due for it, for about a minute; the scheduled job takes the rest. */
+async function scoreDeskPostings(): Promise<ScoreRun> {
+  await requireUser();
+
+  return scorePostings({ deadline: Date.now() + 50_000 });
+}
+
+/** What the desk looks for, and the model that scores against it. */
+async function deskJobSearch() {
+  await requireUser();
+
+  return { ...(await loadJobSearch()), model: scoreModel() };
+}
+
+async function saveDeskJobSearch(notes: unknown) {
+  await requireUser();
+  await saveJobSearch(parseInput(string("Notes are text."), notes).trim());
+}
+
 /** Makes a collector; answers its secret, shown once. */
 async function createDeskCollector(id: string, body: unknown): Promise<string> {
   await requireUser();
 
-  const { type, label } = parseInput(collectorSchema, body);
+  const { type, label, board } = parseInput(collectorSchema, body);
 
-  return createCollector(requireSlug(id), type satisfies CollectorType, label);
+  return createCollector(requireSlug(id), type satisfies CollectorType, label, board ?? null);
 }
 
 async function updateDeskCollector(id: string, change: unknown) {
   await requireUser();
   await updateCollector(id, parseInput(collectorChangeSchema, change));
+}
+
+/** Runs a job board collector now; answers what it found. */
+async function runDeskCollector(id: string): Promise<CollectorRun> {
+  await requireUser();
+
+  return runCollector(id);
 }
 
 async function renewDeskCollectorSecret(id: string): Promise<string> {
@@ -196,9 +241,14 @@ export {
   createDeskCollector,
   deleteDeskCollector,
   deleteDeskPosting,
+  deskJobSearch,
   renewDeskCollectorSecret,
   rereadDeskCollector,
+  runDeskCollector,
+  saveDeskJobSearch,
   saveDeskPosting,
+  scoreDeskPosting,
+  scoreDeskPostings,
   setDeskPostingsStatus,
   updateDeskCollector,
 };
