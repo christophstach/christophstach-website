@@ -34,6 +34,9 @@ function collect() {
       plain: message.getPlainBody(),
       // Only the HTML body has each job's workplace and salary.
       html: message.getBody(),
+      // The day of the alert, in the script's time zone: the jobs in it are
+      // at most a day older. The desk keeps it as their posting date.
+      date: Utilities.formatDate(message.getDate(), Session.getScriptTimeZone(), "yyyy-MM-dd"),
     }));
     const response = UrlFetchApp.fetch(endpoint, {
       method: "post",

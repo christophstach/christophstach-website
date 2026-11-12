@@ -5,7 +5,9 @@ import type { Salary } from "./salary";
 import type { Workplace } from "../../data/postings";
 import { array, exactOptional, maxLength, object, safeParse, string } from "zod/mini";
 import { htmlToText, tidyLines } from "./text";
-import { parseInput } from "../input";
+import { emptyOrMatching, parseInput } from "../input";
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
 
 // LinkedIn's job alert mails, as the script in Gmail sends them
 // (tools/linkedin-alerts.gs). LinkedIn has no job search API for its
@@ -19,13 +21,24 @@ const bodySchema = object({
       subject: exactOptional(string("A subject is text.")),
       plain: exactOptional(string("A plain body is text.")),
       html: exactOptional(string("An HTML body is text.")),
+      date: exactOptional(emptyOrMatching(ISO_DATE, "A date is YYYY-MM-DD.")),
     }),
-    "Send { messages: [{ subject, plain, html }] }.",
+    "Send { messages: [{ subject, plain, html, date }] }.",
   ).check(maxLength(50, "At most 50 messages at a time.")),
 });
 
-/** What a posting keeps of its mail: both bodies as text. Older ones kept the plain text alone. */
-const rawSchema = object({ plain: string(), html: string() });
+/**
+ * What a posting keeps of its mail: both bodies as text, and its day. Older
+ * ones kept the plain text alone, or no day.
+ */
+const rawSchema = object({ plain: string(), html: string(), date: exactOptional(string()) });
+
+/** A mail as the desk reads it: its bodies as text and its day (YYYY-MM-DD), each may be empty. */
+interface Mail {
+  plain: string;
+  html: string;
+  date: string;
+}
 
 /** A job's link; the id may follow a slug, e.g. /jobs/view/frontend-at-acme-4012345678. */
 const JOB_LINK =
@@ -107,8 +120,8 @@ function readCards(html: string): Map<string, Card> {
  * meaningful lines since the last one or the last separator. The HTML body,
  * as text, adds each job's workplace and salary (readCards).
  */
-function readMail(plain: string, html: string): FoundPosting[] {
-  const raw = html === "" ? plain : JSON.stringify({ plain, html });
+function readMail({ plain, html, date }: Mail): FoundPosting[] {
+  const raw = html === "" && date === "" ? plain : JSON.stringify({ plain, html, date });
   const cards = readCards(html);
   const found = new Map<string, FoundPosting>();
   let lines: string[] = [];
@@ -134,7 +147,8 @@ function readMail(plain: string, html: string): FoundPosting[] {
           company: companyName,
           location: place,
           description: "",
-          postedOn: "",
+          // LinkedIn says no more than that the job is new since the last alert.
+          postedOn: date,
           ...(cards.get(id) ?? { workplace: "", ...NO_SALARY }),
           raw,
         });
@@ -152,20 +166,20 @@ function readMail(plain: string, html: string): FoundPosting[] {
 }
 
 /** A posting's stored mail: both bodies, or the plain one alone. */
-function storedMail(raw: string): { plain: string; html: string } {
+function storedMail(raw: string): Mail {
   if (raw.startsWith("{")) {
     try {
       const parsed = safeParse(rawSchema, JSON.parse(raw));
 
       if (parsed.success) {
-        return parsed.data;
+        return { ...parsed.data, date: parsed.data.date ?? "" };
       }
     } catch {
       // Plain text that happens to start with a brace.
     }
   }
 
-  return { plain: raw, html: "" };
+  return { plain: raw, html: "", date: "" };
 }
 
 const linkedinEmail: PushCollector = {
@@ -177,16 +191,15 @@ const linkedinEmail: PushCollector = {
     // and location: read as text, the HTML one mixes those up. The HTML one
     // adds workplace and salary.
     return messages.flatMap((message) =>
-      readMail(
-        compactLinks(tidyLines(message.plain ?? "")),
-        message.html === undefined ? "" : compactLinks(htmlToText(message.html)),
-      ),
+      readMail({
+        plain: compactLinks(tidyLines(message.plain ?? "")),
+        html: message.html === undefined ? "" : compactLinks(htmlToText(message.html)),
+        date: message.date ?? "",
+      }),
     );
   },
   reread(raw, externalId) {
-    const { plain, html } = storedMail(raw);
-
-    return readMail(plain, html).find((posting) => posting.externalId === externalId);
+    return readMail(storedMail(raw)).find((posting) => posting.externalId === externalId);
   },
 };
 

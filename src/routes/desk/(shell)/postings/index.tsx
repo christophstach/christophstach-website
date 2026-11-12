@@ -17,7 +17,7 @@ import type { DeskTableColumn, DeskTableFilter } from "../../../../components/de
 import { IconPlus } from "../../../../components/icons";
 import type { RouteDefinition } from "@solidjs/router";
 import { addDeskPostingByUrl } from "../../../../lib/desk/postings";
-import { formatRelative } from "../../../../lib/format";
+import { formatDay, formatRelative } from "../../../../lib/format";
 import { paths } from "../../../../router";
 import styles from "../../../../components/desk/page-postings.module.css";
 import { useDeskRequest } from "../../../../lib/desk/request";
@@ -62,6 +62,13 @@ const COLUMNS: DeskTableColumn<JobPostingRecord>[] = [
     cell: (posting) => formatSalary(posting) || "–",
     // Not stated sorts last either way.
     sort: (posting) => salaryTop(posting) ?? "",
+    firstDirection: "desc",
+  },
+  {
+    id: "posted",
+    header: "posted",
+    cell: (posting) => (posting.postedOn === "" ? "–" : formatDay(posting.postedOn, "en")),
+    sort: (posting) => posting.postedOn,
     firstDirection: "desc",
   },
   {
