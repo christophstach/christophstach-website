@@ -174,7 +174,9 @@ typing; it asks before leaving with unsaved changes. Change store arrays in plac
 filters that open as popovers with counts and show ticked values as chips, sorting, pages of
 25, opt-in reorder, opt-in ticking rows for bulk actions; a filter hides options no row has
 and itself when one value is left, `more` puts it behind "More filters", and a row can give
-several values, e.g. a YC company is also VC), `DeskFormSection`,
+several values, e.g. a YC company is also VC; its state lives in the page's query string,
+`src/lib/desk/table-url.ts`, defaults left out, so reload and back/forward keep it: typing
+replaces the history entry, everything else pushes one), `DeskFormSection`,
 `DeskSaveBar`, `DeskMenu`, `DeskLinkRows`, `DeskCvRows` (a CV's picks).
 
 **Applications** are private to the desk (`applications`, `src/server/applications.ts`, edited

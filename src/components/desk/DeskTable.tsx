@@ -1,4 +1,6 @@
-import { For, Show, createMemo, createSignal, createUniqueId, untrack } from "solid-js";
+import { ALL_TAB, readTableState, writeTableState } from "../../lib/desk/table-url";
+import { For, Show, createMemo, createSignal, createUniqueId, onFlush, onSettled } from "solid-js";
+import type { SortDirection, TableSort, TableSpec, TableState } from "../../lib/desk/table-url";
 import {
   IconChevronDown,
   IconChevronLeft,
@@ -10,6 +12,7 @@ import {
 import type { JSX } from "@solidjs/web";
 import styles from "./DeskTable.module.css";
 import { useDragReorder } from "../../lib/drag-reorder";
+import { useSearchParams } from "@solidjs/router";
 
 /** A column: how a row shows in it, and whether it sorts and is searched. */
 interface DeskTableColumn<T> {
@@ -60,15 +63,7 @@ interface DeskTableTabs<T> {
   all?: string | undefined;
 }
 
-/** The tab value that shows every row. */
-const ALL_TAB = "\u0000all";
-
-type SortDirection = "asc" | "desc";
-
-interface DeskTableSort {
-  column: string;
-  direction: SortDirection;
-}
+type DeskTableSort = TableSort;
 
 interface DeskTableProps<T> {
   /** The panel title, lowercase, e.g. "applications". */
@@ -93,7 +88,16 @@ interface DeskTableProps<T> {
   pageSize?: number | undefined;
   /** Rows can be ticked and acted on together, e.g. dismissing a few postings. */
   select?: DeskTableSelect<T> | undefined;
+  /**
+   * Put before the table's keys in the query string, for a page with more
+   * than one table. Filter ids are keys too, so none may be `q`, `tab`,
+   * `sort` or `page`, nor a key the page itself reads (`new`, `name`).
+   */
+  urlPrefix?: string | undefined;
 }
+
+/** Typing waits this long before the search reaches the URL. */
+const SEARCH_WRITE_DELAY = 250;
 
 /** Ticking rows, and what can be done to the ticked ones. */
 interface DeskTableSelect<T> {
@@ -263,14 +267,90 @@ function FilterButton(props: {
  */
 function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
   const id = createUniqueId();
-  const [query, setQuery] = createSignal("");
+  const [search, setSearch] = useSearchParams();
+
+  // The state lives in the query string (src/lib/desk/table-url.ts): what the
+  // table accepts there, and what it shows when the query leaves a part out.
+  const spec = createMemo((): TableSpec => ({
+    prefix: props.urlPrefix ?? "",
+    tabs:
+      props.tabs === undefined
+        ? []
+        : [
+            ...props.tabs.options.map((option) => option.value),
+            ...(props.tabs.all === undefined ? [] : [ALL_TAB]),
+          ],
+    defaultTab:
+      props.tabs === undefined
+        ? ALL_TAB
+        : (props.tabs.initial ?? props.tabs.options[0]?.value ?? ALL_TAB),
+    sortable: props.columns.filter((column) => column.sort).map((column) => column.id),
+    defaultSort: props.initialSort,
+    filters: (props.filters ?? []).map((filter) => ({
+      id: filter.id,
+      values: filter.options.map((option) => option.value),
+    })),
+  }));
+  const state = createMemo(() => readTableState(search, spec()));
+  // What the table shows: the URL's state, or a change ahead of it until its
+  // navigation lands (see `update`).
+  const [showing, setShowing] = createSignal<TableState>(() => state());
   // The ticked values of each filter, by filter id; a filter without any is off.
-  const [picked, setPicked] = createSignal<Readonly<Record<string, readonly string[]>>>({});
-  const [sort, setSort] = createSignal(untrack(() => props.initialSort));
-  const [tab, setTab] = createSignal(
-    untrack(() => props.tabs?.initial ?? props.tabs?.options[0]?.value ?? ALL_TAB),
-  );
+  const picked = () => showing().picked;
+  const sort = () => showing().sort;
+  const tab = () => showing().tab;
+
+  // The search shows what is typed at once; the URL follows after a pause, so
+  // a word isn't a navigation per letter. When the URL brings back the text
+  // this table wrote, the field keeps what was typed since; any other text
+  // (back, forward) replaces it.
+  let sentQuery: string | undefined;
+  let searchTimer: ReturnType<typeof setTimeout> | undefined;
+  const [query, setQuery] = createSignal<string>((previous) => {
+    const fromUrl = state().query;
+
+    if (previous !== undefined && fromUrl === sentQuery) {
+      return previous;
+    }
+
+    sentQuery = undefined;
+
+    return fromUrl;
+  });
   const [showMore, setShowMore] = createSignal(false);
+
+  onSettled(() => () => clearTimeout(searchTimer));
+
+  /**
+   * Writes a change to the URL, with a search typed but not yet written.
+   * Typing replaces the current history entry; everything else is a step of
+   * its own, so back undoes a filter, a tab, a sort or a page.
+   */
+  function update(change: Partial<TableState>, options: { replace?: boolean } = {}) {
+    clearTimeout(searchTimer);
+    searchTimer = undefined;
+
+    const next: TableState = { ...showing(), query: query(), ...change };
+
+    sentQuery = next.query.trim() === "" ? "" : next.query;
+    // Writes beside a navigation wait for it to land; these land at once, so
+    // the controls show the change (and keep the select and checkboxes the
+    // user just changed) while the URL catches up.
+    onFlush(() => {
+      setShowing(next);
+      setQuery(next.query);
+    });
+    setSearch(writeTableState(next, spec()), { replace: options.replace === true });
+  }
+
+  function typeSearch(value: string) {
+    setQuery(value);
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(
+      () => update({ query: value, page: 1 }, { replace: true }),
+      SEARCH_WRITE_DELAY,
+    );
+  }
 
   const terms = createMemo(() =>
     fold(query())
@@ -409,8 +489,9 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
   const narrowed = () => query().trim() !== "" || filtering();
   const noun = (count: number) => (count === 1 ? props.noun[0] : props.noun[1]);
 
-  // Pages: 1-based. Search, filters and sorting go back to the first page.
-  const [page, setPage] = createSignal(1);
+  // Pages: 1-based. Search, filters and sorting go back to the first page; a
+  // search typed but not yet in the URL already shows its first page.
+  const page = () => (query() === showing().query ? showing().page : 1);
   const pageSize = () =>
     props.reorder === undefined ? Math.max(1, props.pageSize ?? PAGE_SIZE) : Infinity;
   const pageCount = () => Math.max(1, Math.ceil(shown().length / pageSize()));
@@ -423,7 +504,7 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
   let section: HTMLElement | undefined;
 
   function goTo(next: number) {
-    setPage(Math.min(Math.max(1, next), pageCount()));
+    update({ page: Math.min(Math.max(1, next), pageCount()) });
 
     // Back to the table's top if it scrolled out of view, where the new page starts.
     if (section !== undefined && section.getBoundingClientRect().top < 0) {
@@ -431,9 +512,14 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
     }
   }
 
-  // Ticked rows, by id. Search and filters clear them: a ticked row they hide
-  // would still be acted on, out of sight.
-  const [ticked, setTicked] = createSignal<ReadonlySet<string>>(new Set());
+  // Ticked rows, by id. Search, filters and tabs clear them (back and forward
+  // too): a ticked row they hide would still be acted on, out of sight.
+  const narrowing = createMemo(() => JSON.stringify([query().trim(), tab(), picked()]));
+  const [ticked, setTicked] = createSignal<ReadonlySet<string>>(() => {
+    narrowing();
+
+    return new Set<string>();
+  });
   const [acting, setActing] = createSignal(false);
   const selectable = () => props.select !== undefined;
   // Rows that are gone (deleted, say) drop out.
@@ -490,50 +576,45 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
     }
   }
 
-  /** Search or filters changed: back to the first page, without ticks. */
-  function narrowAgain() {
-    setPage(1);
-    setTicked(new Set<string>());
-  }
-
   /** Ticks a filter's value, or unticks it. */
   function toggle(filterId: string, value: string) {
-    narrowAgain();
-    setPicked((current) => {
-      const values = current[filterId] ?? [];
+    const current = picked();
+    const values = current[filterId] ?? [];
 
-      return {
+    update({
+      picked: {
         ...current,
         [filterId]: values.includes(value)
           ? values.filter((other) => other !== value)
           : [...values, value],
-      };
+      },
+      page: 1,
     });
   }
 
   function clearFilter(filterId: string) {
-    narrowAgain();
-    setPicked((current) => ({ ...current, [filterId]: [] }));
+    update({ picked: { ...picked(), [filterId]: [] }, page: 1 });
   }
 
   function showTab(value: string) {
-    narrowAgain();
-    setTab(value);
+    update({ tab: value, page: 1 });
   }
 
   function sortBy(column: DeskTableColumn<T>) {
-    setPage(1);
-    setSort((current) =>
-      current?.column === column.id
-        ? { column: column.id, direction: current.direction === "asc" ? "desc" : "asc" }
-        : { column: column.id, direction: column.firstDirection ?? "asc" },
-    );
+    const current = sort();
+
+    update({
+      sort:
+        current?.column === column.id
+          ? { column: column.id, direction: current.direction === "asc" ? "desc" : "asc" }
+          : { column: column.id, direction: column.firstDirection ?? "asc" },
+      page: 1,
+    });
   }
 
-  function clear() {
-    narrowAgain();
-    setQuery("");
-    setPicked({});
+  /** Clears the search and every filter. */
+  function clear(change: Partial<TableState> = {}) {
+    update({ query: "", picked: {}, page: 1, ...change });
   }
 
   // Rows move only in their stored order with all of them shown: in a sorted view
@@ -553,8 +634,7 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
   );
 
   function showStoredOrder() {
-    setSort(undefined);
-    clear();
+    clear({ sort: undefined });
   }
 
   /** The arrow a header shows: its direction when sorted, else the first click's. */
@@ -600,14 +680,11 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
               placeholder={`Search ${props.noun[1]}`}
               aria-label={`Search ${props.noun[1]}`}
               aria-controls={`${id}-grid`}
-              onInput={(event) => {
-                narrowAgain();
-                setQuery(event.currentTarget.value);
-              }}
+              onInput={(event) => typeSearch(event.currentTarget.value)}
               onKeyDown={(event) => {
                 if (event.key === "Escape" && query() !== "") {
                   event.preventDefault();
-                  setQuery("");
+                  update({ query: "", page: 1 }, { replace: true });
                 }
 
                 // The search is live; in a form, Enter would submit it.
@@ -714,7 +791,7 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
                 )}
               </For>
               <li>
-                <button type="button" class="text-link" onClick={clear}>
+                <button type="button" class="text-link" onClick={() => clear()}>
                   Clear all
                 </button>
               </li>
@@ -730,10 +807,13 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
                 onChange={(event) => {
                   const [column = "", direction] = event.currentTarget.value.split(":");
 
-                  setPage(1);
-                  setSort(
-                    direction === "asc" || direction === "desc" ? { column, direction } : undefined,
-                  );
+                  update({
+                    sort:
+                      direction === "asc" || direction === "desc"
+                        ? { column, direction }
+                        : undefined,
+                    page: 1,
+                  });
                 }}
               >
                 <option value="" selected={sort() === undefined}>
@@ -977,7 +1057,7 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
           <Show when={props.rows.length > 0} fallback={`No ${props.noun[1]} yet.`}>
             <Show when={narrowed()} fallback={`No ${props.noun[1]} here.`}>
               {`No ${props.noun[1]} match. `}
-              <button type="button" class="text-link" onClick={clear}>
+              <button type="button" class="text-link" onClick={() => clear()}>
                 Clear search and filters
               </button>
             </Show>
@@ -995,7 +1075,7 @@ function DeskTable<T>(props: DeskTableProps<T>): JSX.Element {
             : `${tabRows().length} ${noun(tabRows().length)}`}
         </p>
         <Show when={narrowed() && shown().length > 0}>
-          <button type="button" class="text-link" onClick={clear}>
+          <button type="button" class="text-link" onClick={() => clear()}>
             Clear search and filters
           </button>
         </Show>
