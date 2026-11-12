@@ -167,6 +167,18 @@ declare module "virtual:file-routes" {
       $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/applications/index"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/applications/index")>>>;
     },
     {
+      path: "/desk/(shell)/collectors/:id";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/collectors/[id]"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/collectors/[id]")>>>;
+      $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/collectors/[id]"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/collectors/[id]")>>>;
+    },
+    {
+      path: "/desk/(shell)/collectors/";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/collectors/index"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/collectors/index")>>>;
+      $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/collectors/index"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/collectors/index")>>>;
+    },
+    {
       path: "/desk/(shell)/content/education/:id";
       page: true;
       $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/content/education/[id]"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/content/education/[id]")>>>;
@@ -255,6 +267,18 @@ declare module "virtual:file-routes" {
       page: true;
       $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/index"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/index")>>>;
       $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/index"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/index")>>>;
+    },
+    {
+      path: "/desk/(shell)/postings/:id";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/postings/[id]"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/postings/[id]")>>>;
+      $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/postings/[id]"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/postings/[id]")>>>;
+    },
+    {
+      path: "/desk/(shell)/postings/";
+      page: true;
+      $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/postings/index"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/postings/index")>>>;
+      $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/postings/index"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/postings/index")>>>;
     },
     {
       path: "/desk/cover-letter-print/:id";
@@ -376,11 +400,43 @@ declare module "virtual:file-routes" {
           children?: undefined;
         },
         {
+          path: "/postings/";
+          id: "/postings/";
+          page: true;
+          $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/postings/index"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/postings/index")>>>;
+          $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/postings/index"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/postings/index")>>>;
+          children?: undefined;
+        },
+        {
+          path: "/collectors/";
+          id: "/collectors/";
+          page: true;
+          $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/collectors/index"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/collectors/index")>>>;
+          $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/collectors/index"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/collectors/index")>>>;
+          children?: undefined;
+        },
+        {
+          path: "/postings/:id";
+          id: "/postings/:id";
+          page: true;
+          $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/postings/[id]"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/postings/[id]")>>>;
+          $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/postings/[id]"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/postings/[id]")>>>;
+          children?: undefined;
+        },
+        {
           path: "/applications/";
           id: "/applications/";
           page: true;
           $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/applications/index"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/applications/index")>>>;
           $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/applications/index"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/applications/index")>>>;
+          children?: undefined;
+        },
+        {
+          path: "/collectors/:id";
+          id: "/collectors/:id";
+          page: true;
+          $component: FileRouteLazyRef<Pick<typeof import("./src/routes/desk/(shell)/collectors/[id]"), Extract<"default", keyof typeof import("./src/routes/desk/(shell)/collectors/[id]")>>>;
+          $$route: FileRouteEagerRef<Pick<typeof import("./src/routes/desk/(shell)/collectors/[id]"), Extract<"route", keyof typeof import("./src/routes/desk/(shell)/collectors/[id]")>>>;
           children?: undefined;
         },
         {
