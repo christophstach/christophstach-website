@@ -1,6 +1,6 @@
 // How the desk shows and groups postings: salary, workplace, likely duplicates.
 import { SALARY_SYMBOLS, WORKPLACE_LABELS } from "../data/postings";
-import type { JobPosting, Workplace } from "../data/postings";
+import type { JobPosting, JobTerms, Workplace } from "../data/postings";
 
 type Salary = Pick<JobPosting, "salaryMin" | "salaryMax" | "salaryCurrency">;
 
@@ -121,6 +121,40 @@ function findDuplicates<Posting extends Pick<JobPosting, "id" | "company" | "tit
   return duplicates;
 }
 
+/** Workplace and salary as a form holds them: the salary's ends as digits, or empty. */
+type JobTermsForm = Omit<JobTerms, "salaryMin" | "salaryMax"> & {
+  salaryMin: string;
+  salaryMax: string;
+};
+
+function toTermsForm(terms: JobTerms): JobTermsForm {
+  return {
+    workplace: terms.workplace,
+    salaryMin: terms.salaryMin === null ? "" : String(terms.salaryMin),
+    salaryMax: terms.salaryMax === null ? "" : String(terms.salaryMax),
+    salaryCurrency: terms.salaryCurrency,
+  };
+}
+
+/** An input's amount; null if empty. A number input holds digits or nothing. */
+function amountOf(value: string): number | null {
+  return value.trim() === "" ? null : Math.round(Number(value));
+}
+
+function fromTermsForm(form: JobTermsForm): JobTerms {
+  const salaryMin = amountOf(form.salaryMin);
+  const salaryMax = amountOf(form.salaryMax);
+  const stated = salaryMin !== null || salaryMax !== null;
+
+  return {
+    workplace: form.workplace,
+    salaryMin,
+    salaryMax,
+    // A currency belongs to a salary; without one, it goes too.
+    salaryCurrency: stated ? form.salaryCurrency : "",
+  };
+}
+
 /** "Remote", "Hybrid", "On-site"; empty if not stated. */
 function workplaceLabel(workplace: Workplace | ""): string {
   return workplace === "" ? "" : WORKPLACE_LABELS[workplace];
@@ -132,7 +166,10 @@ export {
   findDuplicates,
   formatSalary,
   formatShortDay,
+  fromTermsForm,
   jobKey,
   salaryBand,
   salaryTop,
+  toTermsForm,
 };
+export type { JobTermsForm };

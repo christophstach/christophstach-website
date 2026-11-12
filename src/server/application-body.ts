@@ -11,6 +11,7 @@ import {
   trimmed,
 } from "./input";
 import type { Application } from "../data/applications";
+import { jobTermsShape, salaryInOrder } from "./job-terms";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
 const NOT_APPLICATION = "Not an application.";
@@ -42,6 +43,7 @@ const applicationSchema = object(
     jobUrl: trimmed(NOT_APPLICATION),
     jobDescription: trimmed(NOT_APPLICATION),
     location: trimmed(NOT_APPLICATION),
+    ...jobTermsShape(NOT_APPLICATION),
     source: literal(APPLICATION_SOURCES, NOT_APPLICATION),
     status: literal(APPLICATION_STATUSES, NOT_APPLICATION),
     cvId: trimmed(NOT_APPLICATION),
@@ -53,7 +55,7 @@ const applicationSchema = object(
     note: trimmed(NOT_APPLICATION),
   },
   NOT_APPLICATION,
-);
+).check(salaryInOrder);
 
 /**
  * Checks the shape of an application sent by the desk; the route's id wins.

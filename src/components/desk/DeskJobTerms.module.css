@@ -1,0 +1,6 @@
+/* From, to, currency. */
+.salary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 5.5rem;
+  gap: var(--space-2);
+}

@@ -61,7 +61,7 @@ async function markSent(id: string) {
     .update(applications)
     .set({
       sent: copy,
-      status: application.status === "saved" ? "applied" : application.status,
+      status: application.status === "preparing" ? "applied" : application.status,
       appliedOn: application.appliedOn === "" ? today : application.appliedOn,
       events: [
         ...application.events,

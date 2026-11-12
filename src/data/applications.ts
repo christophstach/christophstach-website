@@ -1,6 +1,8 @@
+import type { JobTerms } from "./postings";
+
 /** Where an application stands; the last three end it. */
 type ApplicationStatus =
-  | "saved"
+  | "preparing"
   | "applied"
   | "interviewing"
   | "offer"
@@ -31,7 +33,7 @@ interface ApplicationEvent {
 }
 
 /** One job applied for, or about to be, private to the desk. */
-interface Application {
+interface Application extends JobTerms {
   /** URL slug, e.g. /desk/applications/acme-frontend. */
   id: string;
   company: string;
@@ -77,7 +79,7 @@ interface ApplicationRecord extends Application {
 }
 
 const APPLICATION_STATUSES: readonly ApplicationStatus[] = [
-  "saved",
+  "preparing",
   "applied",
   "interviewing",
   "offer",
@@ -100,7 +102,7 @@ const APPLICATION_SOURCES: readonly ApplicationSource[] = [
 
 /** How the desk names each status. */
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
-  saved: "Not sent",
+  preparing: "Preparing",
   applied: "Applied",
   interviewing: "Interviewing",
   offer: "Offer",
