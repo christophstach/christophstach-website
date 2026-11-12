@@ -21,7 +21,7 @@ import { useNavigate, useSearchParams } from "@solidjs/router";
 import { DeskMeta } from "../../../../components/desk/DeskMeta";
 import { DeskTable } from "../../../../components/desk/DeskTable";
 import type { DeskTableColumn, DeskTableFilter } from "../../../../components/desk/DeskTable";
-import { IconPlus } from "../../../../components/icons";
+import { IconPlus, IconStar } from "../../../../components/icons";
 import type { RouteDefinition } from "@solidjs/router";
 import { addDeskPostingByUrl, setDeskPostingsStatus } from "../../../../lib/desk/postings";
 import { formatRelative } from "../../../../lib/format";
@@ -40,7 +40,31 @@ function postingStatus(status: PostingStatus) {
 /** Each posting's likely duplicates (same company and title); see findDuplicates. */
 type Duplicates = ReadonlyMap<string, readonly JobPostingRecord[]>;
 
-const columns = (duplicates: Duplicates): DeskTableColumn<JobPostingRecord>[] => [
+/** The star in a row: favourite or not, and what toggles it. */
+interface Star {
+  toggle: (posting: JobPostingRecord) => void;
+  busy: () => boolean;
+}
+
+const columns = (duplicates: Duplicates, star: Star): DeskTableColumn<JobPostingRecord>[] => [
+  {
+    id: "favourite",
+    header: "favourite",
+    // Applied postings keep their status, so their star stays put.
+    cell: (posting) => (
+      <button
+        type="button"
+        class={[styles.star, { [styles["star--on"] ?? ""]: posting.status === "favourite" }]}
+        aria-pressed={posting.status === "favourite" ? "true" : "false"}
+        aria-label={`Favourite: ${posting.title || posting.externalId}`}
+        disabled={star.busy() || posting.status === "applied"}
+        onClick={() => star.toggle(posting)}
+      >
+        <IconStar size={16} />
+      </button>
+    ),
+    sort: (posting) => (posting.status === "favourite" ? 0 : 1),
+  },
   {
     id: "posting",
     header: "posting",
@@ -310,13 +334,22 @@ export default function Postings() {
           rowKey={(posting) => posting.id}
           rowHref={(posting) => paths.desk.postings(posting.id)()}
           initialSort={{ column: "found", direction: "desc" }}
-          columns={columns(duplicates())}
+          columns={columns(duplicates(), {
+            toggle: (posting) =>
+              void request.run(() =>
+                setDeskPostingsStatus(
+                  [posting.id],
+                  posting.status === "favourite" ? "new" : "favourite",
+                ),
+              ),
+            busy: request.busy,
+          })}
           filters={filters(collectors(), duplicates())}
           select={{
             label: (posting) => `Tick ${posting.title || posting.externalId}`,
             actions: [
               { label: "Dismiss", run: setStatus("dismissed") },
-              { label: "Mark interesting", run: setStatus("interesting") },
+              { label: "Favourite", run: setStatus("favourite") },
               { label: "Back to new", run: setStatus("new") },
             ],
           }}

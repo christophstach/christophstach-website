@@ -113,7 +113,7 @@ async function saveApplication(application: Application, { create }: { create: b
 
 /**
  * Deletes an application and, with it, its cover letter. The posting it was
- * made from goes back among the interesting ones.
+ * made from goes back among the favourites.
  */
 async function deleteApplication(id: string) {
   const deleted = await useDb()

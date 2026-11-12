@@ -8,7 +8,7 @@ import {
   WORKPLACE_LABELS,
 } from "../../../../data/postings";
 import type { JobPostingRecord, PostingEdit, PostingStatus } from "../../../../data/postings";
-import { IconSend, IconTrash } from "../../../../components/icons";
+import { IconSend, IconStar, IconTrash } from "../../../../components/icons";
 import {
   applyToDeskPosting,
   deleteDeskPosting,
@@ -230,12 +230,23 @@ export default function PostingEditor() {
             type="button"
             class="button button--outline"
             disabled={request.busy()}
-            onClick={() => void mark("interesting")}
+            onClick={() => void mark("favourite")}
           >
-            Interesting
+            <IconStar size={16} />
+            Favourite
           </button>
         </Show>
-        <Show when={saved().status === "new" || saved().status === "interesting"}>
+        <Show when={saved().status === "favourite"}>
+          <button
+            type="button"
+            class="button button--outline"
+            disabled={request.busy()}
+            onClick={() => void mark("new")}
+          >
+            Unfavourite
+          </button>
+        </Show>
+        <Show when={saved().status === "new" || saved().status === "favourite"}>
           <button
             type="button"
             class="button button--outline"
