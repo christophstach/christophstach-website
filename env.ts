@@ -50,11 +50,14 @@ const schema = {
     // missing at use. Migrations prefer the unpooled URL.
     DATABASE_URL: optionalSetting(string().check(minLength(1))),
     DATABASE_URL_UNPOOLED: optionalSetting(string().check(minLength(1))),
-    // The AI Gateway model that scores postings (src/server/posting-score.ts),
-    // e.g. "reflection/beam-free". Only a model whose every endpoint is free
-    // runs; unset, the default one does. On Vercel the Gateway signs in with
-    // the deployment's OIDC token, so no API key is needed.
-    JOB_SCORE_MODEL: optionalSetting(string().check(regex(/^[\w.-]+\/[\w.-]+$/u))),
+    // An OpenRouter key for scoring postings (src/server/posting-score.ts),
+    // from an account without credit, so it can't be charged. Unset, scoring
+    // doesn't run.
+    OPENROUTER_API_KEY: optionalSetting(string().check(minLength(1))),
+    // The OpenRouter model that scores postings, e.g.
+    // "nvidia/nemotron-3.5-super-vl:free". Only a model whose every endpoint
+    // is free runs; unset, the default one does.
+    JOB_SCORE_MODEL: optionalSetting(string().check(regex(/^[\w.-]+\/[\w.:-]+$/u))),
   },
 };
 

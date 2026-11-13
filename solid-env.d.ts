@@ -28,6 +28,7 @@ declare module 'virtual:solid-env/server' {
     readonly "CRON_SECRET": __Out<__Schema["server"]["CRON_SECRET"]>;
     readonly "DATABASE_URL": __Out<__Schema["server"]["DATABASE_URL"]>;
     readonly "DATABASE_URL_UNPOOLED": __Out<__Schema["server"]["DATABASE_URL_UNPOOLED"]>;
+    readonly "OPENROUTER_API_KEY": __Out<__Schema["server"]["OPENROUTER_API_KEY"]>;
     readonly "JOB_SCORE_MODEL": __Out<__Schema["server"]["JOB_SCORE_MODEL"]>;
   };
   export { env };
