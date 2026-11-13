@@ -3,6 +3,7 @@ import { Output, generateText } from "ai";
 import { and, desc, eq, isNotNull, isNull, lt, ne, notInArray, or } from "drizzle-orm";
 import { array, number, object, record, string, unknown } from "zod/mini";
 import { applications, jobPostings } from "../../server/db/schema";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { companiesByKey, companyFacts } from "../lib/company";
 import type { CvContent, TimelineEntry } from "../data/cv";
 import type { JobPosting } from "../data/postings";
@@ -16,17 +17,17 @@ import { loadJobSearch } from "./job-search";
 import { requirePosting } from "./postings";
 import { useDb } from "./db";
 
-// Scores how well each posting fits, with a language model through the
-// Vercel AI Gateway: the CV content and the desk's search notes against the
-// ad. Only a free model runs: before a run, the Gateway's public price list
-// must show every endpoint of the model at 0, so no call can cost anything.
-// On Vercel the Gateway signs in with the deployment's OIDC token; locally,
-// `vercel env pull` writes one into .env. Without it a run fails and says so.
+// Scores how well each posting fits, with a language model on OpenRouter
+// (through the Vercel AI SDK): the CV content and the desk's search notes
+// against the ad. Only a free model runs: before a run, OpenRouter's public
+// price list must show every endpoint of the model at 0. The key is from an
+// account without credit, so nothing could be charged even then. Free models
+// allow 50 requests a day; the scheduled job takes the rest the next day.
 
-/** The most accurate model the Gateway serves for free (Reflection's Beam 1.0). */
-const DEFAULT_MODEL = "reflection/beam-free";
+/** A free model on OpenRouter that answers in a JSON schema (NVIDIA's Nemotron 3.5 Super). */
+const DEFAULT_MODEL = "nvidia/nemotron-3.5-super-vl:free";
 
-const GATEWAY = "https://ai-gateway.vercel.sh/v1";
+const OPENROUTER = "https://openrouter.ai/api/v1";
 
 /** An ad's text beyond this adds little and slows the model. */
 const DESCRIPTION_CHARS = 12_000;
@@ -72,8 +73,8 @@ function isZero(price: unknown): boolean {
 }
 
 /**
- * Whether every endpoint the Gateway may route the model to is free. A model
- * free at one provider and paid at another isn't: the Gateway may pick either.
+ * Whether every endpoint OpenRouter may route the model to is free. A model
+ * free at one provider and paid at another isn't: OpenRouter may pick either.
  */
 async function isFree(model: string): Promise<boolean> {
   const known = freeChecks.get(model);
@@ -82,12 +83,12 @@ async function isFree(model: string): Promise<boolean> {
     return known.free;
   }
 
-  const response = await fetch(`${GATEWAY}/models/${model}/endpoints`, {
+  const response = await fetch(`${OPENROUTER}/models/${model}/endpoints`, {
     signal: AbortSignal.timeout(10_000),
   });
 
   if (!response.ok) {
-    throw new Error(`The AI Gateway doesn't list "${model}" (${response.status}).`);
+    throw new Error(`OpenRouter doesn't list "${model}" (${response.status}).`);
   }
 
   const { endpoints } = endpointsSchema.parse(await response.json()).data;
@@ -230,7 +231,9 @@ async function loadBrief() {
 
 type Brief = Awaited<ReturnType<typeof loadBrief>>;
 
-async function scoreOne(brief: Brief, posting: JobPosting, model: string, timeout: number) {
+type Model = ReturnType<ReturnType<typeof createOpenRouter>["chat"]>;
+
+async function scoreOne(brief: Brief, posting: JobPosting, model: Model, timeout: number) {
   const company = brief.companies.get(companyKey(posting.company));
   const { output } = await generateText({
     model,
@@ -250,7 +253,7 @@ async function scoreOne(brief: Brief, posting: JobPosting, model: string, timeou
       scoreReasons: score.reasons,
       scoreConcerns: score.concerns,
       scoreCvId: score.cvId,
-      scoreModel: model,
+      scoreModel: model.modelId,
       scoredAt: new Date(),
     })
     .where(eq(jobPostings.id, posting.id));
@@ -290,11 +293,6 @@ function failure(error: unknown): string {
     return "Scoring failed.";
   }
 
-  if (error.name === "GatewayAuthenticationError") {
-    // Never an API key: one could be charged. The deployment's token can't.
-    return "The AI Gateway needs the deployment's OIDC token: scoring runs on Vercel, or locally after `vercel env pull`.";
-  }
-
   // oxlint-disable-next-line no-control-regex -- strips ANSI colour codes
   return error.message.replaceAll(/\u001b\[\d+m/gu, "");
 }
@@ -314,6 +312,14 @@ async function scorePostings({
   const model = scoreModel();
   const run: ScoreRun = { model, scored: [], error: "", left: 0 };
 
+  const apiKey = env.OPENROUTER_API_KEY;
+
+  if (apiKey === undefined) {
+    return Object.assign(run, {
+      error: "Set OPENROUTER_API_KEY: a key from an OpenRouter account without credit.",
+    });
+  }
+
   try {
     if (!(await isFree(model))) {
       return Object.assign(run, {
@@ -321,6 +327,7 @@ async function scorePostings({
       });
     }
 
+    const llm = createOpenRouter({ apiKey }).chat(model);
     const brief = await loadBrief();
     const due = await dueIds(brief.notesAt, ids);
 
@@ -333,12 +340,12 @@ async function scorePostings({
         return;
       }
 
-      await scoreOne(brief, await requirePosting(id), model, Math.min(CALL_TIMEOUT_MS, remaining));
+      await scoreOne(brief, await requirePosting(id), llm, Math.min(CALL_TIMEOUT_MS, remaining));
       run.scored.push(id);
       run.left -= 1;
     }
 
-    // One at a time on purpose: a free model's rate limits are tight. A
+    // One at a time on purpose: free models allow 20 requests a minute. A
     // failure rejects the chain, so the rest are skipped.
     await due.reduce<Promise<void>>(
       (previous, id) => previous.then(() => scoreNext(id)),

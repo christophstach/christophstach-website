@@ -240,10 +240,12 @@ filters by them.
 a language model reads the CV content, the search notes (one row of `job_search`,
 `src/server/job-search.ts`, edited at `/desk/postings/scoring`, query key `desk-job-search`) and
 the CV list, and answers 0–100, up to three reasons and concerns, and the CV to send, which
-"Create application" then picks. It runs through the Vercel AI SDK (`ai`) and AI Gateway with
-`JOB_SCORE_MODEL` (default `reflection/beam-free`), and only while the Gateway's public price
-list shows every endpoint of that model at 0: no API key, which could be charged; on Vercel the
-Gateway signs in with the deployment's OIDC token (locally `vercel env pull`). Due are postings
+"Create application" then picks. It runs through the Vercel AI SDK (`ai`) on OpenRouter
+(`@openrouter/ai-sdk-provider`) with `JOB_SCORE_MODEL` (default
+`nvidia/nemotron-3.5-super-vl:free`), and only while OpenRouter's public price list shows every
+endpoint of that model at 0. `OPENROUTER_API_KEY` is from an account without credit, so it
+can't be charged; free models allow 50 requests a day. (The AI Gateway would need a card on
+file.) Due are postings
 not dismissed, not applied to, and unscored or scored before the notes last changed; the
 scheduled job scores them newest first, one at a time, "Score now" and a posting's "Score
 again" on demand. A run stops at the first failure.
