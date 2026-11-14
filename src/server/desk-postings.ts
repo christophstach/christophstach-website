@@ -29,7 +29,7 @@ import { requireUser } from "./auth";
 import { companyKey } from "../lib/posting";
 import { slugify } from "../lib/cover-letter";
 import { loadJobSearch, saveJobSearch } from "./job-search";
-import { scoreModel, scorePostings } from "./posting-score";
+import { scoreModel, scorePostings, scoreSoon } from "./posting-score";
 import type { ScoreRun } from "./posting-score";
 import { listCvs } from "./cvs";
 
@@ -76,13 +76,15 @@ async function addDeskPostingByUrl(url: unknown): Promise<string> {
   const found = await readUrl(parseInput(text("Paste the job's address."), url));
 
   // A posting the desk has already keeps its id and status.
-  await addPostings([found], null);
+  const added = await addPostings([found], null);
+
   await checkCompaniesQuietly({
     deadline: Date.now() + 15_000,
     keys: new Set([companyKey(found.company)]),
     // Its ad may say more now than when the company was last checked.
     force: true,
   });
+  await scoreSoon(added);
 
   return postingId(found);
 }

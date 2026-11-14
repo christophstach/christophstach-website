@@ -248,7 +248,8 @@ can't be charged; free models allow 50 requests a day. (The AI Gateway would nee
 file.) Due are postings
 not dismissed, not applied to, and unscored or scored before the notes last changed; the
 scheduled job scores them newest first, one at a time, "Score now" and a posting's "Score
-again" on demand. A run stops at the first failure.
+again" on demand. New postings from a collector or "Add by URL" are scored as they come in
+(`scoreSoon`: after the response through Vercel's `waitUntil` where the request has it). A run stops at the first failure.
 
 **Cover letters** are private to the desk, each the one letter of an application (`cover_letters`,
 `src/server/cover-letters.ts`, edited at `/desk/cover-letters/<id>`). Name and contact come

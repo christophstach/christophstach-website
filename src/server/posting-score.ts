@@ -10,6 +10,7 @@ import type { JobPosting } from "../data/postings";
 import { SALARY_SYMBOLS, WORKPLACE_LABELS } from "../data/postings";
 import { companyKey } from "../lib/posting";
 import { env } from "virtual:solid-env/server";
+import { getRequestEvent } from "@solidjs/web";
 import { listCompanies } from "./companies";
 import { listCvs } from "./cvs";
 import { loadCvContent } from "./cv-content";
@@ -364,5 +365,39 @@ async function scorePostings({
   return run;
 }
 
-export { scoreModel, scorePostings };
+/** A request on Vercel can keep its function running after the response. */
+interface Lingering {
+  waitUntil: (promise: Promise<unknown>) => void;
+}
+
+function canLinger(request: Request): request is Request & Lingering {
+  return "waitUntil" in request && typeof request.waitUntil === "function";
+}
+
+/**
+ * Scores postings that just came in, so a new posting needn't wait for the
+ * scheduled job. Where the platform lets the function run on after the
+ * response (Vercel's waitUntil), that happens in the background; elsewhere
+ * the caller waits. What doesn't fit the time or the day's requests stays
+ * due for the scheduled job.
+ */
+async function scoreSoon(ids: string[], request?: Request): Promise<void> {
+  if (ids.length === 0) {
+    return;
+  }
+
+  // scorePostings never throws: a failure only ends the run.
+  const run = scorePostings({ deadline: Date.now() + 45_000, ids });
+  const from = request ?? getRequestEvent()?.request;
+
+  if (from !== undefined && canLinger(from)) {
+    from.waitUntil(run);
+
+    return;
+  }
+
+  await run;
+}
+
+export { scoreModel, scorePostings, scoreSoon };
 export type { ScoreRun };
