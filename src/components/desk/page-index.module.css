@@ -25,3 +25,55 @@
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
+
+/* Key figures over the panels: each a link to where it is dealt with. */
+.figures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+@media (min-width: 48rem) {
+  .figures {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.figure {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  transition: background-color var(--transition-fast);
+}
+
+.figure:hover {
+  background-color: var(--color-hover);
+}
+
+.figure__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  line-height: 1.1;
+  color: var(--color-heading);
+}
+
+.figure--warn .figure__value {
+  color: var(--color-signal);
+}
+
+.figure__label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* A collector whose last run failed. */
+.warning {
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+}

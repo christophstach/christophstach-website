@@ -2,12 +2,16 @@ import { For, Show, createMemo } from "solid-js";
 import { applicationName, isDue, isOpen, nextStepText, statusTone } from "../../../lib/application";
 import {
   getDeskApplications,
+  getDeskCollectors,
   getDeskContent,
   getDeskCoverLetters,
   getDeskCvs,
+  getDeskJobSearch,
   getDeskPostings,
   getDeskProjects,
 } from "../../../lib/desk/queries";
+import { fitTone, isScoreDue } from "../../../lib/posting";
+import type { JobPostingRecord } from "../../../data/postings";
 import { letterStatus, pageStatus } from "../../../lib/cv-layout";
 import { DeskContentPanel } from "../../../components/desk/DeskContentPanel";
 import { DeskMeta } from "../../../components/desk/DeskMeta";
@@ -15,10 +19,143 @@ import type { RouteDefinition } from "@solidjs/router";
 import { formatRelative } from "../../../lib/format";
 import { paths } from "../../../router";
 import { letterChecks, cvChecks } from "../../../lib/desk/page-checks";
+import postingStyles from "../../../components/desk/page-postings.module.css";
 import styles from "../../../components/desk/page-index.module.css";
 
 const LATEST_LETTERS = 5;
 const LATEST_APPLICATIONS = 5;
+const TOP_POSTINGS = 5;
+
+/** Postings still to decide on: not dismissed, not applied to. */
+function isUndecided(posting: JobPostingRecord): boolean {
+  return posting.status !== "dismissed" && posting.applicationId === "";
+}
+
+function isFresh(posting: JobPostingRecord): boolean {
+  return posting.status === "new" && posting.applicationId === "";
+}
+
+/** The numbers that ask for something, each a link to where it is dealt with. */
+function Figures() {
+  const applications = createMemo(() => getDeskApplications());
+  const postings = createMemo(() => getDeskPostings());
+  const due = () => applications().filter((application) => isDue(application)).length;
+  const running = () =>
+    applications().filter((application) =>
+      ["applied", "interviewing", "offer"].includes(application.status),
+    ).length;
+  const goodFits = () =>
+    postings().filter((posting) => isUndecided(posting) && fitTone(posting) === "high").length;
+  const fresh = () => postings().filter(isFresh).length;
+
+  return (
+    <div class={styles.figures}>
+      <a
+        href={paths.desk.applications()}
+        class={[styles.figure, due() > 0 ? styles["figure--warn"] : undefined]}
+      >
+        <span class={styles.figure__value}>{due()}</span>
+        <span class={styles.figure__label}>next steps due</span>
+      </a>
+      <a href={paths.desk.applications()} class={styles.figure}>
+        <span class={styles.figure__value}>{running()}</span>
+        <span class={styles.figure__label}>applications running</span>
+      </a>
+      <a href={paths.desk.postings()} class={styles.figure}>
+        <span class={styles.figure__value}>{goodFits()}</span>
+        <span class={styles.figure__label}>good fits to decide on</span>
+      </a>
+      <a href={paths.desk.postings()} class={styles.figure}>
+        <span class={styles.figure__value}>{fresh()}</span>
+        <span class={styles.figure__label}>new postings</span>
+      </a>
+    </div>
+  );
+}
+
+function PostingsPanel() {
+  const postings = createMemo(() => getDeskPostings());
+  const search = createMemo(() => getDeskJobSearch());
+  const collectors = createMemo(() => getDeskCollectors());
+  const fresh = () => postings().filter(isFresh).length;
+  const dueForScore = () =>
+    postings().filter((posting) => isScoreDue(posting, search().updatedAt)).length;
+  // The best fits still to decide on, newest first among equals.
+  const best = () =>
+    postings()
+      .filter((posting) => isUndecided(posting) && posting.score !== null)
+      .toSorted(
+        (first, second) =>
+          (second.score?.score ?? 0) - (first.score?.score ?? 0) ||
+          second.createdAt.localeCompare(first.createdAt),
+      )
+      .slice(0, TOP_POSTINGS);
+  const failing = () =>
+    collectors().filter((collector) => collector.active && collector.lastError !== "");
+
+  return (
+    <section class="panel" aria-labelledby="panel-postings">
+      <header class="panel__head">
+        <h2 id="panel-postings" class="panel__title">
+          postings
+        </h2>
+        <a href={paths.desk.postings()} class={["text-link panel__end", styles["add-link"]]}>
+          All {postings().length} postings
+        </a>
+        <a href={paths.desk.postings.scoring()} class={["text-link", styles["add-link"]]}>
+          Scoring
+        </a>
+      </header>
+
+      <For each={failing()}>
+        {(collector) => (
+          <p class={styles.warning} role="alert">
+            <a href={paths.desk.collectors(collector.id)} class="text-link">
+              {collector.label}
+            </a>{" "}
+            failed on its last run: {collector.lastError}
+          </p>
+        )}
+      </For>
+
+      <Show when={fresh() > 0 || dueForScore() > 0}>
+        <p class={styles.notice}>
+          <a href={paths.desk.postings()} class="text-link">
+            {fresh()} new {fresh() === 1 ? "posting" : "postings"}
+          </a>{" "}
+          to sort out · {dueForScore()} due for scoring
+        </p>
+      </Show>
+
+      <Show when={best().length > 0} fallback={<p class="panel__empty">No scored postings yet.</p>}>
+        <ul class="panel__rows">
+          <For each={best()}>
+            {(posting) => (
+              <li>
+                <a href={paths.desk.postings(posting.id)} class={["panel-row", styles.row]}>
+                  <span class={styles.row__main}>
+                    <span
+                      class={[
+                        postingStyles.fit,
+                        postingStyles[`fit--${fitTone(posting)}`],
+                        posting.description === "" ? postingStyles["fit--guess"] : undefined,
+                      ]}
+                    >
+                      {posting.score?.score}
+                    </span>
+                    <span class="panel-row__label">{posting.title}</span>
+                  </span>
+                  <span class="panel-row__meta">{posting.company}</span>
+                  <span class="panel-row__meta">{posting.location}</span>
+                </a>
+              </li>
+            )}
+          </For>
+        </ul>
+      </Show>
+    </section>
+  );
+}
 
 function cvStatus(cv: { id: string; pageFills: number[] }) {
   return cvChecks.running().includes(cv.id)
@@ -101,8 +238,6 @@ function ApplicationsPanel() {
       )
       .slice(0, LATEST_APPLICATIONS);
   const hasMore = () => applications().length > shown().length;
-  const postings = createMemo(() => getDeskPostings());
-  const newPostings = () => postings().filter((posting) => posting.status === "new").length;
 
   return (
     <section class="panel" aria-labelledby="panel-applications">
@@ -122,15 +257,6 @@ function ApplicationsPanel() {
           New application
         </a>
       </header>
-
-      <Show when={newPostings() > 0}>
-        <p class={styles.notice}>
-          <a href={paths.desk.postings()} class="text-link">
-            {newPostings()} new {newPostings() === 1 ? "posting" : "postings"}
-          </a>{" "}
-          to sort out.
-        </p>
-      </Show>
 
       <Show when={shown().length > 0} fallback={<p class="panel__empty">No open applications.</p>}>
         <ul class="panel__rows">
@@ -227,6 +353,8 @@ export const route = {
   preload: () => {
     void getDeskApplications();
     void getDeskPostings();
+    void getDeskJobSearch();
+    void getDeskCollectors();
     void getDeskCvs();
     void getDeskCoverLetters();
     void getDeskContent();
@@ -242,12 +370,17 @@ export default function DeskOverview() {
         <div class="desk-head__text">
           <p class="desk-head__path">~/desk</p>
           <h1 class="desk-head__title">Overview</h1>
-          <p class="desk-head__sub">What's due, what the CVs are built from, and how they print.</p>
+          <p class="desk-head__sub">
+            What's due, which jobs fit, what the CVs are built from, and how they print.
+          </p>
         </div>
       </header>
 
+      <Figures />
+
       <div class="panels">
         <ApplicationsPanel />
+        <PostingsPanel />
         <DeskContentPanel />
         <CvsPanel />
         <LettersPanel />

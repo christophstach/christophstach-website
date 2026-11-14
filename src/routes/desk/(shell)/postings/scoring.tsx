@@ -6,22 +6,13 @@ import { DeskFormSection } from "../../../../components/desk/DeskFormSection";
 import { DeskMeta } from "../../../../components/desk/DeskMeta";
 import { DeskSaveBar } from "../../../../components/desk/DeskSaveBar";
 import { IconSparkles } from "../../../../components/icons";
-import type { JobPostingRecord } from "../../../../data/postings";
 import type { RouteDefinition } from "@solidjs/router";
 import { formatRelative } from "../../../../lib/format";
+import { isScoreDue } from "../../../../lib/posting";
 import { paths } from "../../../../router";
 import styles from "../../../../components/desk/page-postings.module.css";
 import { useDeskRequest } from "../../../../lib/desk/request";
 import { useDraft } from "../../../../lib/desk/draft";
-
-/** As the server picks them: not dismissed, not applied to, unscored or scored before the notes changed. */
-function isDue(posting: JobPostingRecord, notesAt: string): boolean {
-  return (
-    posting.status !== "dismissed" &&
-    posting.applicationId === "" &&
-    (posting.score === null || (notesAt !== "" && posting.score.scoredAt < notesAt))
-  );
-}
 
 const PLACEHOLDER = `e.g.
 Senior or staff frontend / full-stack roles, TypeScript, React or Solid.
@@ -39,7 +30,7 @@ export default function Scoring() {
   );
   const request = useDeskRequest();
   const [run, setRun] = createSignal<DeskScoreRun>();
-  const due = () => postings().filter((posting) => isDue(posting, search().updatedAt)).length;
+  const due = () => postings().filter((posting) => isScoreDue(posting, search().updatedAt)).length;
   const scored = () => postings().filter((posting) => posting.score !== null).length;
   // Ad texts from company boards, for postings that came without one (see ad-texts.ts).
   const textsSearched = () => postings().filter((posting) => posting.adTextCheckedAt !== "").length;

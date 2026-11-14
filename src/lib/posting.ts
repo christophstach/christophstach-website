@@ -191,6 +191,22 @@ function fitTone(posting: Pick<JobPosting, "score">): FitTone {
   return posting.score.score >= 50 ? "mid" : "low";
 }
 
+/**
+ * Whether a posting waits for a score, as the server picks them: not
+ * dismissed, not applied to, and unscored or scored before the search notes
+ * last changed (`notesAt`, an ISO timestamp; empty if never saved).
+ */
+function isScoreDue(
+  posting: Pick<JobPosting, "status" | "score"> & { applicationId: string },
+  notesAt: string,
+): boolean {
+  return (
+    posting.status !== "dismissed" &&
+    posting.applicationId === "" &&
+    (posting.score === null || (notesAt !== "" && posting.score.scoredAt < notesAt))
+  );
+}
+
 function workplaceLabel(workplace: Workplace | ""): string {
   return workplace === "" ? "" : WORKPLACE_LABELS[workplace];
 }
@@ -200,6 +216,7 @@ export {
   SALARY_BANDS,
   companyKey,
   fitTone,
+  isScoreDue,
   workplaceLabel,
   findDuplicates,
   formatSalary,
