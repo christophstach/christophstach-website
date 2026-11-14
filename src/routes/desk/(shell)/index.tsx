@@ -1,12 +1,5 @@
 import { For, Show, createMemo } from "solid-js";
-import {
-  applicationName,
-  isDue,
-  isOpen,
-  nextStepText,
-  statusTone,
-  today,
-} from "../../../lib/application";
+import { applicationName, isDue, nextStepText, statusTone, today } from "../../../lib/application";
 import {
   getDeskApplications,
   getDeskCollectors,
@@ -21,8 +14,7 @@ import { FREE_SCORES_PER_DAY, fitTone, isScoreDue, scoredToday } from "../../../
 import { settleDeskNextStep } from "../../../lib/desk/applications";
 import { useDeskRequest } from "../../../lib/desk/request";
 import type { JobPostingRecord } from "../../../data/postings";
-import type { ApplicationStatus } from "../../../data/applications";
-import { STATUS_LABELS } from "../../../data/applications";
+import type { ApplicationRecord, ApplicationStatus } from "../../../data/applications";
 import { DeskStats } from "../../../components/desk/DeskStats";
 import { letterStatus, pageStatus } from "../../../lib/cv-layout";
 import { DeskContentPanel } from "../../../components/desk/DeskContentPanel";
@@ -52,13 +44,10 @@ function Figures() {
   const applications = createMemo(() => getDeskApplications());
   const postings = createMemo(() => getDeskPostings());
   const due = () => applications().filter((application) => isDue(application)).length;
-  const running = () =>
-    applications().filter((application) =>
-      ["applied", "interviewing", "offer"].includes(application.status),
-    ).length;
+  const count = (status: ApplicationStatus) =>
+    applications().filter((application) => application.status === status).length;
   const goodFits = () =>
     postings().filter((posting) => isUndecided(posting) && fitTone(posting) === "high").length;
-  const fresh = () => postings().filter(isFresh).length;
 
   return (
     <div class={styles.figures}>
@@ -69,17 +58,17 @@ function Figures() {
         <span class={styles.figure__value}>{due()}</span>
         <span class={styles.figure__label}>next steps due</span>
       </a>
-      <a href={paths.desk.applications()} class={styles.figure}>
-        <span class={styles.figure__value}>{running()}</span>
-        <span class={styles.figure__label}>applications running</span>
+      <a href={paths.desk.applications({ status: "applied" })} class={styles.figure}>
+        <span class={styles.figure__value}>{count("applied")}</span>
+        <span class={styles.figure__label}>applications sent</span>
+      </a>
+      <a href={paths.desk.applications({ status: "preparing" })} class={styles.figure}>
+        <span class={styles.figure__value}>{count("preparing")}</span>
+        <span class={styles.figure__label}>in preparation</span>
       </a>
       <a href={paths.desk.postings()} class={styles.figure}>
         <span class={styles.figure__value}>{goodFits()}</span>
         <span class={styles.figure__label}>good fits to decide on</span>
-      </a>
-      <a href={paths.desk.postings()} class={styles.figure}>
-        <span class={styles.figure__value}>{fresh()}</span>
-        <span class={styles.figure__label}>new postings</span>
       </a>
     </div>
   );
@@ -87,7 +76,7 @@ function Figures() {
 
 /** The days the activity panel looks back. */
 const ACTIVITY_DAYS = 7;
-/** How long a sent application may wait for a reply before it asks for a nudge. */
+/** How long a sent application may stay quiet before it asks for a nudge. */
 const QUIET_DAYS = 14;
 
 /** The ISO timestamp `days` ago; its first ten characters are the day. */
@@ -95,51 +84,17 @@ function daysAgo(days: number): string {
   return new Date(Date.now() - days * 86_400_000).toISOString();
 }
 
-/** Where the applications stand, a cell per status, and how many have replied. */
-function PipelinePanel() {
-  const applications = createMemo(() => getDeskApplications());
-  const count = (status: ApplicationStatus) =>
-    applications().filter((application) => application.status === status).length;
-  const stages: ApplicationStatus[] = ["preparing", "applied", "interviewing", "offer", "rejected"];
-  const sent = () => applications().filter((application) => application.status !== "preparing");
-  const replied = () =>
-    sent().filter((application) =>
-      ["interviewing", "offer", "accepted", "rejected"].includes(application.status),
-    ).length;
-  // Sent a while ago, nothing heard and no step planned: worth a nudge.
-  const quiet = () =>
-    applications().filter(
-      (application) =>
-        application.status === "applied" &&
-        application.appliedOn !== "" &&
-        application.appliedOn <= daysAgo(QUIET_DAYS).slice(0, 10) &&
-        application.nextStepOn === "",
-    ).length;
-
+/**
+ * Sent a while ago, nothing written down since and no step planned: worth a
+ * follow-up. Only the history says whether anything happened.
+ */
+function isQuiet(application: ApplicationRecord): boolean {
   return (
-    <section class="panel" aria-labelledby="panel-pipeline">
-      <header class="panel__head">
-        <h2 id="panel-pipeline" class="panel__title">
-          pipeline
-        </h2>
-      </header>
-
-      <DeskStats
-        stats={stages.map((status) => ({
-          to: paths.desk.applications({ status }),
-          label: STATUS_LABELS[status].toLocaleLowerCase("en"),
-          count: count(status),
-        }))}
-      />
-
-      <Show when={sent().length > 0}>
-        <p class={styles.foot}>
-          {replied()} of {sent().length} sent replied (
-          {Math.round((replied() / sent().length) * 100)}%)
-          <Show when={quiet() > 0}>{` · ${quiet()} without a reply for ${QUIET_DAYS}+ days`}</Show>
-        </p>
-      </Show>
-    </section>
+    application.status === "applied" &&
+    application.appliedOn !== "" &&
+    application.appliedOn <= daysAgo(QUIET_DAYS).slice(0, 10) &&
+    application.nextStepOn === "" &&
+    application.events.every((event) => event.date <= application.appliedOn)
   );
 }
 
@@ -205,70 +160,6 @@ function TodayPanel() {
           </For>
         </ul>
       </Show>
-    </section>
-  );
-}
-
-/**
- * How far the applications got, from prepared to an offer: each stage holds
- * the next, so the bars only narrow. The share is of the stage before. The
- * stages are in one hue, stronger the further along (--color-step-1 to -5).
- */
-function FunnelPanel() {
-  const applications = createMemo(() => getDeskApplications());
-  const reached = (statuses: ApplicationStatus[]) =>
-    applications().filter((application) => statuses.includes(application.status)).length;
-  const stages = () => {
-    const counts = [
-      { label: "prepared", count: applications().length },
-      {
-        label: "sent",
-        count: applications().filter((application) => application.status !== "preparing").length,
-      },
-      { label: "replied", count: reached(["interviewing", "offer", "accepted", "rejected"]) },
-      { label: "interviews", count: reached(["interviewing", "offer", "accepted"]) },
-      { label: "offers", count: reached(["offer", "accepted"]) },
-    ];
-    const most = Math.max(1, counts[0]?.count ?? 0);
-
-    return counts.map((stage, index) => {
-      const before = counts[index - 1]?.count ?? 0;
-
-      return {
-        label: stage.label,
-        count: stage.count,
-        fill: `var(--color-step-${index + 1})`,
-        width: `${(stage.count / most) * 100}%`,
-        share: index === 0 || before === 0 ? "" : `${Math.round((stage.count / before) * 100)}%`,
-      };
-    });
-  };
-
-  return (
-    <section class="panel" aria-labelledby="panel-funnel">
-      <header class="panel__head">
-        <h2 id="panel-funnel" class="panel__title">
-          funnel
-        </h2>
-      </header>
-
-      <ol class={styles.funnel}>
-        <For each={stages()}>
-          {(stage) => (
-            <li class={styles.funnel__stage}>
-              <span class={styles.funnel__label}>{stage.label}</span>
-              <span class={styles.funnel__track} aria-hidden="true">
-                <span
-                  class={styles.funnel__bar}
-                  style={{ width: stage.width, "background-color": stage.fill }}
-                />
-              </span>
-              <span class={styles.funnel__count}>{String(stage.count)}</span>
-              <span class={styles.funnel__share}>{stage.share}</span>
-            </li>
-          )}
-        </For>
-      </ol>
     </section>
   );
 }
@@ -660,14 +551,16 @@ function CvsPanel() {
 
 function ApplicationsPanel() {
   const applications = createMemo(() => getDeskApplications());
-  const open = () => applications().filter((application) => isOpen(application.status));
+  const quiet = () => applications().filter(isQuiet).length;
 
-  // Due first, then by the next step's date (undated last), then the newest.
+  // Due first, then the ones still in preparation, then by the next step's
+  // date (undated last), then the newest.
   const shown = () =>
-    open()
+    applications()
       .toSorted(
         (first, second) =>
           Number(isDue(second)) - Number(isDue(first)) ||
+          Number(second.status === "preparing") - Number(first.status === "preparing") ||
           (first.nextStepOn || "9999").localeCompare(second.nextStepOn || "9999") ||
           second.updatedAt.localeCompare(first.updatedAt),
       )
@@ -693,7 +586,13 @@ function ApplicationsPanel() {
         </a>
       </header>
 
-      <Show when={shown().length > 0} fallback={<p class="panel__empty">No open applications.</p>}>
+      <Show when={quiet() > 0}>
+        <p class={styles.notice}>
+          {`${quiet()} sent ${QUIET_DAYS}+ days ago with nothing since: worth a follow-up.`}
+        </p>
+      </Show>
+
+      <Show when={shown().length > 0} fallback={<p class="panel__empty">No applications yet.</p>}>
         <ul class="panel__rows">
           <For each={shown()}>
             {(application) => (
@@ -816,8 +715,6 @@ export default function DeskOverview() {
       <div class="panels">
         <TodayPanel />
         <ApplicationsPanel />
-        <PipelinePanel />
-        <FunnelPanel />
         <PostingsPanel />
         <WeeklyPanel />
         <ActivityPanel />

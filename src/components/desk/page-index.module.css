@@ -117,54 +117,6 @@
   font-size: var(--text-sm);
 }
 
-/* The funnel: a row per stage on a rail, its bar a share of the first stage.
-   Each bar takes its stage's --color-step-N (set inline): one hue, stronger
-   the further along. */
-.funnel {
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-}
-
-.funnel__stage {
-  display: grid;
-  grid-template-columns: 6.5rem minmax(0, 1fr) 2rem 2.5rem;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.funnel__label {
-  color: var(--color-text-muted);
-}
-
-.funnel__track {
-  height: 0.5rem;
-  border-radius: var(--radius-sm);
-  background-color: var(--color-border);
-}
-
-.funnel__bar {
-  display: block;
-  height: 100%;
-  border-radius: var(--radius-sm);
-}
-
-.funnel__count,
-.funnel__share {
-  text-align: end;
-}
-
-.funnel__count {
-  font-weight: var(--font-bold);
-  color: var(--color-heading);
-}
-
-.funnel__share {
-  color: var(--color-text-muted);
-}
-
 /* Postings per week: a bar per week from the baseline, guides at half and full
    height. Each bar stacks its collectors' segments, in the legend's colors. */
 .chart {

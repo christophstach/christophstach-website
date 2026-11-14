@@ -1,5 +1,5 @@
 import type { Application, ApplicationStatus } from "../data/applications";
-import { CLOSED_STATUSES, STATUS_LABELS } from "../data/applications";
+import { STATUS_LABELS } from "../data/applications";
 import { formatDay } from "./format";
 
 /** Today as an ISO date in local time, e.g. "2026-11-12". */
@@ -16,34 +16,24 @@ function applicationName(application: Pick<Application, "company" | "jobTitle">)
   return [application.company, application.jobTitle].filter((part) => part !== "").join(", ");
 }
 
-function isOpen(status: ApplicationStatus): boolean {
-  return !CLOSED_STATUSES.includes(status);
+/** Whether an application's next step is today or overdue. */
+function isDue(application: Pick<Application, "nextStepOn">, on = today()): boolean {
+  return application.nextStepOn !== "" && application.nextStepOn <= on;
 }
 
-/** Whether an open application's next step is today or overdue. */
-function isDue(application: Pick<Application, "status" | "nextStepOn">, on = today()): boolean {
-  return (
-    isOpen(application.status) && application.nextStepOn !== "" && application.nextStepOn <= on
-  );
-}
-
-/** The status as a .desk-status: an offer or a yes is good news, the rest neutral. */
+/** The status as a .desk-status: sent is done (green), preparing is neutral. */
 function statusTone(status: ApplicationStatus) {
   return {
-    tone: status === "offer" || status === "accepted" ? ("ok" as const) : ("none" as const),
+    tone: status === "applied" ? ("ok" as const) : ("none" as const),
     text: STATUS_LABELS[status],
   };
 }
 
 /** The next step as one line, e.g. "Call back · 14 November 2026"; empty if there is none. */
-function nextStepText(application: Pick<Application, "status" | "nextStep" | "nextStepOn">) {
-  if (!isOpen(application.status)) {
-    return "";
-  }
-
+function nextStepText(application: Pick<Application, "nextStep" | "nextStepOn">) {
   const date = application.nextStepOn === "" ? "" : formatDay(application.nextStepOn, "en");
 
   return [application.nextStep, date].filter((part) => part !== "").join(" · ");
 }
 
-export { applicationName, isDue, isOpen, nextStepText, statusTone, today };
+export { applicationName, isDue, nextStepText, statusTone, today };

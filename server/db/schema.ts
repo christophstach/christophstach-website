@@ -361,9 +361,8 @@ const applications = pgTable("applications", {
   source: text({ enum: ["portal", "linkedin", "recruiter", "referral", "direct", "other"] })
     .notNull()
     .default("other"),
-  status: text({
-    enum: ["preparing", "applied", "interviewing", "offer", "accepted", "rejected", "withdrawn"],
-  })
+  /** Whether it went out; what happened after goes into the history. */
+  status: text({ enum: ["preparing", "applied"] })
     .notNull()
     .default("preparing"),
   /** The CV sent with it. */

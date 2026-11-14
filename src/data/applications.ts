@@ -1,14 +1,10 @@
 import type { JobTerms } from "./postings";
 
-/** Where an application stands; the last three end it. */
-type ApplicationStatus =
-  | "preparing"
-  | "applied"
-  | "interviewing"
-  | "offer"
-  | "accepted"
-  | "rejected"
-  | "withdrawn";
+/**
+ * Whether an application went out. Only that is tracked: what happened after
+ * (calls, interviews, a no) goes into its history, if anywhere.
+ */
+type ApplicationStatus = "preparing" | "applied";
 
 /** How the application reached the company. */
 type ApplicationSource = "portal" | "linkedin" | "recruiter" | "referral" | "direct" | "other";
@@ -78,18 +74,7 @@ interface ApplicationRecord extends Application {
   updatedAt: string;
 }
 
-const APPLICATION_STATUSES: readonly ApplicationStatus[] = [
-  "preparing",
-  "applied",
-  "interviewing",
-  "offer",
-  "accepted",
-  "rejected",
-  "withdrawn",
-];
-
-/** The statuses that end an application: nothing is due for them. */
-const CLOSED_STATUSES: readonly ApplicationStatus[] = ["accepted", "rejected", "withdrawn"];
+const APPLICATION_STATUSES: readonly ApplicationStatus[] = ["preparing", "applied"];
 
 const APPLICATION_SOURCES: readonly ApplicationSource[] = [
   "portal",
@@ -104,11 +89,6 @@ const APPLICATION_SOURCES: readonly ApplicationSource[] = [
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
   preparing: "Preparing",
   applied: "Applied",
-  interviewing: "Interviewing",
-  offer: "Offer",
-  accepted: "Accepted",
-  rejected: "Rejected",
-  withdrawn: "Withdrawn",
 };
 
 /** How the desk names each source. */
@@ -121,7 +101,7 @@ const SOURCE_LABELS: Record<ApplicationSource, string> = {
   other: "Other",
 };
 
-export { APPLICATION_SOURCES, APPLICATION_STATUSES, CLOSED_STATUSES, SOURCE_LABELS, STATUS_LABELS };
+export { APPLICATION_SOURCES, APPLICATION_STATUSES, SOURCE_LABELS, STATUS_LABELS };
 export type {
   Application,
   ApplicationRecord,
