@@ -232,6 +232,13 @@
       "when": 1794501563389,
       "tag": "0032_posting_scores",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1794618131702,
+      "tag": "0033_posting_ad_texts",
+      "breakpoints": true
     }
   ]
 }

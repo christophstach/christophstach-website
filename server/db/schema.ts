@@ -266,6 +266,13 @@ const jobPostings = pgTable(
     /** The model that scored it, e.g. "reflection/beam-free", and when. */
     scoreModel: text().notNull().default(""),
     scoredAt: timestamp({ withTimezone: true }),
+    /**
+     * The same job on the company's own board, whose text filled an empty
+     * description (LinkedIn's mails carry none); empty if none was found.
+     */
+    adTextUrl: text().notNull().default(""),
+    /** When the company's boards were searched for the ad's text; null until then. */
+    adTextCheckedAt: timestamp({ withTimezone: true }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },

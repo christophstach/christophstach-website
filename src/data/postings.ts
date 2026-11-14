@@ -84,6 +84,8 @@ interface JobPosting extends JobTerms {
   location: string;
   /** Plain text; empty where the source has none (LinkedIn's mails). */
   description: string;
+  /** The same job on the company's own board, whose text filled the description; empty if none. */
+  adTextUrl: string;
   /** ISO date; empty if the source doesn't say. */
   postedOn: string;
   status: PostingStatus;

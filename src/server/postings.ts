@@ -23,6 +23,7 @@ function toPosting(row: PostingRow): JobPosting {
     title: row.title,
     location: row.location,
     description: row.description,
+    adTextUrl: row.adTextUrl,
     postedOn: row.postedOn,
     workplace: row.workplace,
     salaryMin: row.salaryMin,

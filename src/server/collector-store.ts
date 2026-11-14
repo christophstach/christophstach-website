@@ -197,6 +197,7 @@ async function noteRun(id: string, run: { found: number; added: number; error: s
  * a failed one with its reason.
  */
 async function receive(id: string, request: Request): Promise<CollectorRun> {
+  const started = Date.now();
   const [row] = await useDb().select().from(collectors).where(eq(collectors.id, id));
 
   // An unknown id, one nothing sends to and a wrong secret answer alike, so
@@ -235,7 +236,7 @@ async function receive(id: string, request: Request): Promise<CollectorRun> {
       error: found.length === 0 ? "Found no jobs in what was sent." : "",
     });
     // Then scores them, after the response where the platform allows it.
-    await scoreSoon(added, request);
+    await scoreSoon(added, { started, request });
 
     return { found: found.length, added: added.length, closed: 0 };
   } catch (error) {
@@ -292,6 +293,7 @@ async function runBoard(row: CollectorRow): Promise<{ run: CollectorRun; added: 
 
 /** Runs a collector the desk runs itself, now ("Run now"), also a paused one. */
 async function runCollector(id: string): Promise<CollectorRun> {
+  const started = Date.now();
   const row = await requireRow(id);
 
   if (!isPullCollector(row.type)) {
@@ -301,7 +303,7 @@ async function runCollector(id: string): Promise<CollectorRun> {
   const { run, added } = await runBoard(row);
 
   await checkCompaniesQuietly({ deadline: Date.now() + 15_000 });
-  await scoreSoon(added);
+  await scoreSoon(added, { started });
 
   return run;
 }

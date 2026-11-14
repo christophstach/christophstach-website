@@ -157,13 +157,21 @@ const columns = (
     header: "fit",
     cell: (posting) => (
       <span
-        class={[styles.fit, styles[`fit--${fitTone(posting)}`]]}
+        class={[
+          styles.fit,
+          styles[`fit--${fitTone(posting)}`],
+          posting.score !== null && posting.description === "" ? styles["fit--guess"] : undefined,
+        ]}
         title={
           posting.score === null
             ? "Not scored yet"
-            : [...posting.score.reasons, ...posting.score.concerns.map((line) => `– ${line}`)].join(
-                "\n",
-              )
+            : [
+                ...(posting.description === ""
+                  ? ["Scored without the ad's text: by title, company, place and terms."]
+                  : []),
+                ...posting.score.reasons,
+                ...posting.score.concerns.map((line) => `– ${line}`),
+              ].join("\n")
         }
       >
         {posting.score?.score ?? "–"}

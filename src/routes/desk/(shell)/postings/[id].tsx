@@ -310,6 +310,7 @@ export default function PostingEditor() {
                         styles.fit,
                         styles["fit-panel__big"],
                         styles[`fit--${fitTone(stored())}`],
+                        stored().description === "" ? styles["fit--guess"] : undefined,
                       ]}
                     >
                       {fit().score}
@@ -328,6 +329,28 @@ export default function PostingEditor() {
                       {fit().model}, {formatRelative(fit().scoredAt)}
                     </span>
                   </div>
+                  <Show
+                    when={stored().description !== ""}
+                    fallback={
+                      <p class={styles.hint}>
+                        Scored without the ad's text: by title, company, place and terms. The
+                        company's boards had no job by this title; paste the ad's text into the
+                        description and score it again.
+                      </p>
+                    }
+                  >
+                    <Show when={stored().adTextUrl}>
+                      {(url) => (
+                        <p class={styles.hint}>
+                          The text is from{" "}
+                          <a href={url()} class="text-link" target="_blank" rel="noreferrer">
+                            the company's own board
+                          </a>
+                          .
+                        </p>
+                      )}
+                    </Show>
+                  </Show>
                   <div class={styles["fit-panel__lists"]}>
                     <div>
                       <p class="section-label">fits</p>

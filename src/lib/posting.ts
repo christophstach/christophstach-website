@@ -86,13 +86,18 @@ function companyKey(name: string): string {
   return words(name.trim().replace(LEGAL_FORM, ""));
 }
 
+/** A job title for matching: lowercase words, without a gender tag like "(m/w/d)". */
+function titleKey(title: string): string {
+  return words(title.replaceAll(GENDER_TAG, " "));
+}
+
 /**
  * What a posting is, for spotting the same job twice: its company and its
  * title, without gender tags or legal forms. Empty if either is missing.
  */
 function jobKey(posting: Pick<JobPosting, "company" | "title">): string {
   const company = companyKey(posting.company);
-  const title = words(posting.title.replaceAll(GENDER_TAG, " "));
+  const title = titleKey(posting.title);
 
   return company === "" || title === "" ? "" : `${company}|${title}`;
 }
@@ -201,6 +206,7 @@ export {
   formatShortDay,
   fromTermsForm,
   jobKey,
+  titleKey,
   salaryBand,
   salaryTop,
   toTermsForm,

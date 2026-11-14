@@ -99,7 +99,8 @@ Vercel Cron calls it daily and a GitHub Action (`.github/workflows/page-checks.y
 minutes and after each production deploy, both with `CRON_SECRET`, and it seals a session only for its own Chrome
 to measure every CV and letter without a page check on this build; first it reads the company
 job boards that are due (`runDueCollectors`), then describes the postings' new companies
-(`checkCompanies`), then scores the postings due for it (`scorePostings`).
+(`checkCompanies`), then finds the text of ads that came without one (`fillAdTexts`), then
+scores the postings due for it (`scorePostings`).
 
 **Content is data, not markup.** CV content lives in the database, typed by the interfaces in
 `src/data/cv.ts` (`TimelineEntry`, `EntryRecord`, `SkillGroup`, `Profile`, `CvContent`). The
@@ -250,6 +251,13 @@ not dismissed, not applied to, and unscored or scored before the notes last chan
 scheduled job scores them newest first, one at a time, "Score now" and a posting's "Score
 again" on demand. New postings from a collector or "Add by URL" are scored as they come in
 (`scoreSoon`: after the response through Vercel's `waitUntil` where the request has it). A run stops at the first failure.
+
+**Ad texts** fill postings that came without one (LinkedIn's mails; `src/server/ad-texts.ts`):
+the company's boards at Greenhouse, Lever, Ashby and Personio are read under names guessed from
+its name and website, and a job with the same title lends its text (`job_postings.ad_text_url`
+says where from). Each posting is searched once (`ad_text_checked_at`), as it comes in and in
+the scheduled job; a found text makes its score stale. A fit scored without text has a dashed
+edge.
 
 **Cover letters** are private to the desk, each the one letter of an application (`cover_letters`,
 `src/server/cover-letters.ts`, edited at `/desk/cover-letters/<id>`). Name and contact come

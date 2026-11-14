@@ -71,6 +71,8 @@ const collectorChangeSchema = object({
 
 /** Reads the job ad at an address into the inbox; answers its posting's id, also if it was there. */
 async function addDeskPostingByUrl(url: unknown): Promise<string> {
+  const started = Date.now();
+
   await requireUser();
 
   const found = await readUrl(parseInput(text("Paste the job's address."), url));
@@ -84,7 +86,7 @@ async function addDeskPostingByUrl(url: unknown): Promise<string> {
     // Its ad may say more now than when the company was last checked.
     force: true,
   });
-  await scoreSoon(added);
+  await scoreSoon(added, { started });
 
   return postingId(found);
 }

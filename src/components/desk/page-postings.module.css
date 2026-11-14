@@ -236,6 +236,11 @@
   color: var(--color-text-soft);
 }
 
+/* Scored without the ad's text: the same colour, a dashed edge. */
+.fit--guess {
+  border-style: dashed;
+}
+
 /* The fit panel on a posting's page: score and suggested CV, then why and why not. */
 .fit-panel {
   display: grid;

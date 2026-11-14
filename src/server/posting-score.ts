@@ -10,6 +10,7 @@ import type { JobPosting } from "../data/postings";
 import { SALARY_SYMBOLS, WORKPLACE_LABELS } from "../data/postings";
 import { companyKey } from "../lib/posting";
 import { env } from "virtual:solid-env/server";
+import { fillAdTextsQuietly } from "./ad-texts";
 import { getRequestEvent } from "@solidjs/web";
 import { listCompanies } from "./companies";
 import { listCvs } from "./cvs";
@@ -374,20 +375,36 @@ function canLinger(request: Request): request is Request & Lingering {
   return "waitUntil" in request && typeof request.waitUntil === "function";
 }
 
+/** A function ends after 60 s (maxDuration in vite.config.ts), the time after its response included. */
+const FUNCTION_MS = 55_000;
+
 /**
  * Scores postings that just came in, so a new posting needn't wait for the
- * scheduled job. Where the platform lets the function run on after the
- * response (Vercel's waitUntil), that happens in the background; elsewhere
- * the caller waits. What doesn't fit the time or the day's requests stays
- * due for the scheduled job.
+ * scheduled job: first their ad's text from the company's board where they
+ * came without one, then the score. Where the platform lets the function run
+ * on after the response (Vercel's waitUntil), that happens in the background;
+ * elsewhere the caller waits. `started` is when the request began: all of it
+ * ends inside the function's time. What doesn't fit the time or the day's
+ * requests stays due for the scheduled job.
  */
-async function scoreSoon(ids: string[], request?: Request): Promise<void> {
+async function scoreSoon(
+  ids: string[],
+  { started, request }: { started: number; request?: Request },
+): Promise<void> {
   if (ids.length === 0) {
     return;
   }
 
-  // scorePostings never throws: a failure only ends the run.
-  const run = scorePostings({ deadline: Date.now() + 45_000, ids });
+  const deadline = started + FUNCTION_MS;
+
+  async function textThenScore() {
+    // The search leaves the score one call's time.
+    await fillAdTextsQuietly({ deadline: deadline - MIN_CALL_MS - 5000, ids });
+    // scorePostings never throws: a failure only ends the run.
+    await scorePostings({ deadline, ids });
+  }
+
+  const run = textThenScore();
   const from = request ?? getRequestEvent()?.request;
 
   if (from !== undefined && canLinger(from)) {
