@@ -195,9 +195,9 @@
   color: var(--color-accent-subtle-text);
 }
 
-/* A posting's fit score: a number in a box, coloured like a traffic light (green
-   fits well, amber is a stretch, red doesn't fit). The same in the inbox and on
-   the posting's page. */
+/* A posting's fit score: a number in a box. Green fits well, amber is a stretch,
+   and a poor fit stays in quiet ink: red is kept for deleting. The same in the
+   inbox and on the posting's page. */
 .fit {
   display: inline-block;
   min-inline-size: 2.25rem;
@@ -225,9 +225,8 @@
 }
 
 .fit--low {
-  border-color: color-mix(in srgb, var(--color-danger) 45%, transparent);
-  background-color: color-mix(in srgb, var(--color-danger) 10%, transparent);
-  color: var(--color-danger);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-muted);
 }
 
 .fit--none {

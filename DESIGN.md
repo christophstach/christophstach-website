@@ -30,15 +30,17 @@ There are three surfaces, and each uses the direction differently:
 Components use only the semantic aliases in `src/assets/css/tokens.css`, so they theme
 automatically. No hex values or primitives in components; the paper is the one exception.
 
-| Role                    | Alias                             | Light     | Dark      |
-| ----------------------- | --------------------------------- | --------- | --------- |
-| Page                    | `--color-bg`                      | `#f5f7f7` | `#080b0a` |
-| Panels, raised areas    | `--color-surface`                 | `#e9eded` | `#0f1514` |
-| Headings                | `--color-heading`                 | `#0f1514` | `#f5f7f7` |
-| Text                    | `--color-text`, `-soft`, `-muted` | `#283133` | `#d4dadb` |
-| Links, actions, success | `--color-accent`                  | `#087a5e` | `#34e6a3` |
-| Warnings, errors        | `--color-signal`                  | `#a14a08` | `#ffb454` |
-| Delete actions          | `--color-danger`                  | `#b4232a` | `#ff7b7b` |
+| Role                    | Alias                             | Light                       | Dark          |
+| ----------------------- | --------------------------------- | --------------------------- | ------------- |
+| Page                    | `--color-bg`                      | `#f5f7f7`                   | `#080b0a`     |
+| Panels, raised areas    | `--color-surface`                 | `#e9eded`                   | `#0f1514`     |
+| Headings                | `--color-heading`                 | `#0f1514`                   | `#f5f7f7`     |
+| Text                    | `--color-text`, `-soft`, `-muted` | `#283133`                   | `#d4dadb`     |
+| Links, actions, success | `--color-accent`                  | `#087a5e`                   | `#34e6a3`     |
+| Warnings, errors        | `--color-signal`                  | `#a14a08`                   | `#ffb454`     |
+| Delete actions          | `--color-danger`                  | `#b4232a`                   | `#ff7b7b`     |
+| Data: categories        | `--color-data-1` … `-3`, `-other` | blue, magenta, violet, gray | lighter steps |
+| Data: ordered stages    | `--color-step-1` … `-5`           | blue, light to dark         | dark to light |
 
 - Green is the accent. It marks what can be acted on and what is fine.
 - Amber is only for what needs attention, never for decoration.
@@ -49,6 +51,15 @@ automatically. No hex values or primitives in components; the paper is the one e
   never reuse green, amber or red for another meaning.
 - Colorful, not loud: a view keeps neutral ink as its base and uses a handful of hues at
   most. Every color says something; none is only there to decorate.
+- Data colors: things that are only different (which collector, which kind) take
+  `--color-data-1` to `-3` in that order, and anything past three folds into
+  `--color-data-other`. Things in an order (funnel stages, tiers) take `--color-step-N`,
+  one hue that gets stronger along the order. A chart with more than one color has a legend.
+- New data colors are checked, not picked by eye: run the dataviz skill's
+  `validate_palette.js` in both modes against `--color-surface` (lightness band, chroma,
+  color-blind and normal-vision separation, 3:1 against the surface).
+- Text is checked with both WCAG (4.5:1) and APCA. Small muted text should reach about
+  Lc 45 or more, which is why dark mode's `--color-text-muted` is `--slate-350`.
 - Small text in the accent, the signal or the danger color must clear 4.5:1 on both `--color-bg` and
   `--color-surface`.
 

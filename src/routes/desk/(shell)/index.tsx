@@ -211,7 +211,8 @@ function TodayPanel() {
 
 /**
  * How far the applications got, from prepared to an offer: each stage holds
- * the next, so the bars only narrow. The share is of the stage before.
+ * the next, so the bars only narrow. The share is of the stage before. The
+ * stages are in one hue, stronger the further along (--color-step-1 to -5).
  */
 function FunnelPanel() {
   const applications = createMemo(() => getDeskApplications());
@@ -219,20 +220,14 @@ function FunnelPanel() {
     applications().filter((application) => statuses.includes(application.status)).length;
   const stages = () => {
     const counts = [
-      { label: "prepared", count: applications().length, good: false },
+      { label: "prepared", count: applications().length },
       {
         label: "sent",
         count: applications().filter((application) => application.status !== "preparing").length,
-        good: false,
       },
-      {
-        label: "replied",
-        count: reached(["interviewing", "offer", "accepted", "rejected"]),
-        good: false,
-      },
-      { label: "interviews", count: reached(["interviewing", "offer", "accepted"]), good: false },
-      // An offer is good news: the one bar in the accent.
-      { label: "offers", count: reached(["offer", "accepted"]), good: true },
+      { label: "replied", count: reached(["interviewing", "offer", "accepted", "rejected"]) },
+      { label: "interviews", count: reached(["interviewing", "offer", "accepted"]) },
+      { label: "offers", count: reached(["offer", "accepted"]) },
     ];
     const most = Math.max(1, counts[0]?.count ?? 0);
 
@@ -242,7 +237,7 @@ function FunnelPanel() {
       return {
         label: stage.label,
         count: stage.count,
-        good: stage.good,
+        fill: `var(--color-step-${index + 1})`,
         width: `${(stage.count / most) * 100}%`,
         share: index === 0 || before === 0 ? "" : `${Math.round((stage.count / before) * 100)}%`,
       };
@@ -264,8 +259,8 @@ function FunnelPanel() {
               <span class={styles.funnel__label}>{stage.label}</span>
               <span class={styles.funnel__track} aria-hidden="true">
                 <span
-                  class={[styles.funnel__bar, stage.good ? styles["funnel__bar--good"] : undefined]}
-                  style={{ width: stage.width }}
+                  class={styles.funnel__bar}
+                  style={{ width: stage.width, "background-color": stage.fill }}
                 />
               </span>
               <span class={styles.funnel__count}>{String(stage.count)}</span>
@@ -298,62 +293,100 @@ function weekOf(iso: string): string {
   return date.toISOString().slice(0, 10);
 }
 
-/** Postings found per week, and which collectors brought them. */
+/** The data colors a chart's series take, in this order; the rest are "other". */
+const SERIES_FILLS = ["var(--color-data-1)", "var(--color-data-2)", "var(--color-data-3)"];
+const OTHER_FILL = "var(--color-data-other)";
+// Collector ids are slugs, so this one is never a collector's.
+const OTHER_KEY = "*other";
+
+/**
+ * Postings found per week, stacked by the collector that brought them: the
+ * three that brought the most in these weeks in their own colors, the rest
+ * together as "other".
+ */
 function WeeklyPanel() {
   const postings = createMemo(() => getDeskPostings());
   const collectors = createMemo(() => getDeskCollectors());
-  const weeks = createMemo(() => {
+  const days = createMemo(() => {
     const thisWeek = weekOf(new Date().toISOString());
-    const days = Array.from({ length: CHART_WEEKS }, (_, index) =>
+
+    return Array.from({ length: CHART_WEEKS }, (_, index) =>
       weekOf(
         new Date(Date.parse(thisWeek) - (CHART_WEEKS - 1 - index) * 7 * 86_400_000).toISOString(),
       ),
     );
-    const counts = new Map(days.map((day) => [day, 0]));
+  });
+  // The postings in the chart's weeks, each with its week.
+  const shown = createMemo(() => {
+    const since = days()[0] ?? "";
 
-    for (const posting of postings()) {
-      const week = weekOf(posting.createdAt);
-      const count = counts.get(week);
+    return postings()
+      .map((posting) => ({ collectorId: posting.collectorId, week: weekOf(posting.createdAt) }))
+      .filter((posting) => posting.week >= since);
+  });
+  const labelOf = (id: string) =>
+    collectors().find((collector) => collector.id === id)?.label ??
+    (id === "" ? "added by hand" : id);
+  // The legend: the top collectors with their colors, then the rest as one.
+  const series = createMemo(() => {
+    const byCollector = new Map<string, number>();
 
-      if (count !== undefined) {
-        counts.set(week, count + 1);
-      }
+    for (const posting of shown()) {
+      byCollector.set(posting.collectorId, (byCollector.get(posting.collectorId) ?? 0) + 1);
     }
 
-    const most = Math.max(1, ...counts.values());
+    const ranked = Array.from(byCollector, ([id, count]) => ({ id, count })).toSorted(
+      (first, second) =>
+        second.count - first.count || labelOf(first.id).localeCompare(labelOf(second.id)),
+    );
+    const top = ranked.slice(0, SERIES_FILLS.length).map((source, index) => ({
+      key: source.id,
+      label: labelOf(source.id),
+      count: source.count,
+      fill: SERIES_FILLS[index] ?? OTHER_FILL,
+    }));
+    const rest = ranked.slice(SERIES_FILLS.length).reduce((sum, source) => sum + source.count, 0);
 
-    return days.map((day, index) => {
-      const count = counts.get(day) ?? 0;
+    return rest === 0
+      ? top
+      : [...top, { key: OTHER_KEY, label: "other", count: rest, fill: OTHER_FILL }];
+  });
+  // A collector's key in the chart: its own if it has a color, else "other".
+  const keyOf = (id: string) => (series().some((entry) => entry.key === id) ? id : OTHER_KEY);
+  const weeks = createMemo(() => {
+    const counts = new Map(days().map((day) => [day, new Map<string, number>()]));
+
+    for (const posting of shown()) {
+      const week = counts.get(posting.week);
+      const key = keyOf(posting.collectorId);
+
+      week?.set(key, (week.get(key) ?? 0) + 1);
+    }
+
+    const totals = days().map((day) =>
+      Array.from(counts.get(day)?.values() ?? []).reduce((sum, count) => sum + count, 0),
+    );
+    const most = Math.max(1, ...totals);
+
+    return days().map((day, index) => {
+      const count = totals[index] ?? 0;
+      const week = counts.get(day);
 
       return {
         day,
         count,
         label: weekLabel(day),
-        current: index === days.length - 1,
+        current: index === days().length - 1,
         height: `${(count / most) * 100}%`,
+        // Bottom to top in legend order; each segment a share of the bar.
+        segments: series()
+          .map((entry) => ({ fill: entry.fill, count: week?.get(entry.key) ?? 0 }))
+          .filter((segment) => segment.count > 0)
+          .map((segment) => ({ fill: segment.fill, grow: segment.count })),
       };
     });
   });
-  const total = () => weeks().reduce((sum, week) => sum + week.count, 0);
-  // The collectors' shares over the chart's weeks, most first.
-  const sources = () => {
-    const since = weeks()[0]?.day ?? "";
-    const byCollector = new Map<string, number>();
-
-    for (const posting of postings()) {
-      if (weekOf(posting.createdAt) >= since) {
-        byCollector.set(posting.collectorId, (byCollector.get(posting.collectorId) ?? 0) + 1);
-      }
-    }
-
-    return Array.from(byCollector, ([id, count]) => ({
-      id,
-      label:
-        collectors().find((collector) => collector.id === id)?.label ??
-        (id === "" ? "added by hand" : id),
-      count,
-    })).toSorted((first, second) => second.count - first.count);
-  };
+  const total = () => shown().length;
 
   return (
     <section class="panel" aria-labelledby="panel-weekly">
@@ -381,7 +414,16 @@ function WeeklyPanel() {
                 <span class={styles.chart__value} aria-hidden="true">
                   {String(week.count)}
                 </span>
-                <span class={styles.chart__bar} aria-hidden="true" />
+                <span class={styles.chart__bar} aria-hidden="true">
+                  <For each={week.segments}>
+                    {(segment) => (
+                      <span
+                        class={styles.chart__segment}
+                        style={{ "background-color": segment.fill, "flex-grow": segment.grow }}
+                      />
+                    )}
+                  </For>
+                </span>
                 <span class={styles.chart__label} aria-hidden="true">
                   {week.current ? "this week" : week.label}
                 </span>
@@ -391,12 +433,22 @@ function WeeklyPanel() {
         </ol>
       </div>
 
-      <Show when={sources().length > 0}>
-        <p class={styles.foot}>
-          {sources()
-            .map((source) => `${source.label} ${source.count}`)
-            .join(" · ")}
-        </p>
+      <Show when={series().length > 0}>
+        <ul class={styles.legend}>
+          <For each={series()}>
+            {(entry) => (
+              <li class={styles.legend__item}>
+                <span
+                  class={styles.legend__swatch}
+                  style={{ "background-color": entry.fill }}
+                  aria-hidden="true"
+                />
+                <span>{entry.label}</span>
+                <span class={styles.legend__count}>{String(entry.count)}</span>
+              </li>
+            )}
+          </For>
+        </ul>
       </Show>
     </section>
   );

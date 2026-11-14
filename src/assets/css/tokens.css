@@ -21,6 +21,8 @@
   --slate-100: #e9eded;
   --slate-200: #d4dadb;
   --slate-300: #b0babb;
+  /* Dark-mode muted text: 400 cleared WCAG but read faint at small sizes (APCA Lc 38). */
+  --slate-350: #94a0a2;
   --slate-400: #7d8a8c;
   --slate-500: #586466;
   --slate-600: #3b4547;
@@ -49,6 +51,21 @@
   /* 700 is the light-mode signal and carries small text, so it is tuned to
      clear 4.5:1 on both --color-bg and --color-surface. */
   --amber-700: #a14a08;
+
+  /* Color palettes for data (charts, categories): blue, magenta, violet. None is
+     green, amber or red, so a series never reads as an action or a warning.
+     Checked with the dataviz validator (OKLCH band, chroma, CVD and normal-vision
+     separation, 3:1 on the surface) in both modes. */
+  --blue-200: #9ec5f4;
+  --blue-300: #6da7ec;
+  --blue-400: #3987e5;
+  --blue-450: #2a78d6;
+  --blue-500: #256abf;
+  --blue-600: #184f95;
+  --blue-700: #0d366b;
+  --magenta-500: #d55181;
+  --violet-300: #9085e9;
+  --violet-500: #6250d6;
 
   /* Typography */
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", "Menlo", monospace;
@@ -148,6 +165,19 @@
   --color-signal: var(--amber-700);
   --color-danger: var(--red-700);
 
+  /* Data: categories in a fixed order (stacked next to each other in that
+     order), and "the rest" in neutral ink. */
+  --color-data-1: var(--blue-450);
+  --color-data-2: var(--magenta-500);
+  --color-data-3: var(--violet-500);
+  --color-data-other: var(--slate-400);
+  /* Data: ordered stages, one hue from light to dark (the last stage strongest). */
+  --color-step-1: var(--blue-300);
+  --color-step-2: var(--blue-400);
+  --color-step-3: var(--blue-500);
+  --color-step-4: var(--blue-600);
+  --color-step-5: var(--blue-700);
+
   /* The CV sheet in the desk: paper in the PDF's own colors, in both themes. Its
      muted text only clears 4.5:1 on white, so the paper stays white in dark mode. */
   --color-paper: var(--slate-0);
@@ -167,7 +197,7 @@
   --color-heading: var(--slate-50);
   --color-text: var(--slate-200);
   --color-text-soft: var(--slate-300);
-  --color-text-muted: var(--slate-400);
+  --color-text-muted: var(--slate-350);
 
   --color-border: var(--slate-800);
   --color-border-strong: var(--slate-700);
@@ -187,6 +217,17 @@
 
   --color-signal: var(--amber-400);
   --color-danger: var(--red-300);
+
+  --color-data-1: var(--blue-400);
+  --color-data-2: var(--magenta-500);
+  --color-data-3: var(--violet-300);
+  --color-data-other: var(--slate-500);
+  /* On the dark surface the strongest stage is the brightest. */
+  --color-step-1: var(--blue-600);
+  --color-step-2: var(--blue-500);
+  --color-step-3: var(--blue-400);
+  --color-step-4: var(--blue-300);
+  --color-step-5: var(--blue-200);
 
   --color-paper-shadow: 0 0 0 1px rgb(255 255 255 / 0.04), 0 16px 40px -12px rgb(0 0 0 / 0.6);
 }

@@ -70,12 +70,12 @@
   color: var(--color-text-muted);
 }
 
-/* A collector whose last run failed. */
+/* A collector whose last run failed: it needs attention, so amber (red is for deleting). */
 .warning {
   padding: var(--space-3) var(--space-5);
   border-bottom: 1px solid var(--color-border);
   font-size: var(--text-sm);
-  color: var(--color-danger);
+  color: var(--color-signal);
 }
 
 /* A line under a panel's cells, e.g. how many replied. */
@@ -118,7 +118,8 @@
 }
 
 /* The funnel: a row per stage on a rail, its bar a share of the first stage.
-   Bars are plain ink: green would say "act here", and only an offer is good news. */
+   Each bar takes its stage's --color-step-N (set inline): one hue, stronger
+   the further along. */
 .funnel {
   display: grid;
   gap: var(--space-3);
@@ -148,11 +149,6 @@
   display: block;
   height: 100%;
   border-radius: var(--radius-sm);
-  background-color: var(--color-text-muted);
-}
-
-.funnel__bar--good {
-  background-color: var(--color-accent);
 }
 
 .funnel__count,
@@ -170,7 +166,7 @@
 }
 
 /* Postings per week: a bar per week from the baseline, guides at half and full
-   height. Past weeks are quiet; this week is in full ink. */
+   height. Each bar stacks its collectors' segments, in the legend's colors. */
 .chart {
   padding: var(--space-5) var(--space-5) var(--space-8);
 }
@@ -205,15 +201,48 @@
   background-color: color-mix(in srgb, var(--color-border) 60%, transparent);
 }
 
+/* Segments from the bottom up, a 2px gap of surface between them. */
 .chart__bar {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
   width: min(70%, 1.25rem);
   height: var(--bar);
+  overflow: clip;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  background-color: var(--color-border-control);
 }
 
-.chart__week--current .chart__bar {
-  background-color: var(--color-text-soft);
+.chart__segment {
+  flex-basis: 0;
+  min-height: 2px;
+}
+
+/* Under the chart: a swatch, the collector and its count per series. */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+}
+
+.legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.legend__swatch {
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
+  border-radius: var(--radius-sm);
+}
+
+.legend__count {
+  color: var(--color-text-muted);
 }
 
 /* The count above its bar: always for this week, on hover for the rest. */
