@@ -77,3 +77,11 @@
   font-size: var(--text-sm);
   color: var(--color-danger);
 }
+
+/* A line under a panel's cells, e.g. how many replied. */
+.foot {
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

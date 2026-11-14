@@ -12,6 +12,9 @@ import {
 } from "../../../lib/desk/queries";
 import { fitTone, isScoreDue } from "../../../lib/posting";
 import type { JobPostingRecord } from "../../../data/postings";
+import type { ApplicationStatus } from "../../../data/applications";
+import { STATUS_LABELS } from "../../../data/applications";
+import { DeskStats } from "../../../components/desk/DeskStats";
 import { letterStatus, pageStatus } from "../../../lib/cv-layout";
 import { DeskContentPanel } from "../../../components/desk/DeskContentPanel";
 import { DeskMeta } from "../../../components/desk/DeskMeta";
@@ -70,6 +73,119 @@ function Figures() {
         <span class={styles.figure__label}>new postings</span>
       </a>
     </div>
+  );
+}
+
+/** The days the activity panel looks back. */
+const ACTIVITY_DAYS = 7;
+/** How long a sent application may wait for a reply before it asks for a nudge. */
+const QUIET_DAYS = 14;
+
+/** The ISO timestamp `days` ago; its first ten characters are the day. */
+function daysAgo(days: number): string {
+  return new Date(Date.now() - days * 86_400_000).toISOString();
+}
+
+/** Where the applications stand, a cell per status, and how many have replied. */
+function PipelinePanel() {
+  const applications = createMemo(() => getDeskApplications());
+  const count = (status: ApplicationStatus) =>
+    applications().filter((application) => application.status === status).length;
+  const stages: ApplicationStatus[] = ["preparing", "applied", "interviewing", "offer", "rejected"];
+  const sent = () => applications().filter((application) => application.status !== "preparing");
+  const replied = () =>
+    sent().filter((application) =>
+      ["interviewing", "offer", "accepted", "rejected"].includes(application.status),
+    ).length;
+  // Sent a while ago, nothing heard and no step planned: worth a nudge.
+  const quiet = () =>
+    applications().filter(
+      (application) =>
+        application.status === "applied" &&
+        application.appliedOn !== "" &&
+        application.appliedOn <= daysAgo(QUIET_DAYS).slice(0, 10) &&
+        application.nextStepOn === "",
+    ).length;
+
+  return (
+    <section class="panel" aria-labelledby="panel-pipeline">
+      <header class="panel__head">
+        <h2 id="panel-pipeline" class="panel__title">
+          pipeline
+        </h2>
+      </header>
+
+      <DeskStats
+        stats={stages.map((status) => ({
+          to: paths.desk.applications({ status }),
+          label: STATUS_LABELS[status].toLocaleLowerCase("en"),
+          count: count(status),
+        }))}
+      />
+
+      <Show when={sent().length > 0}>
+        <p class={styles.foot}>
+          {replied()} of {sent().length} sent replied (
+          {Math.round((replied() / sent().length) * 100)}%)
+          <Show when={quiet() > 0}>{` · ${quiet()} without a reply for ${QUIET_DAYS}+ days`}</Show>
+        </p>
+      </Show>
+    </section>
+  );
+}
+
+/** What happened in the last days: found, scored, sent, written down. */
+function ActivityPanel() {
+  const applications = createMemo(() => getDeskApplications());
+  const postings = createMemo(() => getDeskPostings());
+  const since = daysAgo(ACTIVITY_DAYS);
+  const sinceDay = since.slice(0, 10);
+
+  const stats = () => [
+    {
+      to: paths.desk.postings(),
+      label: "postings found",
+      count: postings().filter((posting) => posting.createdAt >= since).length,
+    },
+    {
+      to: paths.desk.postings.scoring(),
+      label: "scored",
+      count: postings().filter((posting) => (posting.score?.scoredAt ?? "") >= since).length,
+    },
+    {
+      to: paths.desk.postings.scoring(),
+      label: "ad texts found",
+      count: postings().filter(
+        (posting) => posting.adTextUrl !== "" && posting.adTextCheckedAt >= since,
+      ).length,
+    },
+    {
+      to: paths.desk.applications(),
+      label: "applications sent",
+      count: applications().filter((application) => application.appliedOn >= sinceDay).length,
+    },
+    {
+      to: paths.desk.applications(),
+      label: "history steps",
+      count: applications().reduce(
+        (sum, application) =>
+          sum + application.events.filter((event) => event.date >= sinceDay).length,
+        0,
+      ),
+    },
+  ];
+
+  return (
+    <section class="panel" aria-labelledby="panel-activity">
+      <header class="panel__head">
+        <h2 id="panel-activity" class="panel__title">
+          {/* One string: a constant between text renders differently on server and client. */}
+          {`last ${ACTIVITY_DAYS} days`}
+        </h2>
+      </header>
+
+      <DeskStats stats={stats()} />
+    </section>
   );
 }
 
@@ -380,7 +496,9 @@ export default function DeskOverview() {
 
       <div class="panels">
         <ApplicationsPanel />
+        <PipelinePanel />
         <PostingsPanel />
+        <ActivityPanel />
         <DeskContentPanel />
         <CvsPanel />
         <LettersPanel />
