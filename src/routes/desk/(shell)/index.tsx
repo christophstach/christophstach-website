@@ -210,32 +210,31 @@ function TodayPanel() {
 }
 
 /**
- * From a posting found to an offer: how many got how far, and what share of
- * the stage before. Applications made without a posting count from "prepared" on.
+ * How far the applications got, from prepared to an offer: each stage holds
+ * the next, so the bars only narrow. The share is of the stage before.
  */
 function FunnelPanel() {
   const applications = createMemo(() => getDeskApplications());
-  const postings = createMemo(() => getDeskPostings());
   const reached = (statuses: ApplicationStatus[]) =>
     applications().filter((application) => statuses.includes(application.status)).length;
   const stages = () => {
     const counts = [
-      { label: "postings found", count: postings().length },
-      {
-        label: "shortlisted",
-        count: postings().filter(
-          (posting) => posting.status === "favourite" || posting.applicationId !== "",
-        ).length,
-      },
-      { label: "prepared", count: applications().length },
+      { label: "prepared", count: applications().length, good: false },
       {
         label: "sent",
         count: applications().filter((application) => application.status !== "preparing").length,
+        good: false,
       },
-      { label: "interviews", count: reached(["interviewing", "offer", "accepted"]) },
-      { label: "offers", count: reached(["offer", "accepted"]) },
+      {
+        label: "replied",
+        count: reached(["interviewing", "offer", "accepted", "rejected"]),
+        good: false,
+      },
+      { label: "interviews", count: reached(["interviewing", "offer", "accepted"]), good: false },
+      // An offer is good news: the one bar in the accent.
+      { label: "offers", count: reached(["offer", "accepted"]), good: true },
     ];
-    const most = Math.max(1, ...counts.map((stage) => stage.count));
+    const most = Math.max(1, counts[0]?.count ?? 0);
 
     return counts.map((stage, index) => {
       const before = counts[index - 1]?.count ?? 0;
@@ -243,7 +242,8 @@ function FunnelPanel() {
       return {
         label: stage.label,
         count: stage.count,
-        width: `${Math.max(stage.count > 0 ? 1 : 0, (stage.count / most) * 100)}%`,
+        good: stage.good,
+        width: `${(stage.count / most) * 100}%`,
         share: index === 0 || before === 0 ? "" : `${Math.round((stage.count / before) * 100)}%`,
       };
     });
@@ -262,8 +262,11 @@ function FunnelPanel() {
           {(stage) => (
             <li class={styles.funnel__stage}>
               <span class={styles.funnel__label}>{stage.label}</span>
-              <span class={styles.funnel__track}>
-                <span class={styles.funnel__bar} style={{ width: stage.width }} />
+              <span class={styles.funnel__track} aria-hidden="true">
+                <span
+                  class={[styles.funnel__bar, stage.good ? styles["funnel__bar--good"] : undefined]}
+                  style={{ width: stage.width }}
+                />
               </span>
               <span class={styles.funnel__count}>{String(stage.count)}</span>
               <span class={styles.funnel__share}>{stage.share}</span>
@@ -278,11 +281,12 @@ function FunnelPanel() {
 /** The weeks the postings chart shows, this one last. */
 const CHART_WEEKS = 12;
 
-const weekLabel = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  timeZone: "UTC",
-});
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "2026-11-09" → "9 Nov": the same on server and client, unlike Intl's "Sept". */
+function weekLabel(day: string): string {
+  return `${Number(day.slice(8, 10))} ${MONTHS[Number(day.slice(5, 7)) - 1] ?? ""}`;
+}
 
 /** The Monday (UTC) of the week an ISO timestamp falls in, as an ISO day. */
 function weekOf(iso: string): string {
@@ -318,13 +322,14 @@ function WeeklyPanel() {
 
     const most = Math.max(1, ...counts.values());
 
-    return days.map((day) => {
+    return days.map((day, index) => {
       const count = counts.get(day) ?? 0;
 
       return {
         day,
         count,
-        label: weekLabel.format(new Date(`${day}T00:00:00Z`)),
+        label: weekLabel(day),
+        current: index === days.length - 1,
         height: `${(count / most) * 100}%`,
       };
     });
@@ -366,12 +371,20 @@ function WeeklyPanel() {
           <For each={weeks()}>
             {(week) => (
               <li
-                class={styles.chart__week}
-                title={`Week of ${week.label}: ${week.count} ${week.count === 1 ? "posting" : "postings"}`}
+                class={[
+                  styles.chart__week,
+                  week.current ? styles["chart__week--current"] : undefined,
+                ]}
+                style={{ "--bar": week.height }}
+                aria-label={`Week of ${week.label}: ${week.count} ${week.count === 1 ? "posting" : "postings"}`}
               >
-                <span class={styles.chart__value}>{String(week.count)}</span>
-                <span class={styles.chart__bar} style={{ height: week.height }} />
-                <span class={styles.chart__label}>{week.label}</span>
+                <span class={styles.chart__value} aria-hidden="true">
+                  {String(week.count)}
+                </span>
+                <span class={styles.chart__bar} aria-hidden="true" />
+                <span class={styles.chart__label} aria-hidden="true">
+                  {week.current ? "this week" : week.label}
+                </span>
               </li>
             )}
           </For>

@@ -117,43 +117,51 @@
   font-size: var(--text-sm);
 }
 
-/* The funnel: a row per stage, its bar scaled to the largest stage. */
+/* The funnel: a row per stage on a rail, its bar a share of the first stage.
+   Bars are plain ink: green would say "act here", and only an offer is good news. */
 .funnel {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
   padding: var(--space-4) var(--space-5);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
 }
 
 .funnel__stage {
   display: grid;
-  grid-template-columns: 8rem minmax(0, 1fr) 3rem 3rem;
+  grid-template-columns: 6.5rem minmax(0, 1fr) 2rem 2.5rem;
   align-items: center;
   gap: var(--space-3);
-  font-size: var(--text-sm);
 }
 
 .funnel__label {
-  color: var(--color-text);
+  color: var(--color-text-muted);
 }
 
 .funnel__track {
-  height: 0.75rem;
+  height: 0.5rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-border);
 }
 
 .funnel__bar {
   display: block;
   height: 100%;
-  border-radius: 0 4px 4px 0;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-text-muted);
+}
+
+.funnel__bar--good {
   background-color: var(--color-accent);
 }
 
 .funnel__count,
 .funnel__share {
-  font-family: var(--font-mono);
   text-align: end;
 }
 
 .funnel__count {
+  font-weight: var(--font-bold);
   color: var(--color-heading);
 }
 
@@ -161,9 +169,10 @@
   color: var(--color-text-muted);
 }
 
-/* Postings per week: a bar per week, bars grow from the baseline. */
+/* Postings per week: a bar per week from the baseline, guides at half and full
+   height. Past weeks are quiet; this week is in full ink. */
 .chart {
-  padding: var(--space-4) var(--space-5) var(--space-8);
+  padding: var(--space-5) var(--space-5) var(--space-8);
 }
 
 .chart__total {
@@ -176,52 +185,68 @@
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 2px;
-  height: 9rem;
-  border-bottom: 1px solid var(--color-border-strong);
+  height: 8rem;
+  border-bottom: 1px solid var(--color-rule);
+  background-image: linear-gradient(var(--color-border) 1px, transparent 1px);
+  background-size: 100% 50%;
 }
 
 .chart__week {
   position: relative;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
+  justify-content: center;
+  align-items: flex-end;
   min-width: 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: background-color var(--transition-fast);
 }
 
 .chart__week:hover {
-  background-color: var(--color-hover);
-}
-
-.chart__week:hover .chart__value {
-  visibility: visible;
+  background-color: color-mix(in srgb, var(--color-border) 60%, transparent);
 }
 
 .chart__bar {
-  width: min(100%, 1.5rem);
-  border-radius: 4px 4px 0 0;
-  background-color: var(--color-accent);
+  width: min(70%, 1.25rem);
+  height: var(--bar);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background-color: var(--color-border-control);
 }
 
+.chart__week--current .chart__bar {
+  background-color: var(--color-text-soft);
+}
+
+/* The count above its bar: always for this week, on hover for the rest. */
 .chart__value {
-  visibility: hidden;
   position: absolute;
-  top: 0;
+  bottom: calc(var(--bar) + var(--space-1));
+  visibility: hidden;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  font-weight: var(--font-bold);
+  color: var(--color-heading);
 }
 
-/* Week labels under the baseline: every third, so they don't collide. */
+.chart__week:hover .chart__value,
+.chart__week--current .chart__value {
+  visibility: visible;
+}
+
+/* Week labels under the baseline: every fourth, so they don't collide. */
 .chart__label {
   position: absolute;
-  top: calc(100% + var(--space-1));
+  top: calc(100% + var(--space-2));
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   white-space: nowrap;
 }
 
-.chart__week:not(:nth-child(3n)) .chart__label {
+.chart__week--current .chart__label {
+  right: 0;
+  color: var(--color-text);
+}
+
+.chart__week:not(:nth-child(4n)) .chart__label {
   display: none;
 }
