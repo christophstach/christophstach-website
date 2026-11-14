@@ -13,6 +13,7 @@ import { collectors, jobPostings } from "../../server/db/schema";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { HttpError } from "./http";
 import { checkCompaniesQuietly } from "./company-check";
+import { scoreSoon } from "./posting-score";
 import { isPullCollector } from "../data/postings";
 import { safeParse } from "zod/mini";
 import { useDb } from "./db";
@@ -233,6 +234,8 @@ async function receive(id: string, request: Request): Promise<CollectorRun> {
       added: added.length,
       error: found.length === 0 ? "Found no jobs in what was sent." : "",
     });
+    // Then scores them, after the response where the platform allows it.
+    await scoreSoon(added, request);
 
     return { found: found.length, added: added.length, closed: 0 };
   } catch (error) {
@@ -250,9 +253,9 @@ async function receive(id: string, request: Request): Promise<CollectorRun> {
  * Reads a job board collector's board: stores the jobs that pass its
  * filters and dismisses new postings of jobs the board no longer lists.
  * Notes the run on the collector, a failed one with its reason. Leaves the
- * companies to the caller.
+ * companies and scores to the caller; answers the new postings' ids too.
  */
-async function runBoard(row: CollectorRow): Promise<CollectorRun> {
+async function runBoard(row: CollectorRow): Promise<{ run: CollectorRun; added: string[] }> {
   const board = boardOf(row);
 
   try {
@@ -275,7 +278,7 @@ async function runBoard(row: CollectorRow): Promise<CollectorRun> {
       error: listed.length === 0 ? "The board lists no jobs." : "",
     });
 
-    return { found: found.length, added: added.length, closed };
+    return { run: { found: found.length, added: added.length, closed }, added };
   } catch (error) {
     await noteRun(row.id, {
       found: 0,
@@ -295,9 +298,10 @@ async function runCollector(id: string): Promise<CollectorRun> {
     throw new HttpError(400, "This collector is sent to: it doesn't run on its own.");
   }
 
-  const run = await runBoard(row);
+  const { run, added } = await runBoard(row);
 
   await checkCompaniesQuietly({ deadline: Date.now() + 15_000 });
+  await scoreSoon(added);
 
   return run;
 }
@@ -340,7 +344,7 @@ async function runDueCollectors({ deadline }: { deadline: number }): Promise<Due
     }
 
     try {
-      const run = await runBoard(row);
+      const { run } = await runBoard(row);
 
       result.ran.push(`${row.id}: ${run.found} found, ${run.added} new, ${run.closed} closed`);
     } catch (error) {
