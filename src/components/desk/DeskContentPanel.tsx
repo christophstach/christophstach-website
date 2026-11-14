@@ -1,7 +1,7 @@
-import { For, createMemo } from "solid-js";
+import { createMemo } from "solid-js";
 import { getDeskContent, getDeskProjects } from "../../lib/desk/queries";
+import { DeskStats } from "./DeskStats";
 import { paths } from "../../router";
-import styles from "./DeskContentPanel.module.css";
 
 /** How much content the CVs pick from, each count linking to its page. */
 export function DeskContentPanel() {
@@ -41,18 +41,7 @@ export function DeskContentPanel() {
         </h2>
       </header>
 
-      <ul class={styles.stats}>
-        <For each={stats()}>
-          {(stat) => (
-            <li>
-              <a href={stat.to} class={styles.stat}>
-                <span class={styles.stat__count}>{stat.count}</span>
-                <span class={styles.stat__label}>{stat.label}</span>
-              </a>
-            </li>
-          )}
-        </For>
-      </ul>
+      <DeskStats stats={stats()} />
     </section>
   );
 }

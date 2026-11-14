@@ -45,3 +45,8 @@
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
+
+/* A count that asks for something, e.g. replies still out. */
+.stat--warn .stat__count {
+  color: var(--color-signal);
+}
