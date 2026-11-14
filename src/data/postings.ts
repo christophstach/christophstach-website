@@ -86,6 +86,8 @@ interface JobPosting extends JobTerms {
   description: string;
   /** The same job on the company's own board, whose text filled the description; empty if none. */
   adTextUrl: string;
+  /** ISO timestamp of when the company's boards were searched for its text; empty until then. */
+  adTextCheckedAt: string;
   /** ISO date; empty if the source doesn't say. */
   postedOn: string;
   status: PostingStatus;

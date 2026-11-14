@@ -41,6 +41,16 @@ export default function Scoring() {
   const [run, setRun] = createSignal<DeskScoreRun>();
   const due = () => postings().filter((posting) => isDue(posting, search().updatedAt)).length;
   const scored = () => postings().filter((posting) => posting.score !== null).length;
+  // Ad texts from company boards, for postings that came without one (see ad-texts.ts).
+  const textsSearched = () => postings().filter((posting) => posting.adTextCheckedAt !== "").length;
+  const textsFound = () => postings().filter((posting) => posting.adTextUrl !== "").length;
+  const textsWaiting = () =>
+    postings().filter(
+      (posting) =>
+        posting.description === "" &&
+        posting.adTextCheckedAt === "" &&
+        posting.status !== "dismissed",
+    ).length;
 
   async function save(event: SubmitEvent) {
     event.preventDefault();
@@ -130,11 +140,16 @@ export default function Scoring() {
             </dd>
             <dt>due</dt>
             <dd>{due()}</dd>
+            <dt>ad texts</dt>
+            <dd>
+              found {textsFound()} of {textsSearched()} searched; {textsWaiting()} waiting
+            </dd>
           </dl>
           <p class={styles.hint}>
             The scheduled job scores what is due every 15 minutes, one or two at a time, up to 50 a
             day. Set <code>JOB_SCORE_MODEL</code> for another free model. The free model's provider
-            may keep what it is sent.
+            may keep what it is sent. Postings that came without the ad's text (LinkedIn's mails)
+            are searched for on the company's own job board first, once each.
           </p>
           <div class={styles.actions}>
             <button

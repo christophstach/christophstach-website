@@ -24,6 +24,7 @@ function toPosting(row: PostingRow): JobPosting {
     location: row.location,
     description: row.description,
     adTextUrl: row.adTextUrl,
+    adTextCheckedAt: row.adTextCheckedAt?.toISOString() ?? "",
     postedOn: row.postedOn,
     workplace: row.workplace,
     salaryMin: row.salaryMin,
