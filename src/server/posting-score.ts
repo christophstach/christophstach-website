@@ -35,6 +35,12 @@ const DESCRIPTION_CHARS = 12_000;
 /** One call never runs longer; a reasoning model can take a while. */
 const CALL_TIMEOUT_MS = 45_000;
 
+/**
+ * A call takes 10–20 s; with less time left before the deadline none starts,
+ * since a call cut off still counts against the free model's daily requests.
+ */
+const MIN_CALL_MS = 25_000;
+
 /** A model's prices are read again after this long. */
 const PRICE_CHECK_MS = 60 * 60 * 1000;
 
@@ -336,7 +342,7 @@ async function scorePostings({
     async function scoreNext(id: string) {
       const remaining = deadline - Date.now();
 
-      if (remaining < 5000) {
+      if (remaining < MIN_CALL_MS) {
         return;
       }
 
