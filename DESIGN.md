@@ -40,10 +40,15 @@ automatically. No hex values or primitives in components; the paper is the one e
 | Warnings, errors        | `--color-signal`                  | `#a14a08` | `#ffb454` |
 | Delete actions          | `--color-danger`                  | `#b4232a` | `#ff7b7b` |
 
-- Green is the only accent. It marks what can be acted on and what is fine, so keep it rare.
+- Green is the accent. It marks what can be acted on and what is fine.
 - Amber is only for what needs attention, never for decoration.
 - Red is only for actions that delete something, so it reads as a warning before the click.
-- Don't add a color for a new meaning. If these don't cover it, use text.
+- More colors are welcome where they make things easier to tell apart: chart series,
+  categories, stages, kinds of things in a list. They are muted to sit beside the charcoal
+  and the phosphor green, defined as semantic tokens with a light and a dark value, and
+  never reuse green, amber or red for another meaning.
+- Colorful, not loud: a view keeps neutral ink as its base and uses a handful of hues at
+  most. Every color says something; none is only there to decorate.
 - Small text in the accent, the signal or the danger color must clear 4.5:1 on both `--color-bg` and
   `--color-surface`.
 
