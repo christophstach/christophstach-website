@@ -132,9 +132,9 @@ export default function Scoring() {
             <dd>{due()}</dd>
           </dl>
           <p class={styles.hint}>
-            The scheduled job scores what is due every 15 minutes, a few at a time, up to 50 a day.
-            Set <code>JOB_SCORE_MODEL</code> for another free model. The free model's provider may
-            keep what it is sent.
+            The scheduled job scores what is due every 15 minutes, one or two at a time, up to 50 a
+            day. Set <code>JOB_SCORE_MODEL</code> for another free model. The free model's provider
+            may keep what it is sent.
           </p>
           <div class={styles.actions}>
             <button
