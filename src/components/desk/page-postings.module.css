@@ -195,8 +195,9 @@
   color: var(--color-accent-subtle-text);
 }
 
-/* A posting's fit score: a number in a box, strong when it fits well, faint when
-   it doesn't. The same in the inbox and on the posting's page. */
+/* A posting's fit score: a number in a box, coloured like a traffic light (green
+   fits well, amber is a stretch, red doesn't fit). The same in the inbox and on
+   the posting's page. */
 .fit {
   display: inline-block;
   min-inline-size: 2.25rem;
@@ -217,9 +218,16 @@
   color: var(--color-accent-subtle-text);
 }
 
+.fit--mid {
+  border-color: color-mix(in srgb, var(--color-signal) 45%, transparent);
+  background-color: color-mix(in srgb, var(--color-signal) 12%, transparent);
+  color: var(--color-signal);
+}
+
 .fit--low {
-  border-color: var(--color-border);
-  color: var(--color-text-soft);
+  border-color: color-mix(in srgb, var(--color-danger) 45%, transparent);
+  background-color: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  color: var(--color-danger);
 }
 
 .fit--none {
