@@ -22,6 +22,21 @@ export async function deleteDeskApplication(id: string): Promise<void> {
   await desk.deleteDeskApplication(id);
 }
 
+/**
+ * Settles an application's next step: "done" moves it into the history,
+ * "later" moves it three days on. `today` is the browser's day.
+ */
+export async function settleDeskNextStep(
+  id: string,
+  settle: { action: "done" | "later"; today: string },
+): Promise<void> {
+  "use server";
+
+  const desk = await import("../../server/desk-applications");
+
+  await desk.settleDeskNextStep(id, settle);
+}
+
 /** Freezes what the application sends now: its CV and cover letters as they print. */
 export async function markDeskApplicationSent(id: string): Promise<void> {
   "use server";

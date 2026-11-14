@@ -1,5 +1,12 @@
 import { For, Show, createMemo } from "solid-js";
-import { applicationName, isDue, isOpen, nextStepText, statusTone } from "../../../lib/application";
+import {
+  applicationName,
+  isDue,
+  isOpen,
+  nextStepText,
+  statusTone,
+  today,
+} from "../../../lib/application";
 import {
   getDeskApplications,
   getDeskCollectors,
@@ -10,7 +17,9 @@ import {
   getDeskPostings,
   getDeskProjects,
 } from "../../../lib/desk/queries";
-import { fitTone, isScoreDue } from "../../../lib/posting";
+import { FREE_SCORES_PER_DAY, fitTone, isScoreDue, scoredToday } from "../../../lib/posting";
+import { settleDeskNextStep } from "../../../lib/desk/applications";
+import { useDeskRequest } from "../../../lib/desk/request";
 import type { JobPostingRecord } from "../../../data/postings";
 import type { ApplicationStatus } from "../../../data/applications";
 import { STATUS_LABELS } from "../../../data/applications";
@@ -134,6 +143,252 @@ function PipelinePanel() {
   );
 }
 
+/**
+ * The next steps due today or overdue, each settled right here: "Done" moves
+ * it into the application's history, "+3 days" moves it on.
+ */
+function TodayPanel() {
+  const applications = createMemo(() => getDeskApplications());
+  const request = useDeskRequest();
+  const due = () =>
+    applications()
+      .filter((application) => isDue(application))
+      .toSorted((first, second) => first.nextStepOn.localeCompare(second.nextStepOn));
+
+  function settle(id: string, action: "done" | "later") {
+    void request.run(() => settleDeskNextStep(id, { action, today: today() }));
+  }
+
+  return (
+    <section class="panel" aria-labelledby="panel-today">
+      <header class="panel__head">
+        <h2 id="panel-today" class="panel__title">
+          today
+        </h2>
+      </header>
+
+      <Show when={request.error() !== ""}>
+        <p class={styles.warning} role="alert">
+          {request.error()}
+        </p>
+      </Show>
+
+      <Show when={due().length > 0} fallback={<p class="panel__empty">Nothing due today.</p>}>
+        <ul class="panel__rows">
+          <For each={due()}>
+            {(application) => (
+              <li class={styles.task}>
+                <a href={paths.desk.applications(application.id)} class={styles.task__main}>
+                  <span class="panel-row__label">{applicationName(application)}</span>
+                  <span class="panel-row__meta">{nextStepText(application)}</span>
+                </a>
+                <span class={styles.task__actions}>
+                  <button
+                    type="button"
+                    class={["button button--outline", styles.action]}
+                    disabled={request.busy()}
+                    onClick={() => settle(application.id, "done")}
+                  >
+                    Done
+                  </button>
+                  <button
+                    type="button"
+                    class={["button button--outline", styles.action]}
+                    disabled={request.busy()}
+                    onClick={() => settle(application.id, "later")}
+                  >
+                    +3 days
+                  </button>
+                </span>
+              </li>
+            )}
+          </For>
+        </ul>
+      </Show>
+    </section>
+  );
+}
+
+/**
+ * From a posting found to an offer: how many got how far, and what share of
+ * the stage before. Applications made without a posting count from "prepared" on.
+ */
+function FunnelPanel() {
+  const applications = createMemo(() => getDeskApplications());
+  const postings = createMemo(() => getDeskPostings());
+  const reached = (statuses: ApplicationStatus[]) =>
+    applications().filter((application) => statuses.includes(application.status)).length;
+  const stages = () => {
+    const counts = [
+      { label: "postings found", count: postings().length },
+      {
+        label: "shortlisted",
+        count: postings().filter(
+          (posting) => posting.status === "favourite" || posting.applicationId !== "",
+        ).length,
+      },
+      { label: "prepared", count: applications().length },
+      {
+        label: "sent",
+        count: applications().filter((application) => application.status !== "preparing").length,
+      },
+      { label: "interviews", count: reached(["interviewing", "offer", "accepted"]) },
+      { label: "offers", count: reached(["offer", "accepted"]) },
+    ];
+    const most = Math.max(1, ...counts.map((stage) => stage.count));
+
+    return counts.map((stage, index) => {
+      const before = counts[index - 1]?.count ?? 0;
+
+      return {
+        label: stage.label,
+        count: stage.count,
+        width: `${Math.max(stage.count > 0 ? 1 : 0, (stage.count / most) * 100)}%`,
+        share: index === 0 || before === 0 ? "" : `${Math.round((stage.count / before) * 100)}%`,
+      };
+    });
+  };
+
+  return (
+    <section class="panel" aria-labelledby="panel-funnel">
+      <header class="panel__head">
+        <h2 id="panel-funnel" class="panel__title">
+          funnel
+        </h2>
+      </header>
+
+      <ol class={styles.funnel}>
+        <For each={stages()}>
+          {(stage) => (
+            <li class={styles.funnel__stage}>
+              <span class={styles.funnel__label}>{stage.label}</span>
+              <span class={styles.funnel__track}>
+                <span class={styles.funnel__bar} style={{ width: stage.width }} />
+              </span>
+              <span class={styles.funnel__count}>{String(stage.count)}</span>
+              <span class={styles.funnel__share}>{stage.share}</span>
+            </li>
+          )}
+        </For>
+      </ol>
+    </section>
+  );
+}
+
+/** The weeks the postings chart shows, this one last. */
+const CHART_WEEKS = 12;
+
+const weekLabel = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+
+/** The Monday (UTC) of the week an ISO timestamp falls in, as an ISO day. */
+function weekOf(iso: string): string {
+  const date = new Date(iso);
+
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
+
+  return date.toISOString().slice(0, 10);
+}
+
+/** Postings found per week, and which collectors brought them. */
+function WeeklyPanel() {
+  const postings = createMemo(() => getDeskPostings());
+  const collectors = createMemo(() => getDeskCollectors());
+  const weeks = createMemo(() => {
+    const thisWeek = weekOf(new Date().toISOString());
+    const days = Array.from({ length: CHART_WEEKS }, (_, index) =>
+      weekOf(
+        new Date(Date.parse(thisWeek) - (CHART_WEEKS - 1 - index) * 7 * 86_400_000).toISOString(),
+      ),
+    );
+    const counts = new Map(days.map((day) => [day, 0]));
+
+    for (const posting of postings()) {
+      const week = weekOf(posting.createdAt);
+      const count = counts.get(week);
+
+      if (count !== undefined) {
+        counts.set(week, count + 1);
+      }
+    }
+
+    const most = Math.max(1, ...counts.values());
+
+    return days.map((day) => {
+      const count = counts.get(day) ?? 0;
+
+      return {
+        day,
+        count,
+        label: weekLabel.format(new Date(`${day}T00:00:00Z`)),
+        height: `${(count / most) * 100}%`,
+      };
+    });
+  });
+  const total = () => weeks().reduce((sum, week) => sum + week.count, 0);
+  // The collectors' shares over the chart's weeks, most first.
+  const sources = () => {
+    const since = weeks()[0]?.day ?? "";
+    const byCollector = new Map<string, number>();
+
+    for (const posting of postings()) {
+      if (weekOf(posting.createdAt) >= since) {
+        byCollector.set(posting.collectorId, (byCollector.get(posting.collectorId) ?? 0) + 1);
+      }
+    }
+
+    return Array.from(byCollector, ([id, count]) => ({
+      id,
+      label:
+        collectors().find((collector) => collector.id === id)?.label ??
+        (id === "" ? "added by hand" : id),
+      count,
+    })).toSorted((first, second) => second.count - first.count);
+  };
+
+  return (
+    <section class="panel" aria-labelledby="panel-weekly">
+      <header class="panel__head">
+        <h2 id="panel-weekly" class="panel__title">
+          postings per week
+        </h2>
+        <span class={["panel__end", styles.chart__total]}>
+          {`${total()} in ${CHART_WEEKS} weeks`}
+        </span>
+      </header>
+
+      <div class={styles.chart}>
+        <ol class={styles.chart__bars}>
+          <For each={weeks()}>
+            {(week) => (
+              <li
+                class={styles.chart__week}
+                title={`Week of ${week.label}: ${week.count} ${week.count === 1 ? "posting" : "postings"}`}
+              >
+                <span class={styles.chart__value}>{String(week.count)}</span>
+                <span class={styles.chart__bar} style={{ height: week.height }} />
+                <span class={styles.chart__label}>{week.label}</span>
+              </li>
+            )}
+          </For>
+        </ol>
+      </div>
+
+      <Show when={sources().length > 0}>
+        <p class={styles.foot}>
+          {sources()
+            .map((source) => `${source.label} ${source.count}`)
+            .join(" · ")}
+        </p>
+      </Show>
+    </section>
+  );
+}
+
 /** What happened in the last days: found, scored, sent, written down. */
 function ActivityPanel() {
   const applications = createMemo(() => getDeskApplications());
@@ -234,14 +489,13 @@ function PostingsPanel() {
         )}
       </For>
 
-      <Show when={fresh() > 0 || dueForScore() > 0}>
-        <p class={styles.notice}>
-          <a href={paths.desk.postings()} class="text-link">
-            {fresh()} new {fresh() === 1 ? "posting" : "postings"}
-          </a>{" "}
-          to sort out · {dueForScore()} due for scoring
-        </p>
-      </Show>
+      <p class={styles.notice}>
+        <a href={paths.desk.postings()} class="text-link">
+          {fresh()} new {fresh() === 1 ? "posting" : "postings"}
+        </a>{" "}
+        to sort out · {dueForScore()} due for scoring ·{" "}
+        {`${scoredToday(postings())} of ${FREE_SCORES_PER_DAY} free scores used today`}
+      </p>
 
       <Show when={best().length > 0} fallback={<p class="panel__empty">No scored postings yet.</p>}>
         <ul class="panel__rows">
@@ -495,9 +749,12 @@ export default function DeskOverview() {
       <Figures />
 
       <div class="panels">
+        <TodayPanel />
         <ApplicationsPanel />
         <PipelinePanel />
+        <FunnelPanel />
         <PostingsPanel />
+        <WeeklyPanel />
         <ActivityPanel />
         <DeskContentPanel />
         <CvsPanel />

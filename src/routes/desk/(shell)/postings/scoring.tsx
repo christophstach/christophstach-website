@@ -8,7 +8,7 @@ import { DeskSaveBar } from "../../../../components/desk/DeskSaveBar";
 import { IconSparkles } from "../../../../components/icons";
 import type { RouteDefinition } from "@solidjs/router";
 import { formatRelative } from "../../../../lib/format";
-import { isScoreDue } from "../../../../lib/posting";
+import { FREE_SCORES_PER_DAY, isScoreDue, scoredToday } from "../../../../lib/posting";
 import { paths } from "../../../../router";
 import styles from "../../../../components/desk/page-postings.module.css";
 import { useDeskRequest } from "../../../../lib/desk/request";
@@ -131,6 +131,8 @@ export default function Scoring() {
             </dd>
             <dt>due</dt>
             <dd>{due()}</dd>
+            <dt>today</dt>
+            <dd>{`${scoredToday(postings())} of ${FREE_SCORES_PER_DAY} free requests used`}</dd>
             <dt>ad texts</dt>
             <dd>
               found {textsFound()} of {textsSearched()} searched; {textsWaiting()} waiting

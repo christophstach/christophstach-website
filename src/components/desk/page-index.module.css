@@ -85,3 +85,143 @@
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
+
+/* A next step due: the application, then its two buttons. */
+.task {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+}
+
+.task__main {
+  display: grid;
+  flex: 1 1 16rem;
+  gap: var(--space-1);
+  min-width: 0;
+  color: var(--color-text);
+}
+
+.task__main:hover :global(.panel-row__label) {
+  color: var(--color-accent);
+}
+
+.task__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.action {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+/* The funnel: a row per stage, its bar scaled to the largest stage. */
+.funnel {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+}
+
+.funnel__stage {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr) 3rem 3rem;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.funnel__label {
+  color: var(--color-text);
+}
+
+.funnel__track {
+  height: 0.75rem;
+}
+
+.funnel__bar {
+  display: block;
+  height: 100%;
+  border-radius: 0 4px 4px 0;
+  background-color: var(--color-accent);
+}
+
+.funnel__count,
+.funnel__share {
+  font-family: var(--font-mono);
+  text-align: end;
+}
+
+.funnel__count {
+  color: var(--color-heading);
+}
+
+.funnel__share {
+  color: var(--color-text-muted);
+}
+
+/* Postings per week: a bar per week, bars grow from the baseline. */
+.chart {
+  padding: var(--space-4) var(--space-5) var(--space-8);
+}
+
+.chart__total {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.chart__bars {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 2px;
+  height: 9rem;
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.chart__week {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 0;
+}
+
+.chart__week:hover {
+  background-color: var(--color-hover);
+}
+
+.chart__week:hover .chart__value {
+  visibility: visible;
+}
+
+.chart__bar {
+  width: min(100%, 1.5rem);
+  border-radius: 4px 4px 0 0;
+  background-color: var(--color-accent);
+}
+
+.chart__value {
+  visibility: hidden;
+  position: absolute;
+  top: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Week labels under the baseline: every third, so they don't collide. */
+.chart__label {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.chart__week:not(:nth-child(3n)) .chart__label {
+  display: none;
+}

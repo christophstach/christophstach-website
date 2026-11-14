@@ -168,7 +168,6 @@ function fromTermsForm(form: JobTermsForm): JobTerms {
   };
 }
 
-/** "Remote", "Hybrid", "On-site"; empty if not stated. */
 /** How the desk groups fit scores: 75+ fits well, under 50 hardly; "none" is unscored. */
 type FitTone = "high" | "mid" | "low" | "none";
 
@@ -207,16 +206,32 @@ function isScoreDue(
   );
 }
 
+/** Free models on OpenRouter allow this many requests a day, counted from midnight UTC. */
+const FREE_SCORES_PER_DAY = 50;
+
+/**
+ * How many postings were scored since midnight UTC: about the free requests
+ * used today. A failed request counts at OpenRouter but leaves no score.
+ */
+function scoredToday(postings: readonly Pick<JobPosting, "score">[], now = new Date()): number {
+  const since = now.toISOString().slice(0, 10);
+
+  return postings.filter((posting) => (posting.score?.scoredAt ?? "") >= since).length;
+}
+
+/** "Remote", "Hybrid", "On-site"; empty if not stated. */
 function workplaceLabel(workplace: Workplace | ""): string {
   return workplace === "" ? "" : WORKPLACE_LABELS[workplace];
 }
 
 export {
   FIT_TONES,
+  FREE_SCORES_PER_DAY,
   SALARY_BANDS,
   companyKey,
   fitTone,
   isScoreDue,
+  scoredToday,
   workplaceLabel,
   findDuplicates,
   formatSalary,
