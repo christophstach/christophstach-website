@@ -41,7 +41,11 @@ handler, Nitro wraps them into `.vercel/output`. On Vercel the `vercel-build` sc
 Database: the schema is `server/db/schema.ts`; after changing it run `pnpm db:generate` and
 commit the SQL migration in `server/db/migrations`. `pnpm db:migrate` applies migrations to
 `DATABASE_URL_UNPOOLED` (or `DATABASE_URL`). Data changes that must ship with the code are
-custom migrations (`drizzle-kit generate --custom`).
+custom migrations (`drizzle-kit generate --custom`). The schema is strict: every rule the app's
+zod schemas enforce (enum values, slugs, ISO dates, non-empty names, salary ranges) is also a
+named CHECK there, built with the helpers at the top of `schema.ts`; a new rule goes into both,
+and never one stricter than what the app writes. A partial unique index allows one primary and
+one website CV, so `markCv` clears a role before it sets it.
 
 Tooling is **TypeScript 7** (`tsc`, strict plus `noUncheckedIndexedAccess`,
 `exactOptionalPropertyTypes`), **oxlint** (type-aware, via `oxlint-tsgolint`;

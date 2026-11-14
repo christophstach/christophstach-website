@@ -1,0 +1,1573 @@
+{
+  "id": "ddcb98bd-8f5c-4730-ab23-9350c98daf6b",
+  "prevId": "2616967e-acfd-4f1a-9b56-64067170e9d4",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.applications": {
+      "name": "applications",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "company": {
+          "name": "company",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "job_title": {
+          "name": "job_title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "job_url": {
+          "name": "job_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "job_description": {
+          "name": "job_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "workplace": {
+          "name": "workplace",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "salary_min": {
+          "name": "salary_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "salary_max": {
+          "name": "salary_max",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "salary_currency": {
+          "name": "salary_currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'other'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'preparing'"
+        },
+        "cv_id": {
+          "name": "cv_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "posting_id": {
+          "name": "posting_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "applied_on": {
+          "name": "applied_on",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "next_step": {
+          "name": "next_step",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "next_step_on": {
+          "name": "next_step_on",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "contacts": {
+          "name": "contacts",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "events": {
+          "name": "events",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "sent": {
+          "name": "sent",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "applications_cv_id_cvs_id_fk": {
+          "name": "applications_cv_id_cvs_id_fk",
+          "tableFrom": "applications",
+          "tableTo": "cvs",
+          "columnsFrom": ["cv_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "applications_posting_id_job_postings_id_fk": {
+          "name": "applications_posting_id_job_postings_id_fk",
+          "tableFrom": "applications",
+          "tableTo": "job_postings",
+          "columnsFrom": ["posting_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "applications_id_check": {
+          "name": "applications_id_check",
+          "value": "\"applications\".\"id\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+        },
+        "applications_company_check": {
+          "name": "applications_company_check",
+          "value": "btrim(\"applications\".\"company\") <> ''"
+        },
+        "applications_workplace_check": {
+          "name": "applications_workplace_check",
+          "value": "\"applications\".\"workplace\" in ('', 'remote', 'hybrid', 'onsite')"
+        },
+        "applications_salary_range_check": {
+          "name": "applications_salary_range_check",
+          "value": "(\"applications\".\"salary_min\" is null or \"applications\".\"salary_min\" between 0 and 100000000)\n        and (\"applications\".\"salary_max\" is null or \"applications\".\"salary_max\" between 0 and 100000000)\n        and (\"applications\".\"salary_min\" is null or \"applications\".\"salary_max\" is null or \"applications\".\"salary_min\" <= \"applications\".\"salary_max\")"
+        },
+        "applications_salary_currency_check": {
+          "name": "applications_salary_currency_check",
+          "value": "\"applications\".\"salary_currency\" in ('', 'EUR', 'USD', 'GBP', 'CHF')"
+        },
+        "applications_source_check": {
+          "name": "applications_source_check",
+          "value": "\"applications\".\"source\" in ('portal', 'linkedin', 'recruiter', 'referral', 'direct', 'other')"
+        },
+        "applications_status_check": {
+          "name": "applications_status_check",
+          "value": "\"applications\".\"status\" in ('preparing', 'applied')"
+        },
+        "applications_applied_on_check": {
+          "name": "applications_applied_on_check",
+          "value": "\"applications\".\"applied_on\" = '' or \"applications\".\"applied_on\" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'"
+        },
+        "applications_next_step_on_check": {
+          "name": "applications_next_step_on_check",
+          "value": "\"applications\".\"next_step_on\" = '' or \"applications\".\"next_step_on\" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'"
+        },
+        "applications_contacts_check": {
+          "name": "applications_contacts_check",
+          "value": "jsonb_typeof(\"applications\".\"contacts\") = 'array'"
+        },
+        "applications_events_check": {
+          "name": "applications_events_check",
+          "value": "jsonb_typeof(\"applications\".\"events\") = 'array'"
+        },
+        "applications_sent_check": {
+          "name": "applications_sent_check",
+          "value": "\"applications\".\"sent\" is null or jsonb_typeof(\"applications\".\"sent\") = 'object'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.collectors": {
+      "name": "collectors",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "secret_hash": {
+          "name": "secret_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "board": {
+          "name": "board",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_run_at": {
+          "name": "last_run_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_found": {
+          "name": "last_found",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_added": {
+          "name": "last_added",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "collectors_id_check": {
+          "name": "collectors_id_check",
+          "value": "\"collectors\".\"id\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+        },
+        "collectors_type_check": {
+          "name": "collectors_type_check",
+          "value": "\"collectors\".\"type\" in ('linkedin-email', 'ats-board')"
+        },
+        "collectors_label_check": {
+          "name": "collectors_label_check",
+          "value": "btrim(\"collectors\".\"label\") <> ''"
+        },
+        "collectors_secret_hash_check": {
+          "name": "collectors_secret_hash_check",
+          "value": "\"collectors\".\"secret_hash\" is null or \"collectors\".\"secret_hash\" ~ '^[0-9a-f]{64}$'"
+        },
+        "collectors_board_check": {
+          "name": "collectors_board_check",
+          "value": "(\"collectors\".\"type\" = 'ats-board') = (\"collectors\".\"board\" is not null)\n        and (\"collectors\".\"board\" is null or jsonb_typeof(\"collectors\".\"board\") = 'object')"
+        },
+        "collectors_counts_check": {
+          "name": "collectors_counts_check",
+          "value": "\"collectors\".\"last_found\" >= 0 and \"collectors\".\"last_added\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.companies": {
+      "name": "companies",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "field": {
+          "name": "field",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "headquarters": {
+          "name": "headquarters",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "funding": {
+          "name": "funding",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "website": {
+          "name": "website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "batch": {
+          "name": "batch",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "sources": {
+          "name": "sources",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "checked_at": {
+          "name": "checked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "companies_key_unique": {
+          "name": "companies_key_unique",
+          "nullsNotDistinct": false,
+          "columns": ["key"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "companies_id_check": {
+          "name": "companies_id_check",
+          "value": "\"companies\".\"id\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+        },
+        "companies_name_check": {
+          "name": "companies_name_check",
+          "value": "btrim(\"companies\".\"name\") <> ''"
+        },
+        "companies_key_check": {
+          "name": "companies_key_check",
+          "value": "btrim(\"companies\".\"key\") <> ''"
+        },
+        "companies_field_check": {
+          "name": "companies_field_check",
+          "value": "\"companies\".\"field\" in ('', 'ai', 'devtools', 'data', 'security', 'fintech', 'health', 'commerce', 'mobility', 'enterprise', 'consumer', 'agency', 'other')"
+        },
+        "companies_headquarters_check": {
+          "name": "companies_headquarters_check",
+          "value": "\"companies\".\"headquarters\" = '' or \"companies\".\"headquarters\" ~ '^[A-Z]{2}$'"
+        },
+        "companies_funding_check": {
+          "name": "companies_funding_check",
+          "value": "\"companies\".\"funding\" in ('', 'vc', 'public', 'private', 'subsidiary')"
+        },
+        "companies_website_check": {
+          "name": "companies_website_check",
+          "value": "\"companies\".\"website\" = '' or \"companies\".\"website\" ~ '^https?://.'"
+        },
+        "companies_batch_check": {
+          "name": "companies_batch_check",
+          "value": "\"companies\".\"batch\" = '' or \"companies\".\"batch\" ~ '^[A-Z][0-9]{2}$'"
+        },
+        "companies_sources_check": {
+          "name": "companies_sources_check",
+          "value": "jsonb_typeof(\"companies\".\"sources\") = 'array'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.cover_letters": {
+      "name": "cover_letters",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "application_id": {
+          "name": "application_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "recipient": {
+          "name": "recipient",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "language": {
+          "name": "language",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'en'"
+        },
+        "letter_date": {
+          "name": "letter_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "salutation": {
+          "name": "salutation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "closing": {
+          "name": "closing",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "page_fills": {
+          "name": "page_fills",
+          "type": "real[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::real[]"
+        },
+        "page_fills_build": {
+          "name": "page_fills_build",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "cover_letters_application_id_applications_id_fk": {
+          "name": "cover_letters_application_id_applications_id_fk",
+          "tableFrom": "cover_letters",
+          "tableTo": "applications",
+          "columnsFrom": ["application_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "cover_letters_applicationId_unique": {
+          "name": "cover_letters_applicationId_unique",
+          "nullsNotDistinct": false,
+          "columns": ["application_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "cover_letters_id_check": {
+          "name": "cover_letters_id_check",
+          "value": "\"cover_letters\".\"id\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+        },
+        "cover_letters_label_check": {
+          "name": "cover_letters_label_check",
+          "value": "btrim(\"cover_letters\".\"label\") <> ''"
+        },
+        "cover_letters_language_check": {
+          "name": "cover_letters_language_check",
+          "value": "\"cover_letters\".\"language\" in ('en', 'de')"
+        },
+        "cover_letters_letter_date_check": {
+          "name": "cover_letters_letter_date_check",
+          "value": "\"cover_letters\".\"letter_date\" = '' or \"cover_letters\".\"letter_date\" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.cv_entries": {
+      "name": "cv_entries",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "section": {
+          "name": "section",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization": {
+          "name": "organization",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "from": {
+          "name": "from",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to": {
+          "name": "to",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "tech": {
+          "name": "tech",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "bullets": {
+          "name": "bullets",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "links": {
+          "name": "links",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "cv_entries_id_section_unique": {
+          "name": "cv_entries_id_section_unique",
+          "nullsNotDistinct": false,
+          "columns": ["id", "section"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "cv_entries_id_check": {
+          "name": "cv_entries_id_check",
+          "value": "\"cv_entries\".\"id\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+        },
+        "cv_entries_section_check": {
+          "name": "cv_entries_section_check",
+          "value": "\"cv_entries\".\"section\" in ('experience', 'education')"
+        },
+        "cv_entries_title_check": {
+          "name": "cv_entries_title_check",
+          "value": "btrim(\"cv_entries\".\"title\") <> ''"
+        },
+        "cv_entries_organization_check": {
+          "name": "cv_entries_organization_check",
+          "value": "btrim(\"cv_entries\".\"organization\") <> ''"
+        },
+        "cv_entries_from_check": {
+          "name": "cv_entries_from_check",
+          "value": "\"cv_entries\".\"from\" ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'"
+        },
+        "cv_entries_to_check": {
+          "name": "cv_entries_to_check",
+          "value": "\"cv_entries\".\"to\" = '' or \"cv_entries\".\"to\" ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'"
+        },
+        "cv_entries_dates_check": {
+          "name": "cv_entries_dates_check",
+          "value": "\"cv_entries\".\"to\" = '' or \"cv_entries\".\"to\" >= \"cv_entries\".\"from\""
+        },
+        "cv_entries_bullets_check": {
+          "name": "cv_entries_bullets_check",
+          "value": "jsonb_typeof(\"cv_entries\".\"bullets\") = 'array'"
+        },
+        "cv_entries_links_check": {
+          "name": "cv_entries_links_check",
+          "value": "jsonb_typeof(\"cv_entries\".\"links\") = 'array'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.cv_entry_picks": {
+      "name": "cv_entry_picks",
+      "schema": "",
+      "columns": {
+        "cv_id": {
+          "name": "cv_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "section": {
+          "name": "section",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entry_id": {
+          "name": "entry_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bullets": {
+          "name": "bullets",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "cv_entry_picks_cv_id_cvs_id_fk": {
+          "name": "cv_entry_picks_cv_id_cvs_id_fk",
+          "tableFrom": "cv_entry_picks",
+          "tableTo": "cvs",
+          "columnsFrom": ["cv_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "cv_entry_picks_entry_fk": {
+          "name": "cv_entry_picks_entry_fk",
+          "tableFrom": "cv_entry_picks",
+          "tableTo": "cv_entries",
+          "columnsFrom": ["entry_id", "section"],
+          "columnsTo": ["id", "section"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "cv_entry_picks_cv_id_section_position_pk": {
+          "name": "cv_entry_picks_cv_id_section_position_pk",
+          "columns": ["cv_id", "section", "position"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "cv_entry_picks_section_check": {
+          "name": "cv_entry_picks_section_check",
+          "value": "\"cv_entry_picks\".\"section\" in ('experience', 'education')"
+        },
+        "cv_entry_picks_position_check": {
+          "name": "cv_entry_picks_position_check",
+          "value": "\"cv_entry_picks\".\"position\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.cv_profile": {
+      "name": "cv_profile",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "default": 1
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "links": {
+          "name": "links",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "cv_profile_single_row_check": {
+          "name": "cv_profile_single_row_check",
+          "value": "\"cv_profile\".\"id\" = 1"
+        },
+        "cv_profile_name_check": {
+          "name": "cv_profile_name_check",
+          "value": "btrim(\"cv_profile\".\"name\") <> ''"
+        },
+        "cv_profile_links_check": {
+          "name": "cv_profile_links_check",
+          "value": "jsonb_typeof(\"cv_profile\".\"links\") = 'array'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.cvs": {
+      "name": "cvs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "projects": {
+          "name": "projects",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "core_technologies": {
+          "name": "core_technologies",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "skills": {
+          "name": "skills",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "layout": {
+          "name": "layout",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\"spacing\":\"normal\",\"textSize\":\"normal\",\"margin\":\"normal\"}'::jsonb"
+        },
+        "is_primary": {
+          "name": "is_primary",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_website": {
+          "name": "is_website",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "page_fills": {
+          "name": "page_fills",
+          "type": "real[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::real[]"
+        },
+        "page_fills_build": {
+          "name": "page_fills_build",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "cvs_one_primary": {
+          "name": "cvs_one_primary",
+          "columns": [
+            {
+              "expression": "is_primary",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"cvs\".\"is_primary\"",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "cvs_one_website": {
+          "name": "cvs_one_website",
+          "columns": [
+            {
+              "expression": "is_website",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"cvs\".\"is_website\"",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "cvs_id_check": {
+          "name": "cvs_id_check",
+          "value": "\"cvs\".\"id\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+        },
+        "cvs_label_check": {
+          "name": "cvs_label_check",
+          "value": "btrim(\"cvs\".\"label\") <> ''"
+        },
+        "cvs_layout_check": {
+          "name": "cvs_layout_check",
+          "value": "jsonb_typeof(\"cvs\".\"layout\") = 'object'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.job_postings": {
+      "name": "job_postings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "collector_id": {
+          "name": "collector_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "company": {
+          "name": "company",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "posted_on": {
+          "name": "posted_on",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "workplace": {
+          "name": "workplace",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "salary_min": {
+          "name": "salary_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "salary_max": {
+          "name": "salary_max",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "salary_currency": {
+          "name": "salary_currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'new'"
+        },
+        "raw": {
+          "name": "raw",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "score": {
+          "name": "score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "score_reasons": {
+          "name": "score_reasons",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "score_concerns": {
+          "name": "score_concerns",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "score_cv_id": {
+          "name": "score_cv_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "score_model": {
+          "name": "score_model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "scored_at": {
+          "name": "scored_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ad_text_url": {
+          "name": "ad_text_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "ad_text_checked_at": {
+          "name": "ad_text_checked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_postings_collector_id_collectors_id_fk": {
+          "name": "job_postings_collector_id_collectors_id_fk",
+          "tableFrom": "job_postings",
+          "tableTo": "collectors",
+          "columnsFrom": ["collector_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "job_postings_source_externalId_unique": {
+          "name": "job_postings_source_externalId_unique",
+          "nullsNotDistinct": false,
+          "columns": ["source", "external_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "job_postings_id_check": {
+          "name": "job_postings_id_check",
+          "value": "\"job_postings\".\"id\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+        },
+        "job_postings_source_check": {
+          "name": "job_postings_source_check",
+          "value": "\"job_postings\".\"source\" in ('linkedin', 'web', 'greenhouse', 'lever', 'ashby', 'personio')"
+        },
+        "job_postings_external_id_check": {
+          "name": "job_postings_external_id_check",
+          "value": "btrim(\"job_postings\".\"external_id\") <> ''"
+        },
+        "job_postings_url_check": {
+          "name": "job_postings_url_check",
+          "value": "\"job_postings\".\"url\" ~ '^https?://.'"
+        },
+        "job_postings_posted_on_check": {
+          "name": "job_postings_posted_on_check",
+          "value": "\"job_postings\".\"posted_on\" = '' or \"job_postings\".\"posted_on\" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'"
+        },
+        "job_postings_workplace_check": {
+          "name": "job_postings_workplace_check",
+          "value": "\"job_postings\".\"workplace\" in ('', 'remote', 'hybrid', 'onsite')"
+        },
+        "job_postings_salary_range_check": {
+          "name": "job_postings_salary_range_check",
+          "value": "(\"job_postings\".\"salary_min\" is null or \"job_postings\".\"salary_min\" between 0 and 100000000)\n        and (\"job_postings\".\"salary_max\" is null or \"job_postings\".\"salary_max\" between 0 and 100000000)\n        and (\"job_postings\".\"salary_min\" is null or \"job_postings\".\"salary_max\" is null or \"job_postings\".\"salary_min\" <= \"job_postings\".\"salary_max\")"
+        },
+        "job_postings_salary_currency_check": {
+          "name": "job_postings_salary_currency_check",
+          "value": "\"job_postings\".\"salary_currency\" in ('', 'EUR', 'USD', 'GBP', 'CHF')"
+        },
+        "job_postings_status_check": {
+          "name": "job_postings_status_check",
+          "value": "\"job_postings\".\"status\" in ('new', 'favourite', 'dismissed')"
+        },
+        "job_postings_score_check": {
+          "name": "job_postings_score_check",
+          "value": "(\"job_postings\".\"score\" is null and \"job_postings\".\"scored_at\" is null)\n        or (\"job_postings\".\"score\" between 0 and 100 and \"job_postings\".\"scored_at\" is not null)"
+        },
+        "job_postings_score_reasons_check": {
+          "name": "job_postings_score_reasons_check",
+          "value": "jsonb_typeof(\"job_postings\".\"score_reasons\") = 'array'"
+        },
+        "job_postings_score_concerns_check": {
+          "name": "job_postings_score_concerns_check",
+          "value": "jsonb_typeof(\"job_postings\".\"score_concerns\") = 'array'"
+        },
+        "job_postings_ad_text_url_check": {
+          "name": "job_postings_ad_text_url_check",
+          "value": "\"job_postings\".\"ad_text_url\" = '' or \"job_postings\".\"ad_text_url\" ~ '^https?://.'"
+        },
+        "job_postings_ad_text_check": {
+          "name": "job_postings_ad_text_check",
+          "value": "\"job_postings\".\"ad_text_url\" = '' or \"job_postings\".\"ad_text_checked_at\" is not null"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.job_search": {
+      "name": "job_search",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "default": 1
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "job_search_single_row_check": {
+          "name": "job_search_single_row_check",
+          "value": "\"job_search\".\"id\" = 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.projects": {
+      "name": "projects",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tech": {
+          "name": "tech",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "projects_id_check": {
+          "name": "projects_id_check",
+          "value": "\"projects\".\"id\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+        },
+        "projects_title_check": {
+          "name": "projects_title_check",
+          "value": "btrim(\"projects\".\"title\") <> ''"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.skill_groups": {
+      "name": "skill_groups",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "items": {
+          "name": "items",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "skill_groups_id_check": {
+          "name": "skill_groups_id_check",
+          "value": "\"skill_groups\".\"id\" ~ '^[a-z0-9][a-z0-9_-]*$'"
+        },
+        "skill_groups_title_check": {
+          "name": "skill_groups_title_check",
+          "value": "btrim(\"skill_groups\".\"title\") <> ''"
+        },
+        "skill_groups_position_check": {
+          "name": "skill_groups_position_check",
+          "value": "\"skill_groups\".\"position\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -1,6 +1,6 @@
 import "server-only";
 import type { EntryRecord, Profile, SkillGroupRecord } from "../data/cv";
-import { array, literal, object, optional } from "zod/mini";
+import { array, literal, object, optional, refine } from "zod/mini";
 import {
   emptyOrMatching,
   matching,
@@ -43,6 +43,11 @@ const entrySchema = object(
     links: array(timelineLinkSchema, "Links must be a list."),
   },
   NOT_ENTRY,
+).check(
+  refine(
+    (entry: { from: string; to: string }) => entry.to === "" || entry.to >= entry.from,
+    "An entry can't end before it starts.",
+  ),
 );
 
 const SKILL_GROUP = "Every skill group needs an id and a title.";

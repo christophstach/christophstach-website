@@ -1,7 +1,7 @@
 import "server-only";
 import type { Cv, EntryPick } from "../data/cvs";
 import { DEFAULT_CV_LAYOUT, normalizeCvLayout } from "../data/cv-print-layout";
-import { asc, eq, sql } from "drizzle-orm";
+import { asc, eq, ne, sql } from "drizzle-orm";
 import { cvEntryPicks, cvs } from "../../server/db/schema";
 import { BUILD_ID } from "../build-id";
 import { HttpError } from "./http";
@@ -192,9 +192,17 @@ async function storePageFills(id: string, fills: number[]) {
 /** Gives this CV a public role; the CV that held it loses it. */
 async function markCv(id: string, mark: Mark) {
   await requireCv(id);
-  await useDb()
-    .update(cvs)
-    .set({ [mark]: sql`${cvs.id} = ${id}` });
+  // In two steps: a unique index allows one CV per role, and Postgres checks it row by row.
+  await useDb().transaction(async (tx) => {
+    await tx
+      .update(cvs)
+      .set({ [mark]: false })
+      .where(ne(cvs.id, id));
+    await tx
+      .update(cvs)
+      .set({ [mark]: true })
+      .where(eq(cvs.id, id));
+  });
 }
 
 /** Deletes a CV, but never one with a public role: the site needs it. */

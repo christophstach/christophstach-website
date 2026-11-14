@@ -246,6 +246,13 @@
       "when": 1794661742216,
       "tag": "0034_application_status_sent",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1794662374478,
+      "tag": "0035_strict_schema",
+      "breakpoints": true
     }
   ]
 }
