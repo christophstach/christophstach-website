@@ -119,8 +119,9 @@
 
 /* Postings per week: a bar per week from the baseline, guides at half and full
    height. Each bar stacks its collectors' segments, in the legend's colors. */
+/* The top padding holds the count over a full-height bar, then the panel's own space. */
 .chart {
-  padding: var(--space-5) var(--space-5) var(--space-8);
+  padding: calc(var(--space-5) + var(--space-6)) var(--space-5) var(--space-8);
 }
 
 .chart__total {
