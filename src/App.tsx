@@ -1,7 +1,9 @@
 import "./assets/css/main.css";
-import { Errored, Loading } from "solid-js";
+import { Errored, Loading, untrack } from "solid-js";
+import { useLocation } from "@solidjs/router";
 import { ErrorPage } from "./components/ErrorPage";
 import { Router } from "./router";
+import { reloadForStaleBuild } from "./lib/stale-build";
 
 /** The status a failed render answers with: a thrown HttpError's, or 500. */
 function errorStatus(error: unknown): number {
@@ -30,9 +32,15 @@ export default function App() {
         <Loading>
           <Errored
             // `error` is an accessor (Solid 2), not the thrown value.
-            fallback={(error) => (
-              <ErrorPage status={errorStatus(error())} {...errorMessage(error())} />
-            )}
+            // A tab left open across a deploy reloads onto the new build instead.
+            fallback={(error) => {
+              const location = useLocation();
+              const target = untrack(() => location.pathname + location.search + location.hash);
+
+              return reloadForStaleBuild(error(), target) ? null : (
+                <ErrorPage status={errorStatus(error())} {...errorMessage(error())} />
+              );
+            }}
           >
             {props.children}
           </Errored>
