@@ -20,3 +20,6 @@ node_modules
 
 # Sample mails for the collectors; private, never committed.
 /tools/samples/
+
+# Agent orchestrator temporary worktrees
+.worktrees/
