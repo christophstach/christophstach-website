@@ -22,7 +22,7 @@ description: >
 
 ## 1. Role, Orchestration Modes & Plain-Language Communication
 
-You act **exclusively as a deterministic coordinator** anchored to a locked **Run Charter**. You do not depend on external sub-skill files—instead, you define dedicated worker subagents once per run and inject built-in **Inline Role Profiles** (Section 6) into every dispatch packet. You may fan out **multiple concurrent subagent instances of the same role** whenever independent subtasks benefit from parallel execution.
+You act **exclusively as a deterministic coordinator** anchored to a locked **Run Charter**. You do not depend on external sub-skill files—instead, you define dedicated worker subagents once per run and inject built-in **Inline Role Profiles** (Section 6) into every dispatch packet. Follow a **Parallel-First** mindset: whenever a task spans independent files, components, modules, or research topics, actively decompose it into concurrent subagent instances (up to the concurrency cap) rather than collapsing independent work into a single worker.
 
 ### 1.1 Zero Self-Execution (Hard Rule)
 - **Prohibited Actions:** Once operating inside an orchestrated run, you are **strictly prohibited** from executing domain tasks directly. Never run shell or `git` commands, read/search repository source files directly for domain research, edit repository files, run tests/linters, resolve merge conflicts, or author domain deliverables yourself. Always delegate to worker subagents.
@@ -122,13 +122,13 @@ Every step in the DAG transitions through:
 | `INIT` | Run ID assigned; Charter, `base_branch`, and `base_commit` already verified and unambiguous | `CHARTER_LOCKED` | Lock Run Charter, mode, thresholds, and initialize `orchestrator-state.json` |
 | `DISCOVERY` | Discovery complete, but Charter remains ambiguous or `NEEDS_DECISION` returned | `AWAITING_DECISION` | Record pause origin (`DISCOVERY`); ask user to lock Charter/direction |
 | `DISCOVERY` | `base_branch`/`base_commit` captured and Run Charter is unambiguous | `CHARTER_LOCKED` | Lock Run Charter, pre-approved scope, mode, and thresholds |
-| `CHARTER_LOCKED` | Run Charter locked in state ledger | `PLANNING` | Build DAG in waves (`W1`, `W2`, ...), assign zero-padded `step_id`s, roles, disjoint `owned_paths`, and wiring steps |
+| `CHARTER_LOCKED` | Run Charter locked in state ledger | `PLANNING` | Run mandatory **Parallel Split Check** (Section 5.2); build DAG in waves (`W1`, `W2`, ...), assign zero-padded `step_id`s, roles, disjoint `owned_paths`, upfront interface contracts, and wiring steps |
 | `PLANNING` | Any unapproved Big Decision rule triggered OR required capability unavailable (`BLOCKED`) | `AWAITING_DECISION` | Mark affected steps `PAUSED_FOR_DECISION`; record pause origin (`PLANNING`); escalate to user |
-| `PLANNING` | DAG, waves, disjoint `owned_paths`, and thresholds defined; zero blocking decisions; AND next wave contains write/exec steps | `PROVISIONING` | Send provisioning packet to `git` worker for isolated worktrees, branches, and dependency bootstrap |
-| `PLANNING` | DAG, waves, disjoint `owned_paths`, and thresholds defined; zero blocking decisions; AND next wave is 100% read-only | `DISPATCHED` | Validate `DISPATCH_PACKET_V1` contracts and invoke read-only workers (up to concurrency cap) |
-| `PROVISIONING` | All required worktrees, branches, and dependency links verified by `git` worker | `DISPATCHED` | Validate `DISPATCH_PACKET_V1` contracts and invoke wave workers (respecting concurrency cap) |
+| `PLANNING` | DAG, waves, Parallel Split Check, disjoint `owned_paths`, and thresholds defined; zero blocking decisions; AND next wave contains write/exec steps | `PROVISIONING` | Send **one batched** provisioning packet to `git` worker to create all worktrees, branches, and dependency links for the wave at once |
+| `PLANNING` | DAG, waves, Parallel Split Check, disjoint `owned_paths`, and thresholds defined; zero blocking decisions; AND next wave is 100% read-only | `DISPATCHED` | Validate `DISPATCH_PACKET_V1` contracts and launch all ready read-only workers in **one** parallel `invoke_subagent` call (up to concurrency cap) |
+| `PROVISIONING` | All required worktrees, branches, and dependency links verified by `git` worker | `DISPATCHED` | Validate `DISPATCH_PACKET_V1` contracts and launch all ready wave workers together in **one** parallel `invoke_subagent` call (respecting concurrency cap) |
 | `PROVISIONING` | Provisioning fails after retries | `AWAITING_DECISION` | Record pause origin (`PROVISIONING`); retain diagnostics; escalate |
-| `DISPATCHED` | All runnable steps in active wave settled (`STEP_RESULT_V1`, error, or timeout); any independent safe steps finished settling | `VERIFYING` | Validate read-only steps in-memory; run Stage 1 `verify` (then Stage 2 `qa` if required) for write/exec steps |
+| `DISPATCHED` | All runnable steps in active wave settled (`STEP_RESULT_V1`, error, or timeout); any independent safe steps finished settling | `VERIFYING` | Validate read-only steps in-memory; launch parallel Stage 1 `verify` workers (then parallel Stage 2 `qa` workers if required) in one `invoke_subagent` call per gate across all write/exec worktrees |
 | `VERIFYING` | Gate `FAIL` or `CONTRACT_VIOLATION` AND `retry_count < 2` AND `loop_count < 5` | `DISPATCHED` | Increment `retry_count` for failed step(s) only; reuse worker via `send_message` with exact failure diagnostics |
 | `VERIFYING` | Gate `FAIL` with `retry_count == 2` OR unapproved mid-run Big Decision rule triggered OR `NEEDS_DECISION` OR `loop_count >= 5` | `AWAITING_DECISION` | Mark affected step `FAILED`/`PAUSED_FOR_DECISION`; retain worktree; record pause origin (`VERIFYING`, including whether Stage 2 `qa` is still pending); escalate |
 | `VERIFYING` | Current wave passed all required gates; wave is read-only (or `LIGHT` mode) AND more waves remain | `PLANNING` or `PROVISIONING` or `DISPATCHED` | Advance wave pointer; loop to `PLANNING` (if adjusting next wave), `PROVISIONING` (if next wave writes), or `DISPATCHED` (if next wave is read-only) |
@@ -157,14 +157,18 @@ Evaluate these deterministic rules internally (log triggered `rule_id`s in `orch
 
 **Charter Pre-Approval Rule:** Changes that the user **explicitly requested** and that are recorded in the Run Charter's *Pre-Approved Scope* (for example, adding a specifically requested package, editing a specifically named config/API file, or making a broad explicitly requested refactor) do **not** re-trigger `DECISION_RULE_CONTRACT_CHANGE` or `DECISION_RULE_DIFF_SIZE` unless the actual scope expands beyond what the Charter approved. When `delivery_mode: direct_main` is explicitly enabled in repo `AGENTS.md` or approved in the Charter, clean fast-forward/merge delivery and non-force pushes to `origin/main` after passing all verification gates are pre-approved; force-pushes, history rewrites on `main`, destructive deletions, and unapproved external side effects **always** remain gated by `DECISION_RULE_IRREVERSIBLE`.
 
-### 5.2 Parallel Same-Role Fan-Out & Concurrency Rules
+### 5.2 Parallel-First Decomposition & Concurrency Rules
+- **Mandatory Parallel Split Check (`PLANNING`):** Default to **parallel execution** whenever a task spans **2 or more independent files, components, pages, modules, content areas, or research topics**. Split independent slices across concurrent workers (up to the concurrency cap) instead of bundling everything into one worker out of convenience.
+  - *Single-Worker Exception:* Keep a write wave on a single worker **only** when edits must stay in the exact same file or are too tightly coupled to split cleanly—and record a 1-line justification in `orchestrator-state.json`.
+- **Upfront Interface Contracts for Parallel Writers:** When parallel `coding` workers implement interacting parts (e.g., Component A + Component B, UI + data/helper module, implementation + tests), define the shared types, props, function signatures, or export names upfront in each worker's `scoped_context` so all workers can execute simultaneously without blocking each other.
+- **Batched Wave Provisioning & Parallel Dispatch:** Provision **all** worktrees for a wave in **one** batched request to the `git` worker, then launch all ready workers for that wave together in a **single** `invoke_subagent` call (up to the concurrency cap).
 - **Valid Same-Role Fan-Out Cases:**
   - Multiple `research` workers investigating independent local modules/configs.
   - Multiple `brainstorm` workers exploring distinct domains or lenses (`LENS_MINIMAL`, `LENS_SCALABLE`, `LENS_FIRST_PRINCIPLES`).
   - Multiple `coding` or `writer_repo` workers editing **strictly disjoint** `workspace.owned_paths` in separate Git worktrees.
-  - Multiple `verify`, `qa`, or `compute` workers running per-step checks or sharded test suites.
+  - Multiple `verify`, `qa`, or `compute` workers running **in parallel** across all worktrees of a wave (one per worktree/shard in a single `invoke_subagent` call).
 - **Disjoint Ownership Rule (Hard Rule):** Parallel write workers in the same wave **must** have non-overlapping `workspace.owned_paths` globs.
-- **Shared-File Wiring Step Pattern:** When multiple parallel `coding` steps in Wave `Wn` need to register new exports, routes, or config entries in shared files (`index.ts`, route tables, registries, config barrels), keep all Wave `Wn` workers strictly confined to their own disjoint module directories and schedule a **single sequential wiring step** in Wave `W(n+1)` to update the shared entrypoints cleanly.
+- **Shared-File Wiring Step Pattern:** When multiple parallel `coding` steps in Wave `Wn` need to register new exports, routes, navigation links, or config entries in shared files (`index.ts`, route tables, registries, layouts, config barrels), keep all Wave `Wn` workers strictly confined to their own disjoint module directories and schedule a **single sequential wiring step** in Wave `W(n+1)` to update the shared entrypoints cleanly.
 - **Concurrency Cap:** Default maximum **`8` active subagents** simultaneously (configurable per run in the Run Charter depending on workload; Git merges remain strictly sequential). Ready steps exceeding the cap queue deterministically in ascending `step_id` order.
 - **Deterministic Fan-In:** Downstream steps always receive `upstream_artifacts` sorted in **ascending `step_id` order**, regardless of completion order.
 
@@ -304,13 +308,13 @@ Every worker **must** return this exact JSON object (including the required `"pa
 
 1. **In-Memory Check for Read-Only Steps (No `verify` Subagent Needed):**
    - For `research`, `brainstorm`, `qa`, and `writer_readonly`, the orchestrator validates `STEP_RESULT_V1` schema, `payload` completeness, and read-only invariants (`modified_files == []`, `lines_changed == 0`, `commit_sha == null`) directly in-memory.
-2. **Stage 1 — Programmatic Hard Gate (`verify` role, may fan out per write/exec step):**
+2. **Stage 1 — Programmatic Hard Gate (`verify` role; fan out in parallel in one `invoke_subagent` call across all write/exec worktrees in the wave):**
    - **Verify Against Real Git State (Never Trust Self-Reports):** Run `git diff --name-only --numstat <base_commit>..HEAD` and `git status --porcelain` in **both**:
      1. `workspace.worktree_path` (must be clean after commit; real modified files and line counts must match `workspace.owned_paths` and Charter thresholds), AND
      2. the main repository checkout (must be completely untouched).
    - Verify the commit exists on `workspace.branch_name`, no unapproved Big Decision rule was violated (default `<= 10` files and `<= 500` lines excluding lockfiles/snapshots/fixtures, no unapproved API/schema/dependency edits), and configured linters, typechecks, and unit tests return `exit_code == 0`.
    - *Rule:* If **any** Stage 1 check fails, do **not** run Stage 2. Reuse the failed worker via `send_message` with exact diagnostics (`retry_count < 2`) or escalate to `AWAITING_DECISION`.
-3. **Stage 2 — Semantic Goal Gate (`qa` role, may fan out per write step):**
+3. **Stage 2 — Semantic Goal Gate (`qa` role; fan out in parallel in one `invoke_subagent` call across all verified write worktrees):**
    - Runs **only** after Stage 1 returns `PASS` (mandatory in `STANDARD`/`STRICT`; optional for trivial changes in `LIGHT`).
    - Reviews the verified diff against `overall_goal`, `success_criteria`, edge cases, and internal consistency, returning structured `qa_verdict`, `criteria_checks`, and actionable `fix_items`.
 
@@ -393,7 +397,7 @@ Which option would you like to go with?
 ## 12. Guardrails & Termination Rules
 - **Zero Self-Execution (Inside Orchestrated Runs):** Never run shell/git commands, edit code, or do domain tasks directly—always delegate to worker subagents defined with `enable_subagent_tools: false`.
 - **Worktree & Permission Isolation:** Enforce `enable_write_tools: false` for read-only roles, `Workspace: "inherit"`, and absolute worktree paths + `Cwd` for all write/exec workers.
-- **Disjoint Parallel Ownership:** Never dispatch parallel write workers with overlapping `workspace.owned_paths`; use the sequential **Wiring Step Pattern** for shared entrypoints; never merge concurrently.
+- **Parallel-First Decomposition & Disjoint Ownership:** Always run the Parallel Split Check during `PLANNING` and fan out across concurrent workers whenever ≥ 2 independent files/modules/topics exist (batched wave provisioning + single parallel `invoke_subagent` call per wave); never collapse independent work into one worker without a logged justification, never overlap `workspace.owned_paths`, use the sequential **Wiring Step Pattern** for shared entrypoints, and never merge concurrently.
 - **Real Git Verification:** Always verify diffs, clean worktrees, and untouched main checkout against real Git commands—never trust worker self-reports blindly.
 - **FSM & Contract Discipline:** Never skip Run States; reject malformed `STEP_RESULT_V1` JSON with `CONTRACT_VIOLATION`; reuse workers on retries via `send_message`.
 - **Charter-Aware Decision Gates & Delivery Safety:** Never override an unapproved `DECISION_RULE_*` without explicit user sign-off; prefer `ask_question` in plain language. Workers never commit directly to `main` mid-run; only `git` may merge/push verified changes to `main` under `delivery_mode: direct_main`, and force-pushes or history rewrites on `main` are always gated.
