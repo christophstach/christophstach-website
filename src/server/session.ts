@@ -1,10 +1,11 @@
 import "server-only";
+import { Effect, Option, Schema } from "effect";
 import { H3Event, clearSession, getSession, updateSession } from "nitro/h3";
-import type { DeskUser } from "../data/desk-user";
 import type { SessionConfig } from "nitro/h3";
-import { deskUserSchema } from "../data/desk-user";
 import { env } from "virtual:solid-env/server";
-import { safeParse } from "zod/mini";
+import type { DeskUser } from "../data/desk-user";
+import { ConfigError } from "./effect/errors";
+import { runServerEffect } from "./effect/runtime";
 
 // The desk session: h3's sealed cookie (encrypted and signed).
 // SESSION_SECRET is comma-separated, newest first: the first seals, every one
@@ -12,6 +13,14 @@ import { safeParse } from "zod/mini";
 
 const SESSION_NAME = "desk-session";
 const MAX_AGE = 60 * 60 * 24 * 7;
+
+// Inline Effect v4 Schema matching DeskUser (avoids coupling to src/data/desk-user.ts
+// during parallel migration; W6 will point directly to DeskUserSchema).
+const sessionUserSchema = Schema.Struct({
+  githubId: Schema.Finite,
+  login: Schema.String,
+  avatarUrl: Schema.String,
+});
 
 function secrets(): string[] {
   return env.SESSION_SECRET.split(",")
@@ -30,37 +39,88 @@ function sessionConfig(password: string): SessionConfig {
 }
 
 /** The signed-in desk user of a request, or undefined. */
-async function readDeskUser(request: Request): Promise<DeskUser | undefined> {
-  // getSession leaves the session empty when the cookie doesn't unseal with
-  // that secret, so at most one of them yields a user.
-  const sessions = await Promise.all(
-    secrets().map((secret) => getSession(new H3Event(request), sessionConfig(secret))),
-  );
+function readSessionEffect(request: Request): Effect.Effect<DeskUser | undefined> {
+  return Effect.gen(function* () {
+    // getSession leaves the session empty when the cookie doesn't unseal with
+    // that secret, so at most one of them yields a user.
+    const sessions = yield* Effect.forEach(
+      secrets(),
+      (secret) => Effect.promise(() => getSession(new H3Event(request), sessionConfig(secret))),
+      { concurrency: "unbounded" },
+    );
 
-  for (const session of sessions) {
-    const user = safeParse(deskUserSchema, session.data.user);
+    for (const session of sessions) {
+      const decoded = Schema.decodeUnknownOption(sessionUserSchema)(session.data.user);
 
-    if (user.success) {
-      return user.data;
+      if (Option.isSome(decoded)) {
+        return decoded.value;
+      }
     }
-  }
 
-  return undefined;
+    return undefined;
+  });
+}
+
+/** The Set-Cookie headers that sign a user in. */
+function writeSessionEffect(
+  request: Request,
+  user: DeskUser,
+): Effect.Effect<string[], ConfigError> {
+  return Effect.gen(function* () {
+    const [newest] = secrets();
+
+    if (newest === undefined) {
+      return yield* new ConfigError({ message: "SESSION_SECRET is empty." });
+    }
+
+    const event = new H3Event(request);
+
+    yield* Effect.promise(() => updateSession(event, sessionConfig(newest), { user }));
+
+    return event.res.headers.getSetCookie();
+  });
+}
+
+/**
+ * A desk session cookie, `name=value`, for the server's own Chrome to print
+ * desk pages when no visitor's session is at hand (the scheduled page check).
+ * Never send it to a client.
+ */
+function serverSessionCookieEffect(
+  request: Request,
+  user: DeskUser,
+): Effect.Effect<string, ConfigError> {
+  return Effect.gen(function* () {
+    const [cookie] = yield* writeSessionEffect(request, user);
+    const pair = cookie?.split(";")[0];
+
+    if (pair === undefined || pair === "") {
+      return yield* new ConfigError({ message: "Sealing the session made no cookie." });
+    }
+
+    return pair;
+  });
+}
+
+/** The Set-Cookie headers that sign out. */
+function clearSessionEffect(request: Request): Effect.Effect<string[]> {
+  return Effect.gen(function* () {
+    const event = new H3Event(request);
+
+    yield* Effect.promise(() => clearSession(event, sessionConfig(secrets()[0] ?? "")));
+
+    return event.res.headers.getSetCookie();
+  });
+}
+
+/** The signed-in desk user of a request, or undefined. */
+async function readDeskUser(request: Request): Promise<DeskUser | undefined> {
+  return runServerEffect(readSessionEffect(request));
 }
 
 /** The Set-Cookie headers that sign a user in. */
 async function signInCookies(request: Request, user: DeskUser): Promise<string[]> {
-  const [newest] = secrets();
-
-  if (newest === undefined) {
-    throw new Error("SESSION_SECRET is empty.");
-  }
-
-  const event = new H3Event(request);
-
-  await updateSession(event, sessionConfig(newest), { user });
-
-  return event.res.headers.getSetCookie();
+  return runServerEffect(writeSessionEffect(request, user));
 }
 
 /**
@@ -69,23 +129,21 @@ async function signInCookies(request: Request, user: DeskUser): Promise<string[]
  * Never send it to a client.
  */
 async function serverSessionCookie(request: Request, user: DeskUser): Promise<string> {
-  const [cookie] = await signInCookies(request, user);
-  const pair = cookie?.split(";")[0];
-
-  if (pair === undefined || pair === "") {
-    throw new Error("Sealing the session made no cookie.");
-  }
-
-  return pair;
+  return runServerEffect(serverSessionCookieEffect(request, user));
 }
 
 /** The Set-Cookie headers that sign out. */
 async function signOutCookies(request: Request): Promise<string[]> {
-  const event = new H3Event(request);
-
-  await clearSession(event, sessionConfig(secrets()[0] ?? ""));
-
-  return event.res.headers.getSetCookie();
+  return runServerEffect(clearSessionEffect(request));
 }
 
-export { readDeskUser, serverSessionCookie, signInCookies, signOutCookies };
+export {
+  clearSessionEffect,
+  readDeskUser,
+  readSessionEffect,
+  serverSessionCookie,
+  serverSessionCookieEffect,
+  signInCookies,
+  signOutCookies,
+  writeSessionEffect,
+};
