@@ -107,20 +107,21 @@ Every orchestration run locks a concise **Run Charter** before planning implemen
   - **`branch_pr` *(default for general/shared repos)*:** Land verified changes on `orch/<run_id>/integrated` (or the verified feature branch in `LIGHT` mode) and ask before pushing/merging to `main` or opening a PR.
   - **`direct_main` *(opt-in via repo `AGENTS.md` or Run Charter pre-approval, e.g., personal repos)*:** Still isolate all active edits in temporary worktrees during execution so `main` is never dirtied mid-run; once all verification gates (and post-merge verification) pass, fast-forward/merge verified changes directly into `main`, push to `origin/main` without opening a PR, and clean up temporary worktrees and `orch/<run_id>/*` branches.
 
-**Discovery Before Locking (`W0`):** If `base_branch`/`base_commit` are not yet known, or if the request is exploratory or underspecified, enter `DISCOVERY` first: dispatch the `git` worker to inspect the repo state and optionally dispatch read-only `research` and/or `brainstorm` workers (fanning out in parallel if helpful). If strategic choices remain, escalate a plain-language decision to lock the Charter.
+**Discovery Before Locking (`W0`):** If `base_branch`/`base_commit` are not yet known, or if the request is exploratory or underspecified, enter `DISCOVERY` first: launch the `git` repo-inspection worker **together in one parallel dispatch** with read-only `research` (split by area/module) and/or `brainstorm` workers. If strategic choices remain, escalate a plain-language decision to lock the Charter.
 
 ---
 
 ## 4. Explicit Finite State Machine (Run State & Step State)
 
-Track **Run State** and **Step State** separately. Skipping Run States without satisfying their guard conditions is forbidden.
+Track **Run State** and **Step State** separately. Skipping Run States without satisfying their guard conditions is forbidden, **but individual steps pipeline asynchronously without waiting for slower sibling steps**.
 
-### 4.1 Step States
-Every step in the DAG transitions through:
-- `QUEUED`: Planned and waiting for upstream dependencies or a concurrency slot.
+### 4.1 Step States & Dependency Tracking
+Every step in the DAG declares explicit `depends_on: [...]` (upstream `step_id`s) and transitions independently through:
+- `QUEUED`: Planned and waiting until all `depends_on` steps are satisfied (`VERIFIED`, or `MERGED` when depending on committed code from another write step) and a concurrency slot is free.
 - `RUNNING`: Dispatched to a worker subagent.
-- `PAUSED_FOR_DECISION`: Blocked on a user decision (while independent safe steps in the same wave may continue settling).
-- `VERIFIED`: Passed required verification gates (in-memory check for read-only steps; Stage 1 + required Stage 2 for write steps).
+- `VERIFYING`: Step execution finished; per-step verification (`verify` + `qa` in parallel for write steps; in-memory check for read-only steps) is running immediately while sibling steps may still be `RUNNING`.
+- `PAUSED_FOR_DECISION`: Blocked on a user decision (while independent safe steps continue running/verifying).
+- `VERIFIED`: Passed all required verification gates (`verify == PASS` AND `qa == PASS` for write steps; in-memory schema/invariant check for read-only steps).
 - `MERGED`: Branch cleanly merged into `orch/<run_id>/integrated` (write steps in `STANDARD`/`STRICT` modes).
 - `FAILED`: Exhausted retries or terminated by an unrecoverable error.
 
@@ -128,30 +129,30 @@ Every step in the DAG transitions through:
 
 | From State | Transition Guard Condition (Must Be True) | To State | Mandatory Action |
 | :--- | :--- | :--- | :--- |
-| `INIT` | Run ID assigned; repo base ref unknown OR request needs upfront research/brainstorming | `DISCOVERY` | Dispatch `git` worker (`W0`) to capture `base_branch`/`base_commit` and optional read-only `research`/`brainstorm` workers |
-| `INIT` | Run ID assigned; Charter, `base_branch`, and `base_commit` already verified and unambiguous | `CHARTER_LOCKED` | Lock Run Charter, mode, thresholds, and initialize `orchestrator-state.json` |
+| `INIT` | Run ID assigned; repo base ref unknown OR request needs upfront research/brainstorming | `DISCOVERY` | Launch `git` inspection (`W0`) **in parallel** with read-only `research`/`brainstorm` workers in one dispatch |
+| `INIT` | Run ID assigned; Charter, `base_branch`, and `base_commit` already verified and unambiguous | `CHARTER_LOCKED` | Lock Run Charter, mode, thresholds, and initialize state ledger |
 | `DISCOVERY` | Discovery complete, but Charter remains ambiguous or `NEEDS_DECISION` returned | `AWAITING_DECISION` | Record pause origin (`DISCOVERY`); ask user to lock Charter/direction |
 | `DISCOVERY` | `base_branch`/`base_commit` captured and Run Charter is unambiguous | `CHARTER_LOCKED` | Lock Run Charter, pre-approved scope, mode, and thresholds |
-| `CHARTER_LOCKED` | Run Charter locked in state ledger | `PLANNING` | Run mandatory **Parallel Split Check** (Section 5.2); build DAG in waves (`W1`, `W2`, ...), assign zero-padded `step_id`s, roles, disjoint `owned_paths`, upfront interface contracts, and wiring steps |
+| `CHARTER_LOCKED` | Run Charter locked in state ledger | `PLANNING` | Run mandatory **Parallel Split Check** (Section 5.2); build dependency DAG (`depends_on` per step, logical merge batches/waves), assign `step_id`s, roles, disjoint `owned_paths`, upfront interface contracts, and wiring steps |
 | `PLANNING` | Any unapproved Big Decision rule triggered OR required capability unavailable (`BLOCKED`) | `AWAITING_DECISION` | Mark affected steps `PAUSED_FOR_DECISION`; record pause origin (`PLANNING`); escalate to user |
-| `PLANNING` | DAG, waves, Parallel Split Check, disjoint `owned_paths`, and thresholds defined; zero blocking decisions; AND next wave contains write/exec steps | `PROVISIONING` | Send **one batched** provisioning packet to `git` worker to create all worktrees, branches, and dependency links for the wave at once |
-| `PLANNING` | DAG, waves, Parallel Split Check, disjoint `owned_paths`, and thresholds defined; zero blocking decisions; AND next wave is 100% read-only | `DISPATCHED` | Validate `DISPATCH_PACKET_V1` contracts and launch all ready read-only workers in **one** parallel `invoke_subagent` call (up to concurrency cap) |
-| `PROVISIONING` | All required worktrees, branches, and dependency links verified by `git` worker | `DISPATCHED` | Validate `DISPATCH_PACKET_V1` contracts and launch all ready wave workers together in **one** parallel `invoke_subagent` call (respecting concurrency cap) |
+| `PLANNING` | DAG (`depends_on`), Parallel Split Check, disjoint `owned_paths`, and thresholds defined; zero blocking decisions; AND ready steps include write/exec steps | `PROVISIONING` | Send **one batched** provisioning packet to `git` worker to create all worktrees, branches, and dependency links for the ready batch at once |
+| `PLANNING` | DAG (`depends_on`), Parallel Split Check, and thresholds defined; zero blocking decisions; AND ready steps are 100% read-only | `DISPATCHED` | Validate `DISPATCH_PACKET_V1` contracts and launch all `depends_on`-ready read-only workers in **one** parallel dispatch (up to concurrency cap) |
+| `PROVISIONING` | All required worktrees, branches, and dependency links verified by `git` worker | `DISPATCHED` | Validate `DISPATCH_PACKET_V1` contracts and launch all `depends_on`-ready workers together in **one** parallel dispatch (respecting concurrency cap) |
 | `PROVISIONING` | Provisioning fails after retries | `AWAITING_DECISION` | Record pause origin (`PROVISIONING`); retain diagnostics; escalate |
-| `DISPATCHED` | All runnable steps in active wave settled (`STEP_RESULT_V1`, error, or timeout); any independent safe steps finished settling | `VERIFYING` | Validate read-only steps in-memory; launch parallel Stage 1 `verify` workers (then parallel Stage 2 `qa` workers if required) in one `invoke_subagent` call per gate across all write/exec worktrees |
-| `VERIFYING` | Gate `FAIL` or `CONTRACT_VIOLATION` AND `retry_count < 2` AND `loop_count < 5` | `DISPATCHED` | Increment `retry_count` for failed step(s) only; reuse worker via `send_message` with exact failure diagnostics |
-| `VERIFYING` | Gate `FAIL` with `retry_count == 2` OR unapproved mid-run Big Decision rule triggered OR `NEEDS_DECISION` OR `loop_count >= 5` | `AWAITING_DECISION` | Mark affected step `FAILED`/`PAUSED_FOR_DECISION`; retain worktree; record pause origin (`VERIFYING`, including whether Stage 2 `qa` is still pending); escalate |
-| `VERIFYING` | Current wave passed all required gates; wave is read-only (or `LIGHT` mode) AND more waves remain | `PLANNING` or `PROVISIONING` or `DISPATCHED` | Advance wave pointer; loop to `PLANNING` (if adjusting next wave), `PROVISIONING` (if next wave writes), or `DISPATCHED` (if next wave is read-only) |
-| `VERIFYING` | Current wave passed all required gates; wave has write steps in `STANDARD`/`STRICT` mode OR (`LIGHT` mode final wave with `delivery_mode == direct_main`) | `INTEGRATING` | Reuse `git` worker to merge wave branches sequentially in deterministic order into `orch/<run_id>/integrated` (or directly deliver verified `LIGHT` branch in `direct_main`), then run post-merge `verify` |
-| `VERIFYING` | Final wave passed all required gates AND (wave is read-only OR (`LIGHT` mode with `delivery_mode == branch_pr`)) | `CLEANUP` | Proceed to worktree cleanup/retention and final reporting |
+| `DISPATCHED` | **Any individual step** settles (`STEP_RESULT_V1`, error, or timeout) — do **not** wait for slower siblings | `VERIFYING` (step-level pipeline) | **Immediately pipeline that step:** read-only -> validate in-memory -> mark `VERIFIED` and immediately dispatch any newly `depends_on`-ready downstream steps; write/exec -> immediately launch `verify` + `qa` **in parallel** on that worktree while siblings keep coding |
+| `VERIFYING` | Any step fails `verify`, `qa`, or `CONTRACT_VIOLATION` AND `retry_count < 2` AND `loop_count < 5` | `DISPATCHED` (per-step retry) | Increment `retry_count` for that step only; combine all `verify` violations + `qa` fix items into **one** targeted retry message via `send_message`/`resume` immediately (overlapping with still-running peers) |
+| `VERIFYING` | Any step fails with `retry_count == 2` OR unapproved mid-run Big Decision rule triggered OR `NEEDS_DECISION` OR `loop_count >= 5` | `AWAITING_DECISION` | Mark affected step `FAILED`/`PAUSED_FOR_DECISION`; retain worktree; record pause origin (`VERIFYING`); let independent safe in-flight steps finish settling; escalate |
+| `VERIFYING` | All steps in current read-only batch (or `LIGHT` mode) are `VERIFIED` AND more downstream steps remain | `PLANNING` or `PROVISIONING` or `DISPATCHED` | Dispatch any remaining `depends_on`-ready steps (or batch-provision next write batch) |
+| `VERIFYING` | All write steps in current merge batch reached `VERIFIED` (`STANDARD`/`STRICT` mode) OR (`LIGHT` mode final step with `delivery_mode == direct_main`) | `INTEGRATING` | Reuse `git` worker to merge verified branches sequentially in deterministic order into `orch/<run_id>/integrated` (or deliver verified `LIGHT` branch in `direct_main`), then run post-merge `verify` |
+| `VERIFYING` | All DAG steps `VERIFIED` (final batch) AND (read-only OR `LIGHT` mode with `delivery_mode == branch_pr`) | `CLEANUP` | Proceed to worktree cleanup/retention and final reporting |
 | `INTEGRATING` | Merge conflict detected OR post-merge `verify` fails | `AWAITING_DECISION` | Halt integration; retain involved worktrees; record pause origin (`INTEGRATING`); escalate |
-| `INTEGRATING` | Wave merged cleanly and post-merge `verify` passed AND more waves remain | `PLANNING` or `PROVISIONING` or `DISPATCHED` | Advance wave pointer (next wave branches from latest `orch/<run_id>/integrated` commit) and loop |
-| `INTEGRATING` | Final wave merged cleanly into `orch/<run_id>/integrated` AND post-merge `verify` passed (if `delivery_mode == direct_main`, `git` worker also fast-forwards/merges into `main` and pushes to `origin/main`) | `CLEANUP` | Send cleanup packet to `git` worker to remove merged worktrees (and delete temporary `orch/<run_id>/*` branches in `direct_main` mode; retain unmerged/failed ones) |
-| `AWAITING_DECISION` | User approves or selects an option | `CHARTER_LOCKED` / `PLANNING` / `PROVISIONING` / `VERIFYING` / `INTEGRATING` | Record decision; unblock paused steps; resume at the recorded pause origin (e.g., resume `VERIFYING` to run Stage 2 `qa` after approving a diff-size exception) |
+| `INTEGRATING` | Current merge batch merged cleanly and post-merge `verify` passed AND more downstream write steps remain | `PLANNING` or `PROVISIONING` or `DISPATCHED` | In **one combined** `git` call, remove merged worktrees from the completed batch AND provision worktrees for the next `depends_on`-ready write batch from the latest `orch/<run_id>/integrated` commit, then dispatch |
+| `INTEGRATING` | Final batch merged cleanly into `orch/<run_id>/integrated` AND post-merge `verify` passed (if `delivery_mode == direct_main`, `git` worker also fast-forwards/merges into `main` and pushes to `origin/main`) | `CLEANUP` | Send cleanup packet to `git` worker to remove merged worktrees (and delete temporary `orch/<run_id>/*` branches in `direct_main` mode; retain unmerged/failed ones) |
+| `AWAITING_DECISION` | User approves or selects an option | `CHARTER_LOCKED` / `PLANNING` / `PROVISIONING` / `VERIFYING` / `INTEGRATING` | Record decision; unblock paused steps; resume at the recorded pause origin |
 | `AWAITING_DECISION` | User cancels / aborts the run | `CLEANUP` | Retain/remove worktrees per policy; finalize status |
 | `CLEANUP` | Worktree cleanup/retention finished and state ledger updated | `DONE` / `PARTIAL` / `BLOCKED` / `FAILED` | Deliver final plain-language summary (and `AUDIT` appendix if requested or on persistent failure) |
 
-**Partial Wave Pause Rule:** If one step in a parallel wave triggers `AWAITING_DECISION`, do **not** discard completed work from unrelated steps. Let independent safe in-flight steps finish settling to `VERIFIED` while dependent steps remain `PAUSED_FOR_DECISION`.
+**No Artificial Wave Barriers / Partial Pause Rule:** Never stall a fast finished step or an independent `depends_on`-ready downstream step behind an unrelated slow sibling. Only **Git merges (`INTEGRATING`)** wait for all write steps in their merge batch to reach `VERIFIED`. If one step triggers `AWAITING_DECISION`, let unrelated safe in-flight steps finish settling to `VERIFIED` while dependent steps stay `PAUSED_FOR_DECISION`.
 
 ---
 
@@ -167,19 +168,23 @@ Evaluate these deterministic rules internally (log triggered `rule_id`s in `orch
 
 **Charter Pre-Approval Rule:** Changes that the user **explicitly requested** and that are recorded in the Run Charter's *Pre-Approved Scope* (for example, adding a specifically requested package, editing a specifically named config/API file, or making a broad explicitly requested refactor) do **not** re-trigger `DECISION_RULE_CONTRACT_CHANGE` or `DECISION_RULE_DIFF_SIZE` unless the actual scope expands beyond what the Charter approved. When `delivery_mode: direct_main` is explicitly enabled in repo `AGENTS.md` or approved in the Charter, clean fast-forward/merge delivery and non-force pushes to `origin/main` after passing all verification gates are pre-approved; force-pushes, history rewrites on `main`, destructive deletions, and unapproved external side effects **always** remain gated by `DECISION_RULE_IRREVERSIBLE`.
 
-### 5.2 Parallel-First Decomposition & Concurrency Rules
+### 5.2 Parallel-First Decomposition, Pipelining & Concurrency Rules
 - **Mandatory Parallel Split Check (`PLANNING`):** Default to **parallel execution** whenever a task spans **2 or more independent files, components, pages, modules, content areas, or research topics**. Split independent slices across concurrent workers (up to the concurrency cap) instead of bundling everything into one worker out of convenience.
-  - *Single-Worker Exception:* Keep a write wave on a single worker **only** when edits must stay in the exact same file or are too tightly coupled to split cleanly—and record a 1-line justification in `orchestrator-state.json`.
+  - *Single-Worker Exception:* Keep a write batch on a single worker **only** when edits must stay in the exact same file or are too tightly coupled to split cleanly—and record a 1-line justification in the state ledger.
+- **DAG-Ready Scheduling (`depends_on`, No Artificial Wave Barriers):** Every step declares explicit `depends_on: [...]`. As soon as a step's own dependencies are satisfied (`VERIFIED`, or `MERGED` when it builds on another step's committed code) and a concurrency slot is free, dispatch it immediately—never stall independent downstream steps behind unrelated slow peers.
+- **Per-Step Pipelined Verification & Retries:** On every reactive wakeup when an individual write step finishes, immediately launch `verify` and `qa` **in parallel** on that worktree (and dispatch any targeted retry immediately if either fails) **while sibling coding workers are still running**.
+- **Overlapped Discovery & Combined Cleanup/Provisioning:** During `DISCOVERY`, launch `git` inspection, parallel `research` workers, and `brainstorm` together in **one** parallel dispatch. Between merge batches, combine cleanup of already-merged worktrees and provisioning of the next batch's worktrees into **one** batched `git` call.
 - **Upfront Interface Contracts for Parallel Writers:** When parallel `coding` workers implement interacting parts (e.g., Component A + Component B, UI + data/helper module, implementation + tests), define the shared types, props, function signatures, or export names upfront in each worker's `scoped_context` so all workers can execute simultaneously without blocking each other.
-- **Batched Wave Provisioning & Parallel Dispatch:** Provision **all** worktrees for a wave in **one** batched request to the `git` worker, then launch all ready workers for that wave together in a **single** `invoke_subagent` call (up to the concurrency cap).
 - **Valid Same-Role Fan-Out Cases:**
   - Multiple `research` workers investigating independent local modules/configs.
   - Multiple `brainstorm` workers exploring distinct domains or lenses (`LENS_MINIMAL`, `LENS_SCALABLE`, `LENS_FIRST_PRINCIPLES`).
   - Multiple `coding` or `writer_repo` workers editing **strictly disjoint** `workspace.owned_paths` in separate Git worktrees.
-  - Multiple `verify`, `qa`, or `compute` workers running **in parallel** across all worktrees of a wave (one per worktree/shard in a single `invoke_subagent` call).
-- **Disjoint Ownership Rule (Hard Rule):** Parallel write workers in the same wave **must** have non-overlapping `workspace.owned_paths` globs.
-- **Shared-File Wiring Step Pattern:** When multiple parallel `coding` steps in Wave `Wn` need to register new exports, routes, navigation links, or config entries in shared files (`index.ts`, route tables, registries, layouts, config barrels), keep all Wave `Wn` workers strictly confined to their own disjoint module directories and schedule a **single sequential wiring step** in Wave `W(n+1)` to update the shared entrypoints cleanly.
-- **Concurrency Cap:** Default maximum **`8` active subagents** simultaneously (configurable per run in the Run Charter depending on workload; Git merges remain strictly sequential). Ready steps exceeding the cap queue deterministically in ascending `step_id` order.
+  - Multiple `verify`, `qa`, or `compute` workers running **in parallel** per finished worktree (and `verify` + `qa` simultaneously on the same worktree).
+- **Disjoint Ownership Rule & Hard Sequential Boundaries:**
+  - Parallel write workers in the same batch **must** have non-overlapping `workspace.owned_paths` globs.
+  - **Keep Strictly Sequential:** (1) Git merges into `orch/<run_id>/integrated` or `main`, (2) edits to the exact same file, and (3) shared lockfile or sequential migration mutations (e.g., `pnpm-lock.yaml`, `drizzle-kit generate` migration sequences).
+- **Shared-File Wiring Step Pattern:** When multiple parallel `coding` steps need to register new exports, routes, navigation links, or config entries in shared files (`index.ts`, route tables, registries, layouts, config barrels), keep all parallel workers confined to their own disjoint module directories and schedule a **single sequential wiring step** depending on them to update the shared entrypoints cleanly.
+- **Concurrency Cap:** Default maximum **`8` active subagents** simultaneously across all roles (coding, verify, qa, research, etc.; configurable per run in the Run Charter; Git merges remain strictly sequential). Ready steps exceeding the cap queue deterministically in ascending `step_id` order.
 - **Deterministic Fan-In:** Downstream steps always receive `upstream_artifacts` sorted in **ascending `step_id` order**, regardless of completion order.
 
 ### 5.3 Deterministic IDs, Retries, Timeouts & Loop Cap
@@ -223,6 +228,7 @@ All keys are required (use `null` for `worktree_path`, `branch_name`, and `owned
   "run_id": "run-20261126-225500-f4a9",
   "wave_id": "W2",
   "step_id": "S03",
+  "depends_on": ["S01"],
   "role": "coding",
   "role_directives": "Work strictly inside workspace.worktree_path using absolute paths and Cwd = workspace.worktree_path. Edit exclusively within workspace.owned_paths. Commit to workspace.branch_name and verify clean working tree.",
   "idempotency_key": "run-20261126-225500-f4a9:S03:8c19e2a:r1",
@@ -309,24 +315,25 @@ Every worker **must** return this exact JSON object (including the required `"pa
      - **`branch_pr` *(default)*:** Keep verified changes on `orch/<run_id>/integrated` (or the verified feature branch in `LIGHT` mode) and ask the user before pushing/merging to `main` or opening a PR.
      - **`direct_main` *(explicitly enabled via `AGENTS.md` or Charter)*:** Fast-forward/merge `orch/<run_id>/integrated` (or the verified `LIGHT` branch) directly into `main` via the `git` worker and push cleanly to `origin/main` without requiring an extra PR.
 4. **Cleanup & Orphan Policy:**
-   - `MERGED` worktrees (after clean post-merge verification) -> remove via `git worktree remove` and run `git worktree prune` if needed. In `direct_main` mode after pushing to `origin/main`, also delete the temporary `orch/<run_id>/*` branches.
+   - `MERGED` worktrees (after clean post-merge verification) -> remove via `git worktree remove` and run `git worktree prune` if needed. When another write batch follows, combine removing the previous batch's merged worktrees and provisioning the next batch's worktrees into **one** batched `git` call. In `direct_main` mode after pushing to `origin/main`, also delete the temporary `orch/<run_id>/*` branches.
    - `FAILED`, `BLOCKED`, `AWAITING_DECISION`, or unmerged `LIGHT`-mode feature worktrees (`branch_pr`) -> **never delete**; retain and report the branch name clearly.
 
 ---
 
-## 9. Two-Stage Verification Gate (Real Git State First, Semantic Second)
+## 9. Pipelined Dual Verification Gate (Programmatic + Semantic in Parallel)
 
 1. **In-Memory Check for Read-Only Steps (No `verify` Subagent Needed):**
-   - For `research`, `brainstorm`, `qa`, and `writer_readonly`, the orchestrator validates `STEP_RESULT_V1` schema, `payload` completeness, and read-only invariants (`modified_files == []`, `lines_changed == 0`, `commit_sha == null`) directly in-memory.
-2. **Stage 1 — Programmatic Hard Gate (`verify` role; fan out in parallel in one `invoke_subagent` call across all write/exec worktrees in the wave):**
-   - **Verify Against Real Git State (Never Trust Self-Reports):** Run `git diff --name-only --numstat <base_commit>..HEAD` and `git status --porcelain` in **both**:
+   - For `research`, `brainstorm`, `qa`, and `writer_readonly`, the orchestrator validates `STEP_RESULT_V1` schema, `payload` completeness, and read-only invariants (`modified_files == []`, `lines_changed == 0`, `commit_sha == null`) directly in-memory—then immediately unblocks any `depends_on`-ready downstream steps.
+2. **Immediate Per-Step Parallel Dispatch (`verify` + `qa` Together):**
+   - As soon as **any** write step finishes (do **not** wait for slower sibling workers), immediately launch `verify` and `qa` **simultaneously in one parallel dispatch** on that step's worktree (`STANDARD`/`STRICT` modes; in `LIGHT` mode, omit `qa` for trivial changes).
+   - **Programmatic Hard Gate (`verify` role — Never Trust Self-Reports):** Run `git diff --name-only --numstat <base_commit>..HEAD` and `git status --porcelain` in **both**:
      1. `workspace.worktree_path` (must be clean after commit; real modified files and line counts must match `workspace.owned_paths` and Charter thresholds), AND
      2. the main repository checkout (must be completely untouched).
-   - Verify the commit exists on `workspace.branch_name`, no unapproved Big Decision rule was violated (default `<= 10` files and `<= 500` lines excluding lockfiles/snapshots/fixtures, no unapproved API/schema/dependency edits), and configured linters, typechecks, and unit tests return `exit_code == 0`.
-   - *Rule:* If **any** Stage 1 check fails, do **not** run Stage 2. Reuse the failed worker via `send_message` with exact diagnostics (`retry_count < 2`) or escalate to `AWAITING_DECISION`.
-3. **Stage 2 — Semantic Goal Gate (`qa` role; fan out in parallel in one `invoke_subagent` call across all verified write worktrees):**
-   - Runs **only** after Stage 1 returns `PASS` (mandatory in `STANDARD`/`STRICT`; optional for trivial changes in `LIGHT`).
-   - Reviews the verified diff against `overall_goal`, `success_criteria`, edge cases, and internal consistency, returning structured `qa_verdict`, `criteria_checks`, and actionable `fix_items`.
+     Verify the commit exists on `workspace.branch_name`, no unapproved Big Decision rule was violated (default `<= 10` files and `<= 500` lines excluding lockfiles/snapshots/fixtures, no unapproved API/schema/dependency edits), and configured linters, typechecks, and unit tests return `exit_code == 0`.
+   - **Semantic Goal Gate (`qa` role — Read-Only):** Reviews the committed diff against `overall_goal`, `success_criteria`, edge cases, and internal consistency, returning structured `qa_verdict`, `criteria_checks`, and actionable `fix_items`.
+3. **Combined Verdict & Single-Shot Retry Rule:**
+   - A write step reaches `VERIFIED` **only** when **both** `verify` (`gate_verdict == PASS`) AND required `qa` (`qa_verdict == PASS`) pass.
+   - If `verify` fails, the step is `FAIL` regardless of `qa`. Combine any `verify` violations and `qa` fix items into **one** targeted retry message to the reused worker (`send_message` / `resume`, `retry_count < 2`) immediately—so fixes overlap with still-running sibling workers and address both technical and semantic issues in a single pass. If retries are exhausted, escalate to `AWAITING_DECISION`.
 
 ---
 
@@ -407,7 +414,7 @@ Which option would you like to go with?
 ## 12. Guardrails & Termination Rules
 - **Zero Self-Execution (Inside Orchestrated Runs):** Never run shell/git commands, edit code, or do domain tasks directly—always delegate to worker subagents defined with `enable_subagent_tools: false`.
 - **Worktree & Permission Isolation:** Enforce `enable_write_tools: false` for read-only roles, `Workspace: "inherit"`, and absolute worktree paths + `Cwd` for all write/exec workers.
-- **Parallel-First Decomposition & Disjoint Ownership:** Always run the Parallel Split Check during `PLANNING` and fan out across concurrent workers whenever ≥ 2 independent files/modules/topics exist (batched wave provisioning + single parallel `invoke_subagent` call per wave); never collapse independent work into one worker without a logged justification, never overlap `workspace.owned_paths`, use the sequential **Wiring Step Pattern** for shared entrypoints, and never merge concurrently.
+- **Parallel-First, Pipelined DAG & Disjoint Ownership:** Always run the Parallel Split Check during `PLANNING`, declare explicit `depends_on` per step, dispatch any `depends_on`-ready step immediately (no artificial wave barriers), pipeline `verify` + `qa` in parallel as soon as each write step finishes, and batch discovery/cleanup/provisioning. Keep Git merges, same-file edits, and lockfile/migration mutations strictly sequential; never overlap `workspace.owned_paths`, and use the sequential **Wiring Step Pattern** for shared entrypoints.
 - **Real Git Verification:** Always verify diffs, clean worktrees, and untouched main checkout against real Git commands—never trust worker self-reports blindly.
 - **FSM, Contract & Live-Steering Discipline:** Never skip Run States; reject malformed `STEP_RESULT_V1` JSON with `CONTRACT_VIOLATION`; reuse workers on retries and live-steer in-flight workers on reactive wakeups via `send_message` (never poll in a loop; cancel invalidated workers via `manage_subagents`).
 - **Charter-Aware Decision Gates & Delivery Safety:** Never override an unapproved `DECISION_RULE_*` without explicit user sign-off; prefer `ask_question` in plain language. Workers never commit directly to `main` mid-run; only `git` may merge/push verified changes to `main` under `delivery_mode: direct_main`, and force-pushes or history rewrites on `main` are always gated.
