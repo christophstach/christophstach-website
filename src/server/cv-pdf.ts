@@ -169,32 +169,33 @@ export function renderPdfEffect(
   path: string,
   withSession = false,
 ): Effect.Effect<Uint8Array, PdfRenderError> {
-  return Effect.suspend(() => {
-    const url = new URL(path, request.url).href;
-    const existing = inFlight.get(url);
+  return Effect.uninterruptibleMask((restore) =>
+    Effect.suspend(() => {
+      const url = new URL(path, request.url).href;
+      const existing = inFlight.get(url);
 
-    if (existing !== undefined) {
-      return Deferred.await(existing);
-    }
+      if (existing !== undefined) {
+        return restore(Deferred.await(existing));
+      }
 
-    const deferred = Deferred.makeUnsafe<Uint8Array, PdfRenderError>();
-    const cookies = withSession ? requestCookies(request) : previewAccess(request);
+      const deferred = Deferred.makeUnsafe<Uint8Array, PdfRenderError>();
+      const cookies = withSession ? requestCookies(request) : previewAccess(request);
 
-    // Paper is printed light, whatever theme the requester browses in.
-    cookies.set(COLOR_MODE_COOKIE, "light");
-    inFlight.set(url, deferred);
+      // Paper is printed light, whatever theme the requester browses in.
+      cookies.set(COLOR_MODE_COOKIE, "light");
+      inFlight.set(url, deferred);
 
-    return renderSemaphore
-      .withPermits(1)(renderEffect({ url, cookies }))
-      .pipe(
-        Effect.ensuring(
+      return restore(renderSemaphore.withPermits(1)(renderEffect({ url, cookies }))).pipe(
+        Effect.onExit((exit) =>
           Effect.sync(() => {
-            inFlight.delete(url);
-          }),
+            if (inFlight.get(url) === deferred) {
+              inFlight.delete(url);
+            }
+          }).pipe(Effect.andThen(Deferred.done(deferred, exit))),
         ),
-        Effect.onExit((exit) => Deferred.done(deferred, exit)),
       );
-  });
+    }),
+  );
 }
 
 /**
