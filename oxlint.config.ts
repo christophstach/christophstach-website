@@ -1,16 +1,18 @@
 import { defineConfig } from "oxlint";
+import { recommended as effectRecommended } from "@effect/tsgo/oxlint-presets";
 
 // oxlint's own categories instead of a hand-picked list: bugs, suspicious
 // code, slow patterns and accessibility (jsx-a11y). Style is oxfmt's job; the
 // type-safety rules on top keep `any` and unchecked casts out.
 export default defineConfig({
+  extends: [effectRecommended],
   plugins: ["typescript", "import", "unicorn", "oxc", "promise", "node", "jsx-a11y"],
   env: { browser: true },
   categories: { correctness: "error", suspicious: "error", perf: "error" },
   rules: {
     eqeqeq: "error",
     "no-console": "error",
-    "no-underscore-dangle": ["error", { allow: ["__BUILD_ID__"] }],
+    "no-underscore-dangle": ["error", { allow: ["__BUILD_ID__", "_tag"] }],
     "import/no-unassigned-import": ["error", { allow: ["**/*.css", "server-only", "client-only"] }],
     "typescript/no-explicit-any": "error",
     "typescript/no-non-null-assertion": "error",
