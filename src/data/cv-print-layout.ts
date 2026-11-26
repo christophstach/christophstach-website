@@ -1,5 +1,6 @@
 // Relative imports only: the server checks and stores layouts with this too.
-import { custom, object, safeParse, catch as withFallback } from "zod/mini";
+import { Effect, Result, Schema } from "effect";
+import { custom, object } from "zod/mini";
 
 /**
  * How a CV's PDF uses its pages: fixed steps on the one design, so a
@@ -27,30 +28,38 @@ function isLayoutStep<Key extends keyof CvLayoutSteps>(
   return typeof value === "string" && Object.hasOwn(CV_LAYOUT_STEPS[key], value);
 }
 
-/** A stored or sent layout with every unknown or missing step back to normal. */
-/** A schema for one layout step, e.g. "normal" or "airy" for the spacing. */
-function layoutStep<Key extends keyof CvLayoutSteps>(key: Key) {
-  return custom<CvLayout[Key]>((value) => isLayoutStep(key, value), `Unknown ${key} step.`);
-}
+const SpacingStepSchema = Schema.Literals(["compact", "normal", "airy", "spacious"]);
+const TextSizeStepSchema = Schema.Literals(["small", "normal", "large", "larger"]);
+const MarginStepSchema = Schema.Literals(["narrow", "normal", "wide"]);
 
 /** A complete, valid layout. */
-const cvLayoutSchema = object({
-  spacing: layoutStep("spacing"),
-  textSize: layoutStep("textSize"),
-  margin: layoutStep("margin"),
+const CvLayoutSchema = Schema.Struct({
+  spacing: SpacingStepSchema,
+  textSize: TextSizeStepSchema,
+  margin: MarginStepSchema,
 });
+
+function withNormalFallback<T extends string>(schema: Schema.Codec<T, T>, fallback: T) {
+  return schema.pipe(
+    Schema.catchDecoding(() => Effect.succeedSome(fallback)),
+    Schema.withDecodingDefault(Effect.succeed(fallback)),
+  );
+}
 
 /** Any stored value as a layout: unknown or missing steps become "normal". */
-const storedLayoutSchema = object({
-  spacing: withFallback(layoutStep("spacing"), "normal"),
-  textSize: withFallback(layoutStep("textSize"), "normal"),
-  margin: withFallback(layoutStep("margin"), "normal"),
+const StoredCvLayoutSchema = Schema.Struct({
+  spacing: withNormalFallback(SpacingStepSchema, "normal"),
+  textSize: withNormalFallback(TextSizeStepSchema, "normal"),
+  margin: withNormalFallback(MarginStepSchema, "normal"),
 });
 
-function normalizeCvLayout(value: unknown): CvLayout {
-  const result = safeParse(storedLayoutSchema, value ?? {});
+const decodeCvLayout = Schema.decodeUnknownResult(CvLayoutSchema);
+const decodeStoredCvLayout = Schema.decodeUnknownResult(StoredCvLayoutSchema);
 
-  return result.success ? result.data : DEFAULT_CV_LAYOUT;
+function normalizeCvLayout(value: unknown): CvLayout {
+  const result = decodeStoredCvLayout(value ?? {});
+
+  return Result.isSuccess(result) ? result.success : DEFAULT_CV_LAYOUT;
 }
 
 /**
@@ -76,11 +85,26 @@ function sameLayout(one: CvLayout, other: CvLayout): boolean {
   );
 }
 
+// Temporary W2 compat until W3/W5 callers migrate
+function layoutStep<Key extends keyof CvLayoutSteps>(key: Key) {
+  return custom<CvLayout[Key]>((value) => isLayoutStep(key, value), `Unknown ${key} step.`);
+}
+
+// Temporary W2 compat until W3/W5 callers migrate
+const cvLayoutSchema = object({
+  spacing: layoutStep("spacing"),
+  textSize: layoutStep("textSize"),
+  margin: layoutStep("margin"),
+});
+
 export type { CvLayout };
 export {
   CV_LAYOUT_STEPS,
+  CvLayoutSchema,
   DEFAULT_CV_LAYOUT,
+  StoredCvLayoutSchema,
   cvLayoutSchema,
+  decodeCvLayout,
   isLayoutStep,
   layoutFromQuery,
   layoutQuery,

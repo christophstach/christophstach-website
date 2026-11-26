@@ -1,11 +1,11 @@
 import { Meta, Title } from "@solidjs/meta";
+import { Result } from "effect";
 import { useParams, useSearchParams } from "@solidjs/router";
 import { CvDocument } from "../../../components/CvDocument";
 import type { CvLayout } from "../../../data/cv-print-layout";
 import { createMemo } from "solid-js";
-import { cvLayoutSchema } from "../../../data/cv-print-layout";
+import { decodeCvLayout } from "../../../data/cv-print-layout";
 import { getDeskCvPrint } from "../../../lib/desk/cvs";
-import { safeParse } from "zod/mini";
 
 // A private CV, printed by /api/desk/cv/<id> and by the desk's
 // page check. It lives under /desk so the guard keeps it behind the GitHub
@@ -20,13 +20,13 @@ export default function DeskCvPrint() {
   const params = useParams<{ id: string }>();
   const [search] = useSearchParams();
   const trial = () => {
-    const parsed = safeParse(cvLayoutSchema, {
+    const parsed = decodeCvLayout({
       spacing: search.spacing,
       textSize: search.textSize,
       margin: search.margin,
     });
 
-    return parsed.success ? parsed.data : undefined;
+    return Result.isSuccess(parsed) ? parsed.success : undefined;
   };
   const cv = createMemo(() => getDeskCvPrint(withTrial(params.id, trial())));
 

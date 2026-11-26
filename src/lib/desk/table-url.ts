@@ -1,4 +1,4 @@
-import { array, regex, safeParse, string, union } from "zod/mini";
+import { Result, Schema } from "effect";
 import type { SearchParams, SetSearchParams } from "@solidjs/router";
 
 // A desk table keeps its state (search, tab, filters, sorting, page) in the
@@ -48,19 +48,23 @@ const ALL_TAB = "\u0000all";
 const ALL_KEYWORD = "all";
 const STORED_ORDER = "none";
 
-const rawValue = union([string(), array(string())]);
-const pageValue = string().check(regex(/^[1-9]\d{0,5}$/u));
-const sortValue = string().check(regex(/^-?[\w-]+$/u));
+const RawValueSchema = Schema.Union([Schema.String, Schema.mutable(Schema.Array(Schema.String))]);
+const PageValueSchema = Schema.String.check(Schema.isPattern(/^[1-9]\d{0,5}$/u));
+const SortValueSchema = Schema.String.check(Schema.isPattern(/^-?[\w-]+$/u));
+
+const decodeRawValue = Schema.decodeUnknownResult(RawValueSchema);
+const decodePageValue = Schema.decodeUnknownResult(PageValueSchema);
+const decodeSortValue = Schema.decodeUnknownResult(SortValueSchema);
 
 /** A query value as a list: a key given more than once has several. */
 function valuesOf(raw: unknown): string[] {
-  const parsed = safeParse(rawValue, raw);
+  const parsed = decodeRawValue(raw);
 
-  if (!parsed.success) {
+  if (Result.isFailure(parsed)) {
     return [];
   }
 
-  return typeof parsed.data === "string" ? [parsed.data] : parsed.data;
+  return typeof parsed.success === "string" ? [parsed.success] : parsed.success;
 }
 
 /** A key's first value, if it has one. */
@@ -79,18 +83,18 @@ function keys(spec: TableSpec) {
 }
 
 function readSort(raw: unknown, spec: TableSpec): TableSort | undefined {
-  const parsed = safeParse(sortValue, firstOf(raw));
+  const parsed = decodeSortValue(firstOf(raw));
 
-  if (!parsed.success) {
+  if (Result.isFailure(parsed)) {
     return spec.defaultSort;
   }
 
-  if (parsed.data === STORED_ORDER) {
+  if (parsed.success === STORED_ORDER) {
     return undefined;
   }
 
-  const descending = parsed.data.startsWith("-");
-  const column = descending ? parsed.data.slice(1) : parsed.data;
+  const descending = parsed.success.startsWith("-");
+  const column = descending ? parsed.success.slice(1) : parsed.success;
 
   return spec.sortable.includes(column)
     ? { column, direction: descending ? "desc" : "asc" }
@@ -114,7 +118,7 @@ function readTab(raw: unknown, spec: TableSpec): string {
 /** The table's state as the query gives it, defaults for what it leaves out. */
 function readTableState(search: SearchParams, spec: TableSpec): TableState {
   const key = keys(spec);
-  const page = safeParse(pageValue, firstOf(search[key.page]));
+  const page = decodePageValue(firstOf(search[key.page]));
   const picked: Record<string, readonly string[]> = {};
 
   for (const filter of spec.filters) {
@@ -131,7 +135,7 @@ function readTableState(search: SearchParams, spec: TableSpec): TableState {
     query: firstOf(search[key.query]) ?? "",
     tab: readTab(search[key.tab], spec),
     sort: readSort(search[key.sort], spec),
-    page: page.success ? Number(page.data) : 1,
+    page: Result.isSuccess(page) ? Number(page.success) : 1,
     picked,
   };
 }

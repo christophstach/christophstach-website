@@ -45,11 +45,16 @@ export const markDeskCv = deskAction(
 export async function checkCvPages({ id, trial }: { id: string; trial?: CvLayout | undefined }) {
   "use server";
 
-  const { cvLayoutSchema } = await import("../../data/cv-print-layout");
-  const { parseInput } = await import("../../server/input");
+  const { CvLayoutSchema } = await import("../../data/cv-print-layout");
+  const { decodeUnknownEffect, runServerEffect } = await import("../../server/effect");
   const desk = await import("../../server/desk-cvs");
 
-  return desk.checkPages(id, trial === undefined ? undefined : parseInput(cvLayoutSchema, trial));
+  const parsedTrial =
+    trial === undefined
+      ? undefined
+      : await runServerEffect(decodeUnknownEffect(CvLayoutSchema, trial));
+
+  return desk.checkPages(id, parsedTrial);
 }
 
 /**
@@ -60,11 +65,16 @@ export async function checkCvPages({ id, trial }: { id: string; trial?: CvLayout
 export const getDeskCvPrint = query(async ({ id, trial }: { id: string; trial?: CvLayout }) => {
   "use server";
 
-  const { cvLayoutSchema } = await import("../../data/cv-print-layout");
-  const { parseInput } = await import("../../server/input");
+  const { CvLayoutSchema } = await import("../../data/cv-print-layout");
+  const { decodeUnknownEffect, runServerEffect } = await import("../../server/effect");
   const desk = await import("../../server/desk-cvs");
 
-  return desk.printForDesk(id, trial === undefined ? undefined : parseInput(cvLayoutSchema, trial));
+  const parsedTrial =
+    trial === undefined
+      ? undefined
+      : await runServerEffect(decodeUnknownEffect(CvLayoutSchema, trial));
+
+  return desk.printForDesk(id, parsedTrial);
 }, "desk-cv-print");
 
 export type { CvInput };

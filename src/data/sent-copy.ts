@@ -2,73 +2,93 @@
 // cover letters exactly as they printed then, kept as JSON with the
 // application. The code that renders them may change after they were stored,
 // so they're parsed with these schemas when read.
-import { array, exactOptional, literal, nullable, object, safeParse, string } from "zod/mini";
+import { Result, Schema } from "effect";
 import { COVER_LETTER_LANGUAGES } from "./cover-letter-wording";
+import { CvLayoutSchema } from "./cv-print-layout";
 import type { PrintedCoverLetter } from "./cover-letters";
 import type { PrintedCv } from "../lib/cv";
-import { cvLayoutSchema } from "./cv-print-layout";
 
-const strings = array(string());
+const MutableStringsSchema = Schema.mutable(Schema.Array(Schema.String));
 
-const profileSchema = object({
-  name: string(),
-  role: string(),
-  location: string(),
-  email: string(),
-  phone: string(),
-  links: array(object({ label: string(), href: string() })),
+const ProfileSchema = Schema.Struct({
+  name: Schema.String,
+  role: Schema.String,
+  location: Schema.String,
+  email: Schema.String,
+  phone: Schema.String,
+  links: Schema.mutable(Schema.Array(Schema.Struct({ label: Schema.String, href: Schema.String }))),
 });
 
-const entrySchema = object({
-  id: string(),
-  title: string(),
-  organization: string(),
-  location: exactOptional(string()),
-  from: string(),
-  to: exactOptional(string()),
-  tech: exactOptional(strings),
-  bullets: strings,
-  links: exactOptional(array(object({ text: string(), href: string() }))),
-});
-
-const printedCvSchema = object({
-  profile: profileSchema,
-  role: string(),
-  summary: exactOptional(string()),
-  coreTechnologies: strings,
-  experience: array(entrySchema),
-  education: array(entrySchema),
-  projects: array(
-    object({
-      id: string(),
-      title: string(),
-      description: string(),
-      tech: strings,
-      url: string(),
-    }),
+const EntrySchema = Schema.Struct({
+  id: Schema.String,
+  title: Schema.String,
+  organization: Schema.String,
+  location: Schema.optionalKey(Schema.String),
+  from: Schema.String,
+  to: Schema.optionalKey(Schema.String),
+  tech: Schema.optionalKey(MutableStringsSchema),
+  bullets: MutableStringsSchema,
+  links: Schema.optionalKey(
+    Schema.mutable(Schema.Array(Schema.Struct({ text: Schema.String, href: Schema.String }))),
   ),
-  skills: array(object({ label: string(), title: string(), items: strings })),
-  layout: cvLayoutSchema,
 });
 
-const printedLetterSchema = object({
-  language: literal(COVER_LETTER_LANGUAGES),
-  recipient: string(),
-  letterDate: string(),
-  subject: string(),
-  salutation: string(),
-  body: string(),
-  closing: string(),
-  profile: profileSchema,
-  role: string(),
+const PrintedCvSchema = Schema.Struct({
+  profile: ProfileSchema,
+  role: Schema.String,
+  summary: Schema.optionalKey(Schema.String),
+  coreTechnologies: MutableStringsSchema,
+  experience: Schema.mutable(Schema.Array(EntrySchema)),
+  education: Schema.mutable(Schema.Array(EntrySchema)),
+  projects: Schema.mutable(
+    Schema.Array(
+      Schema.Struct({
+        id: Schema.String,
+        title: Schema.String,
+        description: Schema.String,
+        tech: MutableStringsSchema,
+        url: Schema.String,
+      }),
+    ),
+  ),
+  skills: Schema.mutable(
+    Schema.Array(
+      Schema.Struct({
+        label: Schema.String,
+        title: Schema.String,
+        items: MutableStringsSchema,
+      }),
+    ),
+  ),
+  layout: CvLayoutSchema,
 });
 
-const sentCopySchema = object({
+const PrintedLetterSchema = Schema.Struct({
+  language: Schema.Literals(COVER_LETTER_LANGUAGES),
+  recipient: Schema.String,
+  letterDate: Schema.String,
+  subject: Schema.String,
+  salutation: Schema.String,
+  body: Schema.String,
+  closing: Schema.String,
+  profile: ProfileSchema,
+  role: Schema.String,
+});
+
+const SentCopySchema = Schema.Struct({
   /** ISO timestamp of when it was marked as sent. */
-  sentAt: string(),
+  sentAt: Schema.String,
   /** The CV as it printed; null if none was linked. */
-  cv: nullable(printedCvSchema),
-  letters: array(object({ id: string(), label: string(), letter: printedLetterSchema })),
+  cv: Schema.NullOr(PrintedCvSchema),
+  letters: Schema.mutable(
+    Schema.Array(
+      Schema.Struct({
+        id: Schema.String,
+        label: Schema.String,
+        letter: PrintedLetterSchema,
+      }),
+    ),
+  ),
 });
 
 /** A frozen copy; its parts render with the same components as the live ones. */
@@ -78,12 +98,14 @@ interface SentCopy {
   letters: { id: string; label: string; letter: PrintedCoverLetter }[];
 }
 
+const decodeSentCopy = Schema.decodeUnknownResult(SentCopySchema);
+
 /** Parses a stored copy; undefined when it no longer fits what the desk renders. */
 function readSentCopy(value: unknown): SentCopy | undefined {
-  const parsed = safeParse(sentCopySchema, value);
+  const parsed = decodeSentCopy(value);
 
-  return parsed.success ? parsed.data : undefined;
+  return Result.isSuccess(parsed) ? parsed.success : undefined;
 }
 
-export { readSentCopy, sentCopySchema };
+export { SentCopySchema, readSentCopy };
 export type { SentCopy };
