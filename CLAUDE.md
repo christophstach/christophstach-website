@@ -18,6 +18,13 @@ versioned with them; read the matching one before changing code:
 - `node_modules/@solidjs/diagnostics/skills/agent-loops/SKILL.md` — checking reactive code with
   evidence instead of reading it.
 
+## Orchestrator skill
+
+- `.claude/skills/orchestrator/SKILL.md` (symlinked to `.agents/skills/orchestrator/SKILL.md`) —
+  parallel multi-agent workflow coordinator for larger features, multi-file refactors, or structured
+  research/brainstorming. Follow its Claude Code runtime mapping (Section 2) and the repository
+  policies in `AGENTS.md` (including `delivery_mode: direct_main` and keeping `.worktrees/` ignored).
+
 ## What this is
 
 Personal CV website for Christoph Stach (christophstach.de), built with **Solid 2**

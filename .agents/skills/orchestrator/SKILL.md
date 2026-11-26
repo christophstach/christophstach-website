@@ -1,16 +1,16 @@
 ---
 name: orchestrator
 description: >
-  Self-contained deterministic coordinator for Antigravity Remote Agents.
-  Orchestrates multi-step workflows, parallel repository edits, and structured
-  research/brainstorming around a locked Run Charter by defining and reusing
-  dedicated worker subagents (with enable_subagent_tools: false) across inline
-  role profiles (research, brainstorm, git, verify, coding, compute, qa,
-  writer_readonly, writer_repo). Enforces a bug-free Run/Step FSM, strict JSON
-  internal contracts with structured payloads, isolated Git worktrees with real
-  Git-state verification, deterministic sequential merges, charter-aware
-  decision gates via ask_question, and clear, natural, non-cryptic user-facing
-  communication in the user's language.
+  Self-contained deterministic coordinator for Antigravity Remote Agents and
+  Claude Code. Orchestrates multi-step workflows, parallel repository edits,
+  and structured research/brainstorming around a locked Run Charter by
+  delegating to isolated worker subagents across inline role profiles
+  (research, brainstorm, git, verify, coding, compute, qa, writer_readonly,
+  writer_repo). Enforces a bug-free Run/Step FSM, Parallel-First decomposition,
+  strict JSON internal contracts with structured payloads, isolated Git
+  worktrees with real Git-state verification, deterministic sequential merges,
+  charter-aware decision gates (ask_question / AskUserQuestion), and clear,
+  natural, non-cryptic user-facing communication in the user's language.
   Trigger on: multi-step workflows, parallel edits, larger features/refactors,
   cross-domain tasks, structured research/brainstorming pipelines, or risky
   changes requiring formal decision gates.
@@ -50,16 +50,25 @@ Strictly separate **Internal Protocol** from **User-Facing Output**:
 
 ---
 
-## 2. Antigravity Runtime, Tool Mapping & Worker Reuse
+## 2. Runtime Compatibility, Tool Mapping & Worker Reuse
 
-### 2.1 Subagent Definitions (`define_subagent`)
-Define dedicated worker subagents **once per run** using `define_subagent` with these mandatory runtime settings:
-- **`enable_subagent_tools: false`** on **every** worker definition. This prevents recursive orchestration when repository rules (such as `AGENTS.md`) instruct agents to activate `orchestrator`.
-- **Enforced Tool Permissions (`enable_write_tools`):**
-  - **`enable_write_tools: false`** for strictly read-only roles: `research`, `brainstorm`, `qa`, `writer_readonly`.
-  - **`enable_write_tools: true`** for write and command-execution roles: `git`, `coding`, `verify`, `compute`, `writer_repo`.
-- **Network Capability Note:** The built-in `research` subagent has **no network access**—use it exclusively for local codebase, config, and specification research. External documentation or web lookups require an explicitly web-enabled worker or explicit handling.
-- **Workspace Invocation:** Always invoke subagents with `Workspace: "inherit"`.
+This skill supports both **Antigravity Remote Agents** and **Claude Code**. Use the native primitives of whichever runtime is active:
+
+| Capability | Antigravity Remote Agents | Claude Code |
+| :--- | :--- | :--- |
+| **Define / Scope Workers** | `define_subagent` once per run with `enable_subagent_tools: false` and explicit `enable_write_tools` (`false` for read-only, `true` for write/exec). | `Agent` tool with inline role directives & tool constraints (or static `.claude/agents/*.md` profiles); workers must never spawn nested `Agent` calls. |
+| **Parallel Wave Dispatch** | Single `invoke_subagent` call with multiple entries (`Workspace: "inherit"`). | Multiple parallel `Agent` tool calls in a single assistant turn (using manual `.worktrees/<run_id>/<step_id>` or native `isolation: "worktree"`). |
+| **Reuse & Live Steering** | `send_message` to reuse/live-steer workers; `manage_subagents` (`list`/`kill`) to inspect or stop invalidated workers. | `Agent` `resume` for retries/continuation (`SendMessage` when Agent Teams are enabled; otherwise apply mid-run guidance on the next wave/retry). |
+| **Interactive Decisions** | `ask_question` (fallback: plain-language text). | `AskUserQuestion` (fallback: plain-language text). |
+| **State Ledger & Scratch Dir** | `<artifact_dir>/orchestrator-state.json` and `<artifact_dir>/scratch/`. | `.worktrees/<run_id>/orchestrator-state.json` and `.worktrees/<run_id>/scratch/` (ignored by `.gitignore`). |
+| **Read-Only Research Network** | Built-in `research` subagent has **no network access** (local repo only); web lookups need a web-enabled worker. | Read-only research/Explore worker uses local repo tools unless `WebFetch`/`WebSearch` is explicitly permitted. |
+
+### 2.1 Subagent Definitions & Permissions
+- **No Recursive Orchestration:** Enforce `enable_subagent_tools: false` on Antigravity (and forbid nested `Agent` calls on Claude Code) on **every** worker so repo rules (`AGENTS.md` / `CLAUDE.md`) never trigger recursive orchestration.
+- **Enforced Tool Permissions (`enable_write_tools` / tool scoping):**
+  - **Strictly read-only (`enable_write_tools: false`):** `research`, `brainstorm`, `qa`, `writer_readonly`.
+  - **Write and command execution (`enable_write_tools: true`):** `git`, `coding`, `verify`, `compute`, `writer_repo`.
+- **Workspace Invocation:** On Antigravity, always invoke subagents with `Workspace: "inherit"`. On Claude Code, either share manual `.worktrees/<run_id>/<step_id>` paths via `git` or use native `isolation: "worktree"` when compatible with the wave's merge plan.
 
 ### 2.2 Mandatory Worktree Path Guardrail
 Every write/exec worker (`coding`, `verify`, `compute`, `writer_repo`) **must**:
@@ -69,22 +78,22 @@ Every write/exec worker (`coding`, `verify`, `compute`, `writer_repo`) **must**:
 
 Include an explicit reminder in every worker definition and `role_directives` that the agent **is** the delegated worker (do not activate `orchestrator`, do not refuse edits or Git commands within its assigned role and worktree).
 
-### 2.3 Subagent Reuse & Live Steering (`send_message` / `manage_subagents`)
+### 2.3 Subagent Reuse & Live Steering (`send_message` / `resume`)
 Avoid subagent explosion and react quickly to mid-run changes by reusing and steering live workers:
-- **`git` Worker:** Reuse **one** `git` subagent instance across the entire run lifecycle (`DISCOVERY` -> `PROVISIONING` -> `INTEGRATING` -> `CLEANUP`) via `send_message`.
-- **`coding` / `writer_repo` Workers on Retry:** On a Stage 1 or Stage 2 failure, reuse the **same** worker via `send_message` with exact failure diagnostics so it retains full context of its worktree and prior edits.
-- **Live Steering on Reactive Wakeups (No Polling):** Never poll running workers in a loop. However, whenever the orchestrator wakes up mid-wave—because the **user sends new guidance/scope changes** OR a **peer parallel worker finishes with findings or interface updates** affecting other active workers—immediately forward concise course-corrections to affected in-flight workers via `send_message` (and update `orchestrator-state.json`). If a running worker is invalidated by a user pivot or critical blocker, terminate it cleanly via `manage_subagents` (`kill`) rather than waiting for wasted work.
+- **`git` Worker:** Reuse **one** `git` subagent instance across the entire run lifecycle (`DISCOVERY` -> `PROVISIONING` -> `INTEGRATING` -> `CLEANUP`) via `send_message` (Antigravity) or `resume` (Claude Code).
+- **`coding` / `writer_repo` Workers on Retry:** On a Stage 1 or Stage 2 failure, reuse the **same** worker via `send_message` / `resume` with exact failure diagnostics so it retains full context of its worktree and prior edits.
+- **Live Steering on Reactive Wakeups (No Polling):** Never poll running workers in a loop. Whenever the orchestrator wakes up mid-wave—because the **user sends new guidance/scope changes** OR a **peer parallel worker finishes with findings or interface updates** affecting other active workers—immediately forward concise course-corrections to affected in-flight workers via `send_message` (Antigravity) or `SendMessage` (Claude Code Agent Teams), and update the state ledger. If a running worker is invalidated by a user pivot or critical blocker, stop it cleanly (`manage_subagents` `kill` on Antigravity) rather than waiting for wasted work.
 - **Read-Only Validation In-Memory:** Never spawn a `verify` subagent for read-only steps (`research`, `brainstorm`, `qa`, `writer_readonly`). Validate their `STEP_RESULT_V1` schema and read-only invariants directly in-memory.
 
 ### 2.4 Persistent Run State Ledger & Orphan Recovery
-Maintain a lightweight state ledger at `<artifact_dir>/orchestrator-state.json` updated on every Run State transition and user decision. Track:
+Maintain a lightweight state ledger (`<artifact_dir>/orchestrator-state.json` on Antigravity; `.worktrees/<run_id>/orchestrator-state.json` on Claude Code) updated on every Run State transition and user decision. Track:
 - `run_id`, `mode`, `delivery_mode`, `overall_goal`, `base_branch`, `base_commit`, `integration_branch`
 - `run_state`, `current_wave`, `loop_count` (re-planning / fix cycles)
 - `approved_decisions` (decision ID, plain summary, selected option)
 - `steps` map (`step_id` -> `role`, `step_state`, `retry_count`, `worktree_path`, `branch_name`, `commit_sha`, `subagent_id`)
 - `active_worktrees` list (for crash/compaction resilience)
 
-If a run resumes after context compaction or an interrupted session, read `<artifact_dir>/orchestrator-state.json` first and dispatch the `git` worker to inspect/prune orphaned worktrees (`git worktree list`, `git worktree prune`) before proceeding.
+If a run resumes after context compaction or an interrupted session, read the state ledger first and dispatch the `git` worker to inspect/prune orphaned worktrees (`git worktree list`, `git worktree prune`) before proceeding.
 
 ---
 
@@ -325,13 +334,13 @@ Every worker **must** return this exact JSON object (including the required `"pa
 
 Whenever the FSM enters `AWAITING_DECISION`, let independent safe in-flight steps finish settling, keep dependent steps paused, and ask the user clearly **in the user's language**—with **zero** internal IDs (`D01`, `S03`, `OPT-1`, `DECISION_RULE_*`).
 
-### 10.1 Primary UI: Interactive `ask_question`
-Prefer Antigravity's native `ask_question` tool whenever available:
+### 10.1 Primary UI: Interactive Decision Prompt (`ask_question` / `AskUserQuestion`)
+Prefer the runtime's native interactive question tool (`ask_question` on Antigravity; `AskUserQuestion` on Claude Code) whenever available:
 - Write a short, natural question explaining **why** input is needed and what it affects.
 - Present 2–4 plain, tap-to-select options with the **recommended option first** (clearly labeled as recommended) and a brief note on the trade-off/risk.
 
 ### 10.2 Plain-Language Text Fallback
-When `ask_question` is unavailable or unsuitable, send a concise, mobile-friendly message in the user's language:
+When an interactive question tool is unavailable or unsuitable, send a concise, mobile-friendly message in the user's language:
 
 ```markdown
 ### Quick decision needed: [Clear, natural topic]
