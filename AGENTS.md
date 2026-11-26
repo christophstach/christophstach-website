@@ -1,6 +1,7 @@
 # Project Agent Instructions
 
-- For any multi-step task, feature implementation, refactoring, or structured research/brainstorming, activate the `orchestrator` skill (`.agents/skills/orchestrator/SKILL.md`).
-- Never execute domain tasks, Git commands, or file edits directly inside the orchestrator role—always delegate via isolated Git worktrees and the built-in subagent role profiles.
-- Pause and escalate a compact mobile-friendly Decision Brief whenever any `DECISION_RULE_*` triggers (especially before changing public APIs, schemas, dependencies, pushing to `main`, or merging PRs).
+- Activate the `orchestrator` skill (`.agents/skills/orchestrator/SKILL.md`) for multi-step workflows, parallel edits, larger features or refactors, structured research/brainstorming, or risky changes. Simple, straightforward 1–2 file edits with no parallel work or risk gates may be handled directly (or in `LIGHT` orchestration mode).
+- When operating inside an orchestrated run, enforce Zero Self-Execution: never execute domain tasks, Git commands, or file edits directly—always delegate via isolated Git worktrees and worker subagents defined with `enable_subagent_tools: false`.
+- **Delivery Mode (`delivery_mode: direct_main`):** In this repository, direct delivery to `main` is preferred—do not create extra pull requests unless explicitly requested. During orchestrated work, still isolate active edits in temporary worktrees so `main` stays clean while work is in progress. Once all verification gates pass, fast-forward/merge directly into `main` via the `git` role, push to `origin/main`, and clean up temporary worktrees and `orch/<run_id>/*` branches.
+- Never force-push (`--force`) or rewrite history on `main`, and always pause with a clear, non-cryptic, plain-language decision (preferring `ask_question`, matching the user's language, and hiding internal IDs/rule codes) for unapproved breaking changes, public API or schema edits, new dependencies, destructive operations, or merge conflicts.
 - Keep `.worktrees/` ignored in `.gitignore`.
