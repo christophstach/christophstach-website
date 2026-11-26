@@ -1,17 +1,28 @@
 import "server-only";
+import { Deferred, Effect, Semaphore } from "effect";
 import { COLOR_MODE_COOKIE } from "../lib/color-mode";
 import chromium from "@sparticuz/chromium";
 import { env } from "virtual:solid-env/server";
 import { launch } from "puppeteer-core";
+import { ExternalFetchError, PdfRenderError, runServerEffect } from "./effect";
 
 // The serverless Chromium build only runs on Linux, so local development on
 // another OS points CV_PDF_CHROME_PATH at a regular Chrome instead.
-async function launchOptions(localChrome: string | undefined) {
+function launchOptionsEffect(
+  localChrome: string | undefined,
+): Effect.Effect<{ executablePath: string; args: string[] }, PdfRenderError> {
   if (localChrome !== undefined) {
-    return { executablePath: localChrome, args: ["--no-sandbox"] };
+    return Effect.succeed({ executablePath: localChrome, args: ["--no-sandbox"] });
   }
 
-  return { executablePath: await chromium.executablePath(), args: chromium.args };
+  return Effect.tryPromise({
+    try: async () => ({ executablePath: await chromium.executablePath(), args: chromium.args }),
+    catch: (cause) =>
+      new PdfRenderError({
+        message: "Failed to resolve Chromium executable for PDF rendering.",
+        cause,
+      }),
+  });
 }
 
 interface RenderJob {
@@ -20,53 +31,109 @@ interface RenderJob {
   cookies: Map<string, string>;
 }
 
-async function render({ url, cookies }: RenderJob): Promise<Uint8Array> {
-  const browser = await launch({
-    headless: true,
-    ...(await launchOptions(env.CV_PDF_CHROME_PATH)),
-  });
+function renderEffect({ url, cookies }: RenderJob): Effect.Effect<Uint8Array, PdfRenderError> {
+  return Effect.scoped(
+    Effect.gen(function* () {
+      const options = yield* launchOptionsEffect(env.CV_PDF_CHROME_PATH);
+      const browser = yield* Effect.acquireRelease(
+        Effect.tryPromise({
+          try: () => launch({ headless: true, ...options }),
+          catch: (cause) =>
+            new PdfRenderError({
+              message: "Failed to launch headless browser for PDF rendering.",
+              cause,
+            }),
+        }),
+        (instance) =>
+          Effect.tryPromise({
+            try: () => instance.close(),
+            catch: (cause) =>
+              new PdfRenderError({
+                message: "Failed to close headless browser after PDF rendering.",
+                cause,
+              }),
+          }).pipe(Effect.ignore({ log: "Warn" })),
+      );
 
-  try {
-    const page = await browser.newPage();
+      const page = yield* Effect.acquireRelease(
+        Effect.tryPromise({
+          try: () => browser.newPage(),
+          catch: (cause) =>
+            new PdfRenderError({
+              message: "Failed to open browser page for PDF rendering.",
+              cause,
+            }),
+        }),
+        (tab) =>
+          Effect.tryPromise({
+            try: () => tab.close(),
+            catch: (cause) =>
+              new PdfRenderError({
+                message: "Failed to close browser page after PDF rendering.",
+                cause,
+              }),
+          }).pipe(Effect.ignore({ log: "Warn" })),
+      );
 
-    // Cookies are scoped to the page's host, which is all Chrome requests here.
-    const { hostname } = new URL(url);
+      // Cookies are scoped to the page's host, which is all Chrome requests here.
+      const { hostname } = new URL(url);
 
-    await browser.setCookie(
-      ...[...cookies].map(([name, value]) => ({ name, value, domain: hostname })),
-    );
-    const response = await page.goto(url, { waitUntil: "networkidle0" });
+      yield* Effect.tryPromise({
+        try: () =>
+          browser.setCookie(
+            ...[...cookies].map(([name, value]) => ({ name, value, domain: hostname })),
+          ),
+        catch: (cause) =>
+          new PdfRenderError({
+            message: "Failed to configure browser cookies for PDF rendering.",
+            cause,
+          }),
+      });
 
-    // ISR would cache whatever got printed, a login or error page included.
-    if (response === null || !response.ok()) {
-      throw new Error(`${url} answered ${response?.status() ?? "nothing"}.`);
-    }
+      const response = yield* Effect.tryPromise({
+        try: () => page.goto(url, { waitUntil: "networkidle0" }),
+        catch: (cause) =>
+          new PdfRenderError({
+            message: "Failed to load print page for PDF rendering.",
+            cause,
+          }),
+      });
 
-    await page.evaluate("document.fonts.ready");
+      // ISR would cache whatever got printed, a login or error page included.
+      if (response === null || !response.ok()) {
+        return yield* new PdfRenderError({
+          message: `${url} answered ${response?.status() ?? "nothing"}.`,
+        });
+      }
 
-    // Paper size and margins come from the page's own @page rule.
-    return await page.pdf({ preferCSSPageSize: true, printBackground: true });
-  } finally {
-    await browser.close();
-  }
+      yield* Effect.tryPromise({
+        try: () => page.evaluate("document.fonts.ready"),
+        catch: (cause) =>
+          new PdfRenderError({
+            message: "Failed while waiting for fonts before PDF rendering.",
+            cause,
+          }),
+      });
+
+      // Paper size and margins come from the page's own @page rule.
+      return yield* Effect.tryPromise({
+        try: () => page.pdf({ preferCSSPageSize: true, printBackground: true }),
+        catch: (cause) =>
+          new PdfRenderError({
+            message: "Failed to print page to PDF.",
+            cause,
+          }),
+      });
+    }),
+  );
 }
 
 // One Chrome at a time per instance. On a cold start the first render is still
 // unpacking Chromium, and a second launch of the half-written binary fails
 // (spawn ETXTBSY); the desk asks for several PDFs at once. Requests for a page
 // that is already rendering share that render.
-const inFlight = new Map<string, Promise<Uint8Array>>();
-let lastRender: Promise<unknown> = Promise.resolve();
-
-async function renderQueued(job: RenderJob, previous: Promise<unknown>) {
-  try {
-    await Promise.allSettled([previous]);
-
-    return await render(job);
-  } finally {
-    inFlight.delete(job.url);
-  }
-}
+const renderSemaphore = Semaphore.makeUnsafe(1);
+const inFlight = new Map<string, Deferred.Deferred<Uint8Array, PdfRenderError>>();
 
 /** The request's cookies by name. */
 function requestCookies(request: Request): Map<string, string> {
@@ -94,24 +161,101 @@ function previewAccess(request: Request): Map<string, string> {
 }
 
 /**
- * Prints a page of this site to PDF. Pass `withSession` for pages under /desk,
- * so Chrome gets past the desk guard with the requester's session.
+ * Prints a page of this site to PDF as an Effect. Pass `withSession` for pages
+ * under /desk, so Chrome gets past the desk guard with the requester's session.
  */
-export function renderPdf(request: Request, path: string, withSession = false) {
-  const url = new URL(path, request.url).href;
-  let rendering = inFlight.get(url);
+export function renderPdfEffect(
+  request: Request,
+  path: string,
+  withSession = false,
+): Effect.Effect<Uint8Array, PdfRenderError> {
+  return Effect.suspend(() => {
+    const url = new URL(path, request.url).href;
+    const existing = inFlight.get(url);
 
-  if (rendering === undefined) {
+    if (existing !== undefined) {
+      return Deferred.await(existing);
+    }
+
+    const deferred = Deferred.makeUnsafe<Uint8Array, PdfRenderError>();
     const cookies = withSession ? requestCookies(request) : previewAccess(request);
 
     // Paper is printed light, whatever theme the requester browses in.
     cookies.set(COLOR_MODE_COOKIE, "light");
-    rendering = renderQueued({ url, cookies }, lastRender);
-    inFlight.set(url, rendering);
-    lastRender = rendering;
+    inFlight.set(url, deferred);
+
+    return renderSemaphore
+      .withPermits(1)(renderEffect({ url, cookies }))
+      .pipe(
+        Effect.ensuring(
+          Effect.sync(() => {
+            inFlight.delete(url);
+          }),
+        ),
+        Effect.onExit((exit) => Deferred.done(deferred, exit)),
+      );
+  });
+}
+
+/**
+ * Prints a page of this site to PDF. Pass `withSession` for pages under /desk,
+ * so Chrome gets past the desk guard with the requester's session.
+ */
+export function renderPdf(
+  request: Request,
+  path: string,
+  withSession = false,
+): Promise<Uint8Array> {
+  return runServerEffect(renderPdfEffect(request, path, withSession));
+}
+
+const REVALIDATE_CONCURRENCY = 4;
+
+/**
+ * Renews cached public responses after a change, e.g. the CV PDF or the data
+ * /curriculum shows. On Vercel they are cached until the next deployment
+ * (ISR); a request with the bypass token renders them again now. Without a
+ * token (local, or not set up) the cache stays until the next deployment.
+ */
+export function revalidatePathsEffect(
+  request: Request,
+  paths: ReadonlyArray<string>,
+): Effect.Effect<void, ExternalFetchError> {
+  const token = env.ISR_BYPASS_TOKEN;
+
+  if (token === undefined || paths.length === 0) {
+    return Effect.void;
   }
 
-  return rendering;
+  return Effect.forEach(
+    paths,
+    (path) => {
+      const url = new URL(path, request.url);
+
+      return Effect.gen(function* () {
+        const response = yield* Effect.tryPromise({
+          try: () =>
+            fetch(url, {
+              method: "HEAD",
+              headers: { "x-prerender-revalidate": token },
+            }),
+          catch: (cause) =>
+            new ExternalFetchError({
+              message: `Failed to revalidate cached path ${path}.`,
+              url: url.href,
+              cause,
+            }),
+        });
+
+        if (!response.ok) {
+          yield* Effect.logWarning(
+            `ISR revalidation for ${path} answered ${response.status} ${response.statusText}.`,
+          );
+        }
+      });
+    },
+    { concurrency: REVALIDATE_CONCURRENCY, discard: true },
+  );
 }
 
 /**
@@ -120,19 +264,6 @@ export function renderPdf(request: Request, path: string, withSession = false) {
  * (ISR); a request with the bypass token renders them again now. Without a
  * token (local, or not set up) the cache stays until the next deployment.
  */
-export async function revalidatePaths(request: Request, paths: string[]) {
-  const token = env.ISR_BYPASS_TOKEN;
-
-  if (token === undefined) {
-    return;
-  }
-
-  await Promise.all(
-    paths.map((path) =>
-      fetch(new URL(path, request.url), {
-        method: "HEAD",
-        headers: { "x-prerender-revalidate": token },
-      }),
-    ),
-  );
+export function revalidatePaths(request: Request, paths: string[]): Promise<void> {
+  return runServerEffect(revalidatePathsEffect(request, paths));
 }
