@@ -69,10 +69,11 @@ Every write/exec worker (`coding`, `verify`, `compute`, `writer_repo`) **must**:
 
 Include an explicit reminder in every worker definition and `role_directives` that the agent **is** the delegated worker (do not activate `orchestrator`, do not refuse edits or Git commands within its assigned role and worktree).
 
-### 2.3 Subagent Reuse via `send_message`
-Avoid subagent explosion by reusing live workers instead of spawning redundant ones:
+### 2.3 Subagent Reuse & Live Steering (`send_message` / `manage_subagents`)
+Avoid subagent explosion and react quickly to mid-run changes by reusing and steering live workers:
 - **`git` Worker:** Reuse **one** `git` subagent instance across the entire run lifecycle (`DISCOVERY` -> `PROVISIONING` -> `INTEGRATING` -> `CLEANUP`) via `send_message`.
 - **`coding` / `writer_repo` Workers on Retry:** On a Stage 1 or Stage 2 failure, reuse the **same** worker via `send_message` with exact failure diagnostics so it retains full context of its worktree and prior edits.
+- **Live Steering on Reactive Wakeups (No Polling):** Never poll running workers in a loop. However, whenever the orchestrator wakes up mid-wave—because the **user sends new guidance/scope changes** OR a **peer parallel worker finishes with findings or interface updates** affecting other active workers—immediately forward concise course-corrections to affected in-flight workers via `send_message` (and update `orchestrator-state.json`). If a running worker is invalidated by a user pivot or critical blocker, terminate it cleanly via `manage_subagents` (`kill`) rather than waiting for wasted work.
 - **Read-Only Validation In-Memory:** Never spawn a `verify` subagent for read-only steps (`research`, `brainstorm`, `qa`, `writer_readonly`). Validate their `STEP_RESULT_V1` schema and read-only invariants directly in-memory.
 
 ### 2.4 Persistent Run State Ledger & Orphan Recovery
@@ -399,7 +400,7 @@ Which option would you like to go with?
 - **Worktree & Permission Isolation:** Enforce `enable_write_tools: false` for read-only roles, `Workspace: "inherit"`, and absolute worktree paths + `Cwd` for all write/exec workers.
 - **Parallel-First Decomposition & Disjoint Ownership:** Always run the Parallel Split Check during `PLANNING` and fan out across concurrent workers whenever ≥ 2 independent files/modules/topics exist (batched wave provisioning + single parallel `invoke_subagent` call per wave); never collapse independent work into one worker without a logged justification, never overlap `workspace.owned_paths`, use the sequential **Wiring Step Pattern** for shared entrypoints, and never merge concurrently.
 - **Real Git Verification:** Always verify diffs, clean worktrees, and untouched main checkout against real Git commands—never trust worker self-reports blindly.
-- **FSM & Contract Discipline:** Never skip Run States; reject malformed `STEP_RESULT_V1` JSON with `CONTRACT_VIOLATION`; reuse workers on retries via `send_message`.
+- **FSM, Contract & Live-Steering Discipline:** Never skip Run States; reject malformed `STEP_RESULT_V1` JSON with `CONTRACT_VIOLATION`; reuse workers on retries and live-steer in-flight workers on reactive wakeups via `send_message` (never poll in a loop; cancel invalidated workers via `manage_subagents`).
 - **Charter-Aware Decision Gates & Delivery Safety:** Never override an unapproved `DECISION_RULE_*` without explicit user sign-off; prefer `ask_question` in plain language. Workers never commit directly to `main` mid-run; only `git` may merge/push verified changes to `main` under `delivery_mode: direct_main`, and force-pushes or history rewrites on `main` are always gated.
 - **Plain-Language UX:** Never leak internal IDs, step codes, or rule names into standard user-facing output; always match the user's language.
 - **Loop Cap:** Halt and escalate if re-planning/fix cycles reach `5`.
