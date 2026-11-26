@@ -37,15 +37,18 @@ function connect(url: string) {
   return drizzle(client, { schema, casing: "snake_case" });
 }
 
-let database: ReturnType<typeof connect> | undefined;
+type DatabaseClient = ReturnType<typeof connect>;
+type DatabaseTransaction = Parameters<Parameters<DatabaseClient["transaction"]>[0]>[0];
 
-/** The database, connected on first use. Vercel's Neon integration sets DATABASE_URL. */
-function useDb() {
+let database: DatabaseClient | undefined;
+
+/** Connects lazily if DATABASE_URL is configured; returns undefined otherwise. */
+function tryUseDb(): DatabaseClient | undefined {
   if (database === undefined) {
     const url = env.DATABASE_URL;
 
     if (url === undefined || url === "") {
-      throw new Error("No database configured: set DATABASE_URL (see .env.example).");
+      return undefined;
     }
 
     database = connect(url);
@@ -54,4 +57,16 @@ function useDb() {
   return database;
 }
 
-export { useDb };
+/** The database, connected on first use. Vercel's Neon integration sets DATABASE_URL. */
+function useDb(): DatabaseClient {
+  const client = tryUseDb();
+
+  if (client === undefined) {
+    throw new Error("No database configured: set DATABASE_URL (see .env.example).");
+  }
+
+  return client;
+}
+
+export { tryUseDb, useDb };
+export type { DatabaseClient, DatabaseTransaction };
