@@ -1,6 +1,8 @@
 import "server-only";
+import { Effect } from "effect";
 import { getRequestEvent } from "@solidjs/web";
-import { signOutCookies } from "./session";
+import { runServerEffect } from "./effect/runtime";
+import { clearSessionEffect } from "./session";
 
 // The body of the desk's sign-out server function (src/lib/desk/session.ts),
 // which imports this module dynamically. Its own module, imported nowhere
@@ -8,16 +10,25 @@ import { signOutCookies } from "./session";
 // statically by the middleware and the auth routes.
 
 /** Clears the session cookie on the current response. */
-async function signOut(): Promise<void> {
-  const event = getRequestEvent();
+function signOutEffect(): Effect.Effect<void> {
+  return Effect.gen(function* () {
+    const event = getRequestEvent();
 
-  if (event === undefined) {
-    return;
-  }
+    if (event === undefined) {
+      return;
+    }
 
-  for (const cookie of await signOutCookies(event.request)) {
-    event.response.headers.append("Set-Cookie", cookie);
-  }
+    const cookies = yield* clearSessionEffect(event.request);
+
+    for (const cookie of cookies) {
+      event.response.headers.append("Set-Cookie", cookie);
+    }
+  });
 }
 
-export { signOut };
+/** Clears the session cookie on the current response. */
+async function signOut(): Promise<void> {
+  return runServerEffect(signOutEffect());
+}
+
+export { signOut, signOutEffect };
