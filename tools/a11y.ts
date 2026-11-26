@@ -102,7 +102,17 @@ const acquireBrowser = Effect.acquireRelease(
         cause,
       }),
   }),
-  (browser) => Effect.ignore(Effect.promise(() => browser.close())),
+  (browser) =>
+    Effect.ignore(
+      Effect.tryPromise({
+        try: () => browser.close(),
+        catch: (cause) =>
+          new A11yBrowserError({
+            message: "Failed to close Chromium browser.",
+            cause,
+          }),
+      }),
+    ),
 );
 
 function acquireContext(browser: Browser, run: AuditRun) {
@@ -115,7 +125,17 @@ function acquireContext(browser: Browser, run: AuditRun) {
           cause,
         }),
     }),
-    (context) => Effect.ignore(Effect.promise(() => context.close())),
+    (context) =>
+      Effect.ignore(
+        Effect.tryPromise({
+          try: () => context.close(),
+          catch: (cause) =>
+            new A11yBrowserError({
+              message: `Failed to close browser context for ${run.path} (${run.mode}).`,
+              cause,
+            }),
+        }),
+      ),
   );
 }
 
@@ -129,7 +149,17 @@ function acquirePage(context: BrowserContext, run: AuditRun) {
           cause,
         }),
     }),
-    (page) => Effect.ignore(Effect.promise(() => page.close())),
+    (page) =>
+      Effect.ignore(
+        Effect.tryPromise({
+          try: () => page.close(),
+          catch: (cause) =>
+            new A11yBrowserError({
+              message: `Failed to close browser page for ${run.path} (${run.mode}).`,
+              cause,
+            }),
+        }),
+      ),
   );
 }
 
