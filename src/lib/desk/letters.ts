@@ -2,25 +2,25 @@
 // functions. Arguments are typed for the caller and parsed again on the server.
 import type { CoverLetter } from "../../data/cover-letters";
 import { query } from "@solidjs/router";
+import { deskAction } from "./mutation";
 
-export async function saveDeskLetter(
-  letter: CoverLetter,
-  options: { create: boolean },
-): Promise<void> {
-  "use server";
+export const saveDeskLetter = deskAction(
+  async (letter: CoverLetter, options: { create: boolean }): Promise<void> => {
+    "use server";
 
-  const desk = await import("../../server/desk-letters");
+    const desk = await import("../../server/desk-letters");
 
-  await desk.saveLetter(letter.id, letter, options);
-}
+    await desk.saveLetter(letter.id, letter, options);
+  },
+);
 
-export async function deleteDeskLetter(id: string): Promise<void> {
+export const deleteDeskLetter = deskAction(async (id: string): Promise<void> => {
   "use server";
 
   const desk = await import("../../server/desk-letters");
 
   await desk.deleteLetter(id);
-}
+});
 
 /** How full each page of the letter's PDF is. Runs Chrome, so not a query. */
 export async function checkDeskLetterPages(id: string) {

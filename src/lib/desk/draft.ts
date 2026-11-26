@@ -15,7 +15,7 @@ type NoFn<Value> = Value extends Function ? never : Value;
 /**
  * An editor's form state, following what's stored: a writable store that
  * resets when the stored value changes (after a save, say) and only then —
- * the router refetches every query after any server function call, and
+ * the router refetches active queries after desk actions, and
  * unchanged data must not throw away what's being typed. Resets reconcile by
  * id, so rows and unchanged fields keep their identity. `dirty` compares the
  * draft with the stored value; leaving with changes asks first.
