@@ -1,23 +1,28 @@
 import "server-only";
 import { CV_HOME_API_PATH, CV_PDF_PATH, CV_WEBSITE_API_PATH } from "../data/endpoints";
 
+/** Cached public home page and its summary data endpoint. */
+const HOME_PATHS = ["/", CV_HOME_API_PATH];
+
 /** Cached public files that show the primary CV. */
 const PRIMARY_PATHS = [CV_PDF_PATH];
 
-/**
- * Cached public data that shows the website CV. The pages that read it
- * (/ and /curriculum) render per request, so only their data is cached.
- */
-const WEBSITE_PATHS = [CV_WEBSITE_API_PATH];
+/** Cached public page and data that show the website CV. */
+const WEBSITE_PATHS = ["/curriculum", CV_WEBSITE_API_PATH];
+
+/** Dynamic sitemap reflecting public CV update timestamps. */
+const SITEMAP_PATH = "/sitemap.xml";
 
 /** The cached paths to renew after a write that touched these roles. */
 function publicPaths({ primary, website }: { primary: boolean; website: boolean }) {
-  return [...(primary ? PRIMARY_PATHS : []), ...(website ? WEBSITE_PATHS : [])];
+  const paths = [...(primary ? PRIMARY_PATHS : []), ...(website ? WEBSITE_PATHS : [])];
+
+  return paths.length > 0 ? [...paths, SITEMAP_PATH] : [];
 }
 
-/** Every cached public file and data: CV content changes can reach all of them. */
+/** Every cached public page, file and data endpoint: CV content changes can reach all of them. */
 function allPublicPaths() {
-  return [CV_HOME_API_PATH, ...PRIMARY_PATHS, ...WEBSITE_PATHS];
+  return [...HOME_PATHS, ...WEBSITE_PATHS, ...PRIMARY_PATHS, SITEMAP_PATH];
 }
 
 export { allPublicPaths, publicPaths };

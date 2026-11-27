@@ -1,10 +1,41 @@
 import "server-only";
 import { Effect, type Schema } from "effect";
 import { getRequestEvent } from "@solidjs/web";
+import { readCookie } from "../lib/cookies";
 import { type BadRequestError, ExternalFetchError } from "./effect/errors";
 import { decodeUnknownEffect } from "./effect/schema";
 
 const PUBLIC_FETCH_TIMEOUT = "10 seconds" as const;
+const VERCEL_JWT_COOKIE = "_vercel_jwt";
+const VERCEL_BYPASS_HEADER = "x-vercel-protection-bypass";
+
+/**
+ * Extracts only Vercel preview-protection credentials (`_vercel_jwt` cookie and
+ * `x-vercel-protection-bypass` header) so internal self-fetches never leak
+ * session or preference cookies (`desk-session`, `color-mode`) to public/ISR routes.
+ */
+function previewProtectionHeaders(request: Request): Headers {
+  const headers = new Headers();
+  let vercelJwt: string | undefined;
+
+  try {
+    vercelJwt = readCookie(request.headers.get("cookie"), VERCEL_JWT_COOKIE);
+  } catch {
+    vercelJwt = undefined;
+  }
+
+  if (vercelJwt !== undefined && vercelJwt !== "") {
+    headers.set("cookie", `${VERCEL_JWT_COOKIE}=${encodeURIComponent(vercelJwt)}`);
+  }
+
+  const bypass = request.headers.get(VERCEL_BYPASS_HEADER);
+
+  if (bypass !== null) {
+    headers.set(VERCEL_BYPASS_HEADER, bypass);
+  }
+
+  return headers;
+}
 
 /**
  * Fetches one of this site's public JSON endpoints over HTTP so the answer
@@ -21,17 +52,9 @@ function fetchPublicJsonEffect(path: string): Effect.Effect<unknown, ExternalFet
       });
     }
 
-    // Previews sit behind Vercel's deployment protection: pass the visitor's
-    // access (its cookie, or the bypass header) on to the call to ourselves.
-    const headers = new Headers();
-
-    for (const name of ["cookie", "x-vercel-protection-bypass"]) {
-      const value = event.request.headers.get(name);
-
-      if (value !== null) {
-        headers.set(name, value);
-      }
-    }
+    // Previews sit behind Vercel's deployment protection: forward only the
+    // preview cookie or bypass header, never desk-session or color-mode.
+    const headers = previewProtectionHeaders(event.request);
 
     const target = new URL(path, event.request.url);
     const response = yield* Effect.tryPromise({
@@ -91,4 +114,4 @@ function fetchPublicEffect<S extends Schema.ConstraintDecoder<unknown>>(
   });
 }
 
-export { fetchPublicEffect };
+export { fetchPublicEffect, previewProtectionHeaders };

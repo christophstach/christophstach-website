@@ -1,15 +1,23 @@
 import "server-only";
 import { Effect } from "effect";
-import { asc, desc, eq, notInArray, sql } from "drizzle-orm";
+import { asc, desc, eq, max, notInArray, or, sql } from "drizzle-orm";
 import {
   coverLetters,
   cvEntries,
   cvEntryPicks,
   cvProfile,
   cvs,
+  projects,
   skillGroups,
 } from "../../server/db/schema";
-import type { CvContent, EntryRecord, Profile, SkillGroupRecord, TimelineEntry } from "../data/cv";
+import type {
+  CvContent,
+  EntryRecord,
+  Profile,
+  SkillGroup,
+  SkillGroupRecord,
+  TimelineEntry,
+} from "../data/cv";
 import type { DatabaseTransaction } from "./db";
 import {
   type ConfigError,
@@ -20,7 +28,6 @@ import {
   dbQuery,
   dbTransaction,
   isPgErrorCode,
-  runServerEffect,
 } from "./effect";
 import { listProjectsEffect } from "./projects";
 
@@ -29,6 +36,29 @@ type EntryRow = typeof cvEntries.$inferSelect;
 type SaveEntryOutcome = { ok: true } | { ok: false; reason: "conflict" | "not_found" };
 
 type DeleteEntryOutcome = { ok: true } | { ok: false; reason: "not_found" };
+
+interface CvHomeExperience {
+  from: string;
+  to?: string;
+  organization: string;
+}
+
+interface CvHomePersonSummary {
+  jobTitle: string;
+  worksFor: string;
+  knowsAbout: string[];
+}
+
+interface CvHomeSummary {
+  experience: CvHomeExperience[];
+  degreeCount: number;
+  skillGroups: SkillGroup[];
+  personSummary: CvHomePersonSummary;
+}
+
+/** Matches academic degrees so apprenticeships aren't counted as degrees. */
+const DEGREE_TITLE =
+  /\b(?:b\.?\s*sc|m\.?\s*sc|b\.?\s*a|m\.?\s*a|b\.?\s*eng|m\.?\s*eng|ph\.?\s*d|bachelor|master|diplom|degree)\b/iu;
 
 function toRecord(row: EntryRow): EntryRecord {
   return {
@@ -109,11 +139,6 @@ function listEntriesEffect(): Effect.Effect<EntryRecord[], DatabaseError | Confi
   });
 }
 
-/** All timeline entries, newest first, as the desk edits them. */
-function listEntries(): Promise<EntryRecord[]> {
-  return runServerEffect(listEntriesEffect());
-}
-
 /** All skill groups, in order, as the desk edits them. */
 function listSkillGroupsEffect(): Effect.Effect<
   SkillGroupRecord[],
@@ -134,11 +159,6 @@ function listSkillGroupsEffect(): Effect.Effect<
       items: row.items,
     }));
   });
-}
-
-/** All skill groups, in order, as the desk edits them. */
-function listSkillGroups(): Promise<SkillGroupRecord[]> {
-  return runServerEffect(listSkillGroupsEffect());
 }
 
 /** The CV's header, the one row of cv_profile. */
@@ -164,18 +184,13 @@ function loadProfileEffect(): Effect.Effect<Profile, DatabaseError | ConfigError
   });
 }
 
-/** The CV's header, the one row of cv_profile. */
-function loadProfile(): Promise<Profile> {
-  return runServerEffect(loadProfileEffect());
-}
-
 /**
  * Everything CVs pick from, in the shapes the site renders. Each field is
  * copied by name, so desk-only names and notes never reach the site or the PDF.
  */
 function loadCvContentEffect(): Effect.Effect<CvContent, DatabaseError | ConfigError, Database> {
   return Effect.gen(function* () {
-    const [profile, entries, skills, projects] = yield* Effect.all(
+    const [profile, entries, skills, projectList] = yield* Effect.all(
       [loadProfileEffect(), listEntriesEffect(), listSkillGroupsEffect(), listProjectsEffect()],
       { concurrency: "unbounded" },
     );
@@ -193,7 +208,7 @@ function loadCvContentEffect(): Effect.Effect<CvContent, DatabaseError | ConfigE
         title: group.title,
         items: group.items,
       })),
-      projects: projects.map((project) => ({
+      projects: projectList.map((project) => ({
         id: project.id,
         title: project.title,
         description: project.description,
@@ -205,11 +220,131 @@ function loadCvContentEffect(): Effect.Effect<CvContent, DatabaseError | ConfigE
 }
 
 /**
- * Everything CVs pick from, in the shapes the site renders. Each field is
- * copied by name, so desk-only names and notes never reach the site or the PDF.
+ * Lean public query for the home page and single-source Person JSON-LD: selects
+ * only entry dates/titles/organizations, skill groups, and profile role — never
+ * bullets, links, desk notes, or projects.
  */
-function loadCvContent(): Promise<CvContent> {
-  return runServerEffect(loadCvContentEffect());
+function loadCvHomeEffect(): Effect.Effect<CvHomeSummary, DatabaseError | ConfigError, Database> {
+  return Effect.gen(function* () {
+    const [entryRows, skillRows, profileRows] = yield* Effect.all(
+      [
+        dbQuery(
+          (db) =>
+            db
+              .select({
+                section: cvEntries.section,
+                title: cvEntries.title,
+                organization: cvEntries.organization,
+                from: cvEntries.from,
+                to: cvEntries.to,
+              })
+              .from(cvEntries)
+              .orderBy(desc(cvEntries.from), asc(cvEntries.id)),
+          "Failed to load CV home entries.",
+        ),
+        dbQuery(
+          (db) =>
+            db
+              .select({
+                id: skillGroups.id,
+                title: skillGroups.title,
+                items: skillGroups.items,
+              })
+              .from(skillGroups)
+              .orderBy(asc(skillGroups.position), asc(skillGroups.id)),
+          "Failed to load CV home skill groups.",
+        ),
+        dbQuery(
+          (db) => db.select({ role: cvProfile.role }).from(cvProfile).where(eq(cvProfile.id, 1)),
+          "Failed to load CV home profile.",
+        ),
+      ],
+      { concurrency: "unbounded" },
+    );
+
+    const experienceRows = entryRows.filter((row) => row.section === "experience");
+    const educationRows = entryRows.filter((row) => row.section === "education");
+    const matchedDegrees = educationRows.filter((row) => DEGREE_TITLE.test(row.title));
+    const degreeCount = matchedDegrees.length > 0 ? matchedDegrees.length : educationRows.length;
+
+    const groups: SkillGroup[] = skillRows.map((row) => ({
+      label: row.id,
+      title: row.title,
+      items: row.items,
+    }));
+
+    const currentJob = experienceRows.find((row) => row.to === "") ?? experienceRows[0];
+    const profileRole = profileRows[0]?.role ?? "";
+
+    return {
+      experience: experienceRows.map(({ from, to, organization }) =>
+        to === "" ? { from, organization } : { from, to, organization },
+      ),
+      degreeCount,
+      skillGroups: groups,
+      personSummary: {
+        jobTitle: currentJob?.title || profileRole,
+        worksFor: currentJob?.organization ?? "",
+        knowsAbout: [...new Set(groups.flatMap((group) => group.items))],
+      },
+    };
+  });
+}
+
+/**
+ * Latest `updatedAt` ISO date string across public CV tables (`cv_profile`,
+ * `cv_entries`, `projects`, and public `cvs`; `skill_groups` has no timestamp
+ * column), or `null` if no rows exist.
+ */
+function loadPublicSitemapUpdatedAtEffect(): Effect.Effect<
+  string | null,
+  DatabaseError | ConfigError,
+  Database
+> {
+  return Effect.gen(function* () {
+    const [profileMax, entriesMax, projectsMax, cvsMax] = yield* Effect.all(
+      [
+        dbQuery(
+          (db) => db.select({ updatedAt: max(cvProfile.updatedAt) }).from(cvProfile),
+          "Failed to load CV profile update time.",
+        ),
+        dbQuery(
+          (db) => db.select({ updatedAt: max(cvEntries.updatedAt) }).from(cvEntries),
+          "Failed to load CV entries update time.",
+        ),
+        dbQuery(
+          (db) => db.select({ updatedAt: max(projects.updatedAt) }).from(projects),
+          "Failed to load projects update time.",
+        ),
+        dbQuery(
+          (db) =>
+            db
+              .select({ updatedAt: max(cvs.updatedAt) })
+              .from(cvs)
+              .where(or(eq(cvs.isPrimary, true), eq(cvs.isWebsite, true))),
+          "Failed to load public CVs update time.",
+        ),
+      ],
+      { concurrency: "unbounded" },
+    );
+
+    const candidates = [
+      profileMax[0]?.updatedAt,
+      entriesMax[0]?.updatedAt,
+      projectsMax[0]?.updatedAt,
+      cvsMax[0]?.updatedAt,
+    ].filter((value): value is Date => value instanceof Date && !Number.isNaN(value.getTime()));
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    const latest = candidates.reduce((newest, candidate) =>
+      candidate.getTime() > newest.getTime() ? candidate : newest,
+    );
+
+    return latest.toISOString();
+  });
 }
 
 /** The entry with this id; a 404 error if there is none. */
@@ -228,11 +363,6 @@ function requireEntryEffect(
 
     return toRecord(row);
   });
-}
-
-/** The entry with this id; a 404 error if there is none. */
-function requireEntry(id: string): Promise<EntryRecord> {
-  return runServerEffect(requireEntryEffect(id));
 }
 
 /**
@@ -291,14 +421,6 @@ function saveEntryEffect(
   });
 }
 
-/**
- * Creates an entry (409 if the id is taken) or updates one (404 if missing).
- * Its section never changes. Bullets it no longer has leave the CVs.
- */
-function saveEntry(entry: EntryRecord, options: { create: boolean }): Promise<void> {
-  return runServerEffect(saveEntryEffect(entry, options));
-}
-
 /** Deletes an entry and takes it out of every CV. */
 function deleteEntryEffect(
   id: string,
@@ -326,11 +448,6 @@ function deleteEntryEffect(
 
     return undefined;
   });
-}
-
-/** Deletes an entry and takes it out of every CV. */
-function deleteEntry(id: string): Promise<void> {
-  return runServerEffect(deleteEntryEffect(id));
 }
 
 /**
@@ -372,14 +489,6 @@ function saveSkillGroupsEffect(
   }, "Failed to save skill groups.");
 }
 
-/**
- * Replaces all skill groups with these, in this order. Groups left out are
- * deleted and taken out of every CV.
- */
-function saveSkillGroups(groups: SkillGroupRecord[]): Promise<void> {
-  return runServerEffect(saveSkillGroupsEffect(groups));
-}
-
 /** Writes the profile; CVs and letters print it, so their page checks are out of date. */
 function saveProfileEffect(
   profile: Profile,
@@ -396,28 +505,17 @@ function saveProfileEffect(
   }, "Failed to save CV profile.");
 }
 
-/** Writes the profile; CVs and letters print it, so their page checks are out of date. */
-function saveProfile(profile: Profile): Promise<void> {
-  return runServerEffect(saveProfileEffect(profile));
-}
-
 export {
-  deleteEntry,
   deleteEntryEffect,
-  listEntries,
   listEntriesEffect,
-  listSkillGroups,
   listSkillGroupsEffect,
-  loadCvContent,
   loadCvContentEffect,
-  loadProfile,
+  loadCvHomeEffect,
   loadProfileEffect,
-  requireEntry,
+  loadPublicSitemapUpdatedAtEffect,
   requireEntryEffect,
-  saveEntry,
   saveEntryEffect,
-  saveProfile,
   saveProfileEffect,
-  saveSkillGroups,
   saveSkillGroupsEffect,
 };
+export type { CvHomeExperience, CvHomePersonSummary, CvHomeSummary };

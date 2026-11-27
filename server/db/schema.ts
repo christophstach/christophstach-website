@@ -2,6 +2,7 @@ import {
   boolean,
   check,
   foreignKey,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -267,6 +268,7 @@ const cvEntryPicks = pgTable(
       .onUpdate("cascade"),
     oneOf("cv_entry_picks_section_check", table.section, SECTIONS),
     check("cv_entry_picks_position_check", sql`${table.position} >= 0`),
+    index("cv_entry_picks_entry_section_idx").on(table.entryId, table.section),
   ],
 );
 
@@ -482,6 +484,10 @@ const jobPostings = pgTable(
       "job_postings_ad_text_check",
       sql`${table.adTextUrl} = '' or ${table.adTextCheckedAt} is not null`,
     ),
+    index("job_postings_collector_id_idx").on(table.collectorId),
+    index("job_postings_status_created_at_idx").on(table.status, table.createdAt.desc()),
+    index("job_postings_scored_at_idx").on(table.scoredAt),
+    index("job_postings_ad_text_checked_at_idx").on(table.adTextCheckedAt),
   ],
 );
 
@@ -611,6 +617,10 @@ const applications = pgTable(
       "applications_sent_check",
       sql`${table.sent} is null or jsonb_typeof(${table.sent}) = 'object'`,
     ),
+    index("applications_posting_id_idx")
+      .on(table.postingId)
+      .where(sql`${table.postingId} is not null`),
+    index("applications_cv_id_idx").on(table.cvId),
   ],
 );
 
