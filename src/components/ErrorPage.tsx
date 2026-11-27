@@ -1,9 +1,7 @@
-import { AppFooter } from "./AppFooter";
-import { AppHeader } from "./AppHeader";
 import { IconArrowRight } from "./icons";
+import { SiteLayout } from "./SiteLayout";
 import { SiteMeta } from "../seo";
 import { httpStatus } from "@solidjs/web";
-import layout from "./SiteLayout.module.css";
 import { paths } from "../router";
 import styles from "./ErrorPage.module.css";
 import { untrack } from "solid-js";
@@ -23,6 +21,9 @@ export function ErrorPage(props: ErrorPageProps) {
   httpStatus(untrack(() => props.status));
   const notFound = () => props.status === 404;
 
+  const heading = () =>
+    notFound() ? `${props.status} — Page not found` : `${props.status} — Something went wrong`;
+
   // Mirrors what a shell says when you cd into a path that isn't there.
   const shellMessage = () =>
     notFound()
@@ -30,41 +31,38 @@ export function ErrorPage(props: ErrorPageProps) {
       : (props.message ?? "Something went wrong on this end.");
 
   return (
-    <div class={layout.layout}>
+    <SiteLayout>
       <SiteMeta
         path={location.pathname}
         title={notFound() ? "Page not found" : "Error"}
         robots="noindex"
       />
-      <AppHeader />
 
-      <main class={styles.main}>
-        <div class={["container", styles.error]}>
-          <h1 class="section-label">error</h1>
+      <div class={["container", styles.error]}>
+        <p class="section-label">error</p>
 
-          <p class={styles.code}>{props.status}</p>
+        <h1 class={styles.heading}>{heading()}</h1>
 
-          <p class={styles.shell}>
-            <span class={styles.prompt}>$</span> cd{" "}
-            <span class={styles.path}>{location.pathname}</span>
-          </p>
+        <p class={styles.shell}>
+          <span class={styles.prompt} aria-hidden="true">
+            $
+          </span>{" "}
+          cd <span class={styles.path}>{location.pathname}</span>
+        </p>
 
-          <p class={styles.message}>{shellMessage()}</p>
+        <p class={styles.message}>{shellMessage()}</p>
 
-          <div class={styles.actions}>
-            <a href={paths()} class="button button--primary">
-              cd ~
-              <IconArrowRight size={16} />
-            </a>
+        <div class={styles.actions}>
+          <a href={paths()} class="button button--primary">
+            cd ~
+            <IconArrowRight size={16} />
+          </a>
 
-            <a href={paths.curriculum()} class="button button--outline">
-              curriculum
-            </a>
-          </div>
+          <a href={paths.curriculum()} class="button button--outline">
+            curriculum
+          </a>
         </div>
-      </main>
-
-      <AppFooter />
-    </div>
+      </div>
+    </SiteLayout>
   );
 }

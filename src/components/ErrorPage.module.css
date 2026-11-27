@@ -1,20 +1,14 @@
-.main {
-  display: flex;
-  flex: 1;
-  align-items: center;
-}
-
 .error {
   padding-block: var(--space-16);
 }
 
-.code {
+.heading {
   margin-top: var(--space-4);
   font-family: var(--font-mono);
-  font-size: clamp(var(--text-4xl), 14vw, var(--text-6xl));
+  font-size: clamp(var(--text-3xl), 5vw, var(--text-5xl));
   font-weight: var(--font-bold);
-  line-height: 1;
-  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
   color: var(--color-heading);
 }
 

@@ -14,7 +14,9 @@ export function CurriculumProjects(props: { projects: CvWebsiteProject[] }) {
           {(project) => (
             <li class={styles.projects__card}>
               <h3 class={styles.projects__title}>
-                <span class={styles.projects__prompt}>›</span>
+                <span class={styles.projects__prompt} aria-hidden="true">
+                  ›
+                </span>
                 <Show when={project.url !== ""} fallback={<CvText text={project.title} />}>
                   <a
                     href={project.url}

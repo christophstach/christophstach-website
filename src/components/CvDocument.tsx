@@ -1,3 +1,4 @@
+import "../assets/css/print.css";
 import { For, Show } from "solid-js";
 import { formatMonth, stripScheme } from "../lib/format";
 import { CV_LAYOUT_STEPS } from "../data/cv-print-layout";

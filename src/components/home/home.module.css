@@ -88,7 +88,7 @@
   margin-top: var(--space-2);
   font-size: clamp(var(--text-4xl), 6vw, var(--text-6xl));
   font-weight: var(--font-bold);
-  letter-spacing: var(--tracking-tight);
+  letter-spacing: var(--tracking-display);
 }
 
 .hero__role {
@@ -126,12 +126,19 @@
 
 /* Portrait framed like an image preview pane. */
 .hero__figure {
+  width: 100%;
   max-width: var(--hero-portrait-size);
-  margin: 0;
+  margin: 0 auto;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   background-color: var(--color-surface);
   overflow: hidden;
+}
+
+@media (min-width: 56rem) {
+  .hero__figure {
+    margin: 0;
+  }
 }
 
 .hero__portrait {
@@ -181,7 +188,9 @@
   font-family: var(--font-mono);
   font-size: var(--text-4xl);
   font-weight: var(--font-bold);
+  font-variant-numeric: tabular-nums;
   line-height: 1;
+  letter-spacing: var(--tracking-display);
   color: var(--color-heading);
 }
 
@@ -321,4 +330,72 @@
   .tree__items {
     padding-top: calc((var(--tree-row) - 1.5rem) / 2);
   }
+}
+
+/* Closing contact CTA */
+.contact {
+  padding-block: var(--space-10) var(--space-16);
+  border-top: 1px solid var(--color-rule);
+}
+
+.contact__card {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+  padding: var(--space-6);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+}
+
+@media (min-width: 40rem) {
+  .contact__card {
+    padding: var(--space-8);
+  }
+}
+
+.contact__lead {
+  max-width: var(--content-max);
+  font-size: var(--text-lg);
+  line-height: var(--leading-normal);
+  color: var(--color-text-soft);
+}
+
+.contact__mail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.contact__address {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+.contact__copy {
+  padding-block: var(--space-1-5);
+}
+
+.contact__status {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-accent);
+}
+
+.contact__status--error {
+  color: var(--color-signal);
+}
+
+.contact__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
 }

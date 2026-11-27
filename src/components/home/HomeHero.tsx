@@ -14,7 +14,7 @@ export function HomeHero(props: HomeHeroProps) {
   return (
     <section class={styles.hero}>
       <div class={styles.hero__grid}>
-        <div class={[styles.terminal, "reveal"]}>
+        <div class={styles.terminal}>
           <div class={styles.terminal__bar}>
             <span class={styles.terminal__dots} aria-hidden="true">
               {" "}
@@ -27,17 +27,29 @@ export function HomeHero(props: HomeHeroProps) {
 
           <div class={styles.terminal__body}>
             <p class={styles.terminal__cmd}>
-              <span class={styles.terminal__prompt}>$</span> whoami
+              <span class={styles.terminal__prompt} aria-hidden="true">
+                $
+              </span>{" "}
+              whoami
             </p>
             <h1 class={styles.hero__title}>Christoph Stach</h1>
             <p class={styles.hero__role}>
-              Senior Software Engineer<span class={styles.hero__sep}>//</span>Berlin
-              <span class={styles.hero__sep}>//</span>
+              Senior Software Engineer
+              <span class={styles.hero__sep} aria-hidden="true">
+                //
+              </span>
+              Berlin
+              <span class={styles.hero__sep} aria-hidden="true">
+                //
+              </span>
               {props.yearsEmployed}+ yrs
             </p>
 
             <p class={styles.terminal__cmd}>
-              <span class={styles.terminal__prompt}>$</span> cat about.txt
+              <span class={styles.terminal__prompt} aria-hidden="true">
+                $
+              </span>{" "}
+              cat about.txt
             </p>
             <p class={styles.hero__text}>
               Senior software engineer with a strong background in <strong>web development</strong>{" "}
@@ -82,12 +94,13 @@ export function HomeHero(props: HomeHeroProps) {
           </div>
         </div>
 
-        <figure class={[styles.hero__figure, "reveal"]} style={{ "animation-delay": "140ms" }}>
+        <figure class={styles.hero__figure}>
           <img
             src="/images/hero.webp"
             alt="Portrait of Christoph Stach"
             width="272"
-            height="272"
+            height="288"
+            decoding="async"
             fetchpriority="high"
             class={styles.hero__portrait}
           />

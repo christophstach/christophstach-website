@@ -28,26 +28,46 @@ export function CvHead(props: CvHeadProps) {
         )}
       </Show>
       {props.children}
-      <ul class={styles.cv__contact}>
-        <li>
-          <CvText text={props.profile.location} />
-        </li>
-        <li>
-          <a href={`mailto:${props.profile.email}`}>{props.profile.email}</a>
-        </li>
-        <li>
-          <a href={`tel:${props.profile.phone.replaceAll(" ", "")}`}>{props.profile.phone}</a>
-        </li>
-      </ul>
-      <ul class={[styles.cv__contact, styles["cv__contact--links"]]}>
-        <For each={props.profile.links} keyed={(link) => link.href}>
-          {(link) => (
-            <li>
-              <a href={link().href}>{stripScheme(link().href)}</a>
-            </li>
-          )}
-        </For>
-      </ul>
+      <Show
+        when={
+          props.profile.location !== "" || props.profile.email !== "" || props.profile.phone !== ""
+        }
+      >
+        <ul class={styles.cv__contact}>
+          <Show when={props.profile.location}>
+            {(location) => (
+              <li>
+                <CvText text={location()} />
+              </li>
+            )}
+          </Show>
+          <Show when={props.profile.email}>
+            {(email) => (
+              <li>
+                <a href={`mailto:${email()}`}>{email()}</a>
+              </li>
+            )}
+          </Show>
+          <Show when={props.profile.phone}>
+            {(phone) => (
+              <li>
+                <a href={`tel:${phone().replaceAll(" ", "")}`}>{phone()}</a>
+              </li>
+            )}
+          </Show>
+        </ul>
+      </Show>
+      <Show when={props.profile.links.length > 0}>
+        <ul class={[styles.cv__contact, styles["cv__contact--links"]]}>
+          <For each={props.profile.links} keyed={(link) => link.href}>
+            {(link) => (
+              <li>
+                <a href={link().href}>{stripScheme(link().href)}</a>
+              </li>
+            )}
+          </For>
+        </ul>
+      </Show>
     </header>
   );
 }

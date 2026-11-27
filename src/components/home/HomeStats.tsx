@@ -4,6 +4,7 @@ interface HomeStatsProps {
   yearsEmployed: number;
   companyCount: number;
   totalSkills: number;
+  degreeCount?: number | undefined;
 }
 
 /** Career at a glance: years, companies, degrees, technologies. */
@@ -24,7 +25,7 @@ export function HomeStats(props: HomeStatsProps) {
           <span class={styles.stat__label}>companies</span>
         </li>
         <li class={styles.stat}>
-          <span class={styles.stat__value}>2</span>
+          <span class={styles.stat__value}>{props.degreeCount ?? 2}</span>
           <span class={styles.stat__label}>cs_degrees</span>
         </li>
         <li class={styles.stat}>

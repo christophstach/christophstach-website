@@ -1,3 +1,4 @@
+import "../assets/css/print.css";
 import { For, Show } from "solid-js";
 import { COVER_LETTER_MARGIN_MM } from "../data/cover-letter-wording";
 import { CvHead } from "./CvHead";
