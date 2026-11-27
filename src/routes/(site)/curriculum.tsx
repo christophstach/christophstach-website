@@ -3,7 +3,6 @@ import { IconBriefcase, IconDownload, IconSchool } from "../../components/icons"
 import { CurriculumProjects } from "../../components/curriculum/CurriculumProjects";
 import { CvTimeline } from "../../components/CvTimeline";
 import { cvDownloadVisible } from "../../data/cvs";
-import { cvWebsiteSchema } from "../../data/public-api";
 import styles from "../../components/curriculum/curriculum.module.css";
 
 // A server page: experience, education and projects come from the website
@@ -13,9 +12,13 @@ export default async function Curriculum() {
   "use server";
 
   // Imported here, inside the server function, so the client build never
-  // resolves the server-only module.
-  const { fetchPublic } = await import("../../server/fetch-public");
-  const cv = await fetchPublic(CV_WEBSITE_API_PATH, cvWebsiteSchema);
+  // resolves the server-only modules or Effect runtime schemas.
+  const [{ fetchPublicEffect }, { runServerEffect }, { CvWebsiteSchema }] = await Promise.all([
+    import("../../server/fetch-public"),
+    import("../../server/effect"),
+    import("../../data/public-api"),
+  ]);
+  const cv = await runServerEffect(fetchPublicEffect(CV_WEBSITE_API_PATH, CvWebsiteSchema));
 
   return () => (
     <div class={["container", styles.page]}>

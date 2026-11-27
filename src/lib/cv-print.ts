@@ -5,7 +5,10 @@ import { query } from "@solidjs/router";
 export const getPrimaryCv = query(async (): Promise<PrintedCv> => {
   "use server";
 
-  const { printStoredCv, requireMarkedCv } = await import("../server/cvs");
+  const [{ Effect }, { printStoredCvEffect, requireMarkedCvEffect }, { runServerEffect }] =
+    await Promise.all([import("effect"), import("../server/cvs"), import("../server/effect")]);
 
-  return printStoredCv(await requireMarkedCv("isPrimary"));
+  return runServerEffect(
+    requireMarkedCvEffect("isPrimary").pipe(Effect.flatMap(printStoredCvEffect)),
+  );
 }, "cv-print");
