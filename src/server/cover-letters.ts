@@ -1,15 +1,33 @@
 import "server-only";
+import { Effect } from "effect";
 import type { CoverLetter, CoverLetterRecord, PrintedCoverLetter } from "../data/cover-letters";
 import { applications, coverLetters } from "../../server/db/schema";
 import { and, asc, desc, eq, ne } from "drizzle-orm";
 import { currentBuild, requireCv } from "./cvs";
+import {
+  BadRequestError,
+  type ConfigError,
+  ConflictError,
+  type Database,
+  DatabaseError,
+  NotFoundError,
+  dbQuery,
+  dbTransaction,
+  isPgErrorCode,
+  runServerEffect,
+} from "./effect";
 import { HttpError } from "./http";
-import { findApplication } from "./applications";
+import { findApplicationEffect } from "./applications";
 import { loadProfile } from "./cv-content";
 import { printedLetter } from "../lib/cover-letter";
-import { useDb } from "./db";
 
 type LetterRow = typeof coverLetters.$inferSelect;
+
+type SaveCoverLetterOutcome =
+  | { readonly _tag: "Saved" }
+  | { readonly _tag: "ApplicationHasLetter"; readonly otherId: string }
+  | { readonly _tag: "AlreadyExists" }
+  | { readonly _tag: "NotFound" };
 
 function toLetter(row: LetterRow): CoverLetter {
   return {
@@ -28,39 +46,66 @@ function toLetter(row: LetterRow): CoverLetter {
 }
 
 function notFound(id: string) {
-  return new HttpError(404, `No cover letter "${id}".`);
+  return new NotFoundError({ message: `No cover letter "${id}".` });
 }
 
 /** All cover letters, newest first, each with its page check on this build and its job. */
-async function listCoverLetters(): Promise<CoverLetterRecord[]> {
-  const build = currentBuild();
-  const rows = await useDb()
-    .select({
-      letter: coverLetters,
-      company: applications.company,
-      jobTitle: applications.jobTitle,
-    })
-    .from(coverLetters)
-    .innerJoin(applications, eq(coverLetters.applicationId, applications.id))
-    .orderBy(desc(coverLetters.createdAt), asc(coverLetters.id));
+function listCoverLettersEffect(): Effect.Effect<
+  CoverLetterRecord[],
+  DatabaseError | ConfigError,
+  Database
+> {
+  return Effect.gen(function* () {
+    const build = currentBuild();
+    const rows = yield* dbQuery(
+      (db) =>
+        db
+          .select({
+            letter: coverLetters,
+            company: applications.company,
+            jobTitle: applications.jobTitle,
+          })
+          .from(coverLetters)
+          .innerJoin(applications, eq(coverLetters.applicationId, applications.id))
+          .orderBy(desc(coverLetters.createdAt), asc(coverLetters.id)),
+      "Failed to list cover letters.",
+    );
 
-  return rows.map(({ letter, company, jobTitle }) =>
-    Object.assign(toLetter(letter), {
-      pageFills: letter.pageFillsBuild === build ? letter.pageFills : [],
-      application: { company, jobTitle },
-    }),
-  );
+    return rows.map(({ letter, company, jobTitle }) =>
+      Object.assign(toLetter(letter), {
+        pageFills: letter.pageFillsBuild === build ? letter.pageFills : [],
+        application: { company, jobTitle },
+      }),
+    );
+  });
+}
+
+/** All cover letters, newest first, each with its page check on this build and its job. */
+function listCoverLetters(): Promise<CoverLetterRecord[]> {
+  return runServerEffect(listCoverLettersEffect());
 }
 
 /** The cover letter with this id; a 404 error if there is none. */
-async function requireCoverLetter(id: string): Promise<CoverLetter> {
-  const [row] = await useDb().select().from(coverLetters).where(eq(coverLetters.id, id));
+function requireCoverLetterEffect(
+  id: string,
+): Effect.Effect<CoverLetter, NotFoundError | DatabaseError | ConfigError, Database> {
+  return Effect.gen(function* () {
+    const [row] = yield* dbQuery(
+      (db) => db.select().from(coverLetters).where(eq(coverLetters.id, id)),
+      `Failed to load cover letter "${id}".`,
+    );
 
-  if (!row) {
-    throw notFound(id);
-  }
+    if (!row) {
+      return yield* notFound(id);
+    }
 
-  return toLetter(row);
+    return toLetter(row);
+  });
+}
+
+/** The cover letter with this id; a 404 error if there is none. */
+function requireCoverLetter(id: string): Promise<CoverLetter> {
+  return runServerEffect(requireCoverLetterEffect(id));
 }
 
 function letterColumns(letter: CoverLetter) {
@@ -69,80 +114,187 @@ function letterColumns(letter: CoverLetter) {
 }
 
 /** Creates a cover letter (409 if the id is taken) or updates one (404 if missing). */
-async function saveCoverLetter(letter: CoverLetter, { create }: { create: boolean }) {
-  if ((await findApplication(letter.applicationId)) === undefined) {
-    throw new HttpError(400, `No application "${letter.applicationId}".`);
-  }
+function saveCoverLetterEffect(
+  letter: CoverLetter,
+  { create }: { create: boolean },
+): Effect.Effect<
+  void,
+  BadRequestError | ConflictError | NotFoundError | DatabaseError | ConfigError,
+  Database
+> {
+  return Effect.gen(function* () {
+    const application = yield* findApplicationEffect(letter.applicationId);
 
-  // An application has at most one letter.
-  const [other] = await useDb()
-    .select({ id: coverLetters.id })
-    .from(coverLetters)
-    .where(
-      and(eq(coverLetters.applicationId, letter.applicationId), ne(coverLetters.id, letter.id)),
+    if (application === undefined) {
+      return yield* new BadRequestError({ message: `No application "${letter.applicationId}".` });
+    }
+
+    const outcome = yield* dbTransaction<SaveCoverLetterOutcome>(async (tx) => {
+      // An application has at most one letter.
+      const [other] = await tx
+        .select({ id: coverLetters.id })
+        .from(coverLetters)
+        .where(
+          and(eq(coverLetters.applicationId, letter.applicationId), ne(coverLetters.id, letter.id)),
+        );
+
+      if (other !== undefined) {
+        return { _tag: "ApplicationHasLetter", otherId: other.id };
+      }
+
+      const written = create
+        ? await tx
+            .insert(coverLetters)
+            .values(letterColumns(letter))
+            .onConflictDoNothing({ target: coverLetters.id })
+            .returning({ id: coverLetters.id })
+        : await tx
+            .update(coverLetters)
+            .set(letterColumns(letter))
+            .where(eq(coverLetters.id, letter.id))
+            .returning({ id: coverLetters.id });
+
+      if (written.length === 0) {
+        return create ? { _tag: "AlreadyExists" } : { _tag: "NotFound" };
+      }
+
+      return { _tag: "Saved" };
+    }, `Failed to save cover letter "${letter.id}".`).pipe(
+      Effect.catchTag("DatabaseError", (error) =>
+        Effect.gen(function* () {
+          if (isPgErrorCode(error, "23505")) {
+            return yield* new ConflictError({
+              message: `Application "${letter.applicationId}" has a cover letter already.`,
+              cause: error,
+            });
+          }
+
+          return yield* error;
+        }),
+      ),
     );
 
-  if (other !== undefined) {
-    throw new HttpError(
-      409,
-      `Application "${letter.applicationId}" has a cover letter already: "${other.id}".`,
-    );
-  }
+    if (outcome._tag === "ApplicationHasLetter") {
+      return yield* new ConflictError({
+        message: `Application "${letter.applicationId}" has a cover letter already: "${outcome.otherId}".`,
+      });
+    }
 
-  const written = create
-    ? await useDb()
-        .insert(coverLetters)
-        .values(letterColumns(letter))
-        .onConflictDoNothing()
-        .returning({ id: coverLetters.id })
-    : await useDb()
-        .update(coverLetters)
-        .set(letterColumns(letter))
-        .where(eq(coverLetters.id, letter.id))
-        .returning({ id: coverLetters.id });
+    if (outcome._tag === "AlreadyExists") {
+      return yield* new ConflictError({ message: `Cover letter "${letter.id}" exists.` });
+    }
 
-  if (written.length === 0) {
-    throw create ? new HttpError(409, `Cover letter "${letter.id}" exists.`) : notFound(letter.id);
-  }
+    if (outcome._tag === "NotFound") {
+      return yield* notFound(letter.id);
+    }
+
+    return undefined;
+  });
 }
 
-async function deleteCoverLetter(id: string) {
-  const deleted = await useDb()
-    .delete(coverLetters)
-    .where(eq(coverLetters.id, id))
-    .returning({ id: coverLetters.id });
+/** Creates a cover letter (409 if the id is taken) or updates one (404 if missing). */
+function saveCoverLetter(letter: CoverLetter, options: { create: boolean }): Promise<void> {
+  return runServerEffect(saveCoverLetterEffect(letter, options));
+}
 
-  if (deleted.length === 0) {
-    throw notFound(id);
-  }
+function deleteCoverLetterEffect(
+  id: string,
+): Effect.Effect<void, NotFoundError | DatabaseError | ConfigError, Database> {
+  return Effect.gen(function* () {
+    const deleted = yield* dbQuery(
+      (db) =>
+        db.delete(coverLetters).where(eq(coverLetters.id, id)).returning({ id: coverLetters.id }),
+      `Failed to delete cover letter "${id}".`,
+    );
+
+    if (deleted.length === 0) {
+      return yield* notFound(id);
+    }
+
+    return undefined;
+  });
+}
+
+function deleteCoverLetter(id: string): Promise<void> {
+  return runServerEffect(deleteCoverLetterEffect(id));
 }
 
 /** Stores how full each page was, marked with the build that printed it. */
-async function storeCoverLetterFills(id: string, fills: number[]) {
-  await useDb()
-    .update(coverLetters)
-    .set({ pageFills: fills, pageFillsBuild: currentBuild() })
-    .where(eq(coverLetters.id, id));
+function storeCoverLetterFillsEffect(
+  id: string,
+  fills: number[],
+): Effect.Effect<void, DatabaseError | ConfigError, Database> {
+  return dbQuery(
+    (db) =>
+      db
+        .update(coverLetters)
+        .set({ pageFills: fills, pageFillsBuild: currentBuild() })
+        .where(eq(coverLetters.id, id)),
+    `Failed to store page fills for cover letter "${id}".`,
+  ).pipe(Effect.asVoid);
+}
+
+/** Stores how full each page was, marked with the build that printed it. */
+function storeCoverLetterFills(id: string, fills: number[]): Promise<void> {
+  return runServerEffect(storeCoverLetterFillsEffect(id, fills));
 }
 
 /** What the print page shows; the role is that of the application's CV. */
-async function printCoverLetter(id: string): Promise<PrintedCoverLetter> {
-  const letter = await requireCoverLetter(id);
-  const [profile, application] = await Promise.all([
-    loadProfile(),
-    findApplication(letter.applicationId),
-  ]);
-  const cvId = application?.cvId ?? "";
-  const cv = cvId === "" ? undefined : await requireCv(cvId);
+function printCoverLetterEffect(
+  id: string,
+): Effect.Effect<PrintedCoverLetter, NotFoundError | DatabaseError | ConfigError, Database> {
+  return Effect.gen(function* () {
+    const letter = yield* requireCoverLetterEffect(id);
+    const [profile, application] = yield* Effect.all(
+      [
+        Effect.tryPromise({
+          try: () => loadProfile(),
+          catch: (cause) =>
+            new DatabaseError({
+              message: cause instanceof HttpError ? cause.message : "Failed to load CV profile.",
+              cause,
+            }),
+        }),
+        findApplicationEffect(letter.applicationId),
+      ],
+      { concurrency: "unbounded" },
+    );
+    const cvId = application?.cvId ?? "";
+    const cv =
+      cvId === ""
+        ? undefined
+        : yield* Effect.tryPromise({
+            try: () => requireCv(cvId),
+            catch: (cause) =>
+              cause instanceof HttpError && cause.status === 404
+                ? new NotFoundError({ message: cause.message, cause })
+                : new DatabaseError({
+                    message:
+                      cause instanceof HttpError ? cause.message : `Failed to load CV "${cvId}".`,
+                    cause,
+                  }),
+          });
 
-  return printedLetter(letter, profile, cv?.role);
+    return printedLetter(letter, profile, cv?.role);
+  });
+}
+
+/** What the print page shows; the role is that of the application's CV. */
+function printCoverLetter(id: string): Promise<PrintedCoverLetter> {
+  return runServerEffect(printCoverLetterEffect(id));
 }
 
 export {
   deleteCoverLetter,
+  deleteCoverLetterEffect,
   listCoverLetters,
+  listCoverLettersEffect,
   printCoverLetter,
+  printCoverLetterEffect,
   requireCoverLetter,
+  requireCoverLetterEffect,
   saveCoverLetter,
+  saveCoverLetterEffect,
   storeCoverLetterFills,
+  storeCoverLetterFillsEffect,
 };
