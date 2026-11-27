@@ -15,11 +15,24 @@
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1-5) var(--space-2);
+  margin-inline-start: calc(var(--space-2) * -1);
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: var(--font-bold);
   letter-spacing: var(--tracking-tight);
   color: var(--color-heading);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.brand:hover {
+  background-color: var(--color-hover);
+  color: var(--color-hover-text);
 }
 
 .brand::before {
@@ -30,6 +43,11 @@
 
 .brandAccent {
   color: var(--color-accent);
+  transition: color var(--transition-fast);
+}
+
+.brand:hover .brandAccent {
+  color: var(--color-accent-strong);
 }
 
 /* Abbreviate the brand below 40rem so brand, nav, and toggle fit on
@@ -48,13 +66,20 @@
   }
 }
 
+.actions,
 .nav {
   display: flex;
   align-items: center;
   gap: var(--space-1);
 }
 
+.control {
+  display: flex;
+  align-items: center;
+}
+
 @media (min-width: 40rem) {
+  .actions,
   .nav {
     gap: var(--space-2);
   }

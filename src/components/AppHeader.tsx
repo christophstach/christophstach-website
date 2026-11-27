@@ -6,8 +6,8 @@ import styles from "./AppHeader.module.css";
 import { useLocation } from "@solidjs/router";
 
 const LINKS = [
-  { to: paths(), text: "Home" },
-  { to: paths.curriculum(), text: "Curriculum" },
+  { id: "nav-home", to: paths(), text: "Home" },
+  { id: "nav-curriculum", to: paths.curriculum(), text: "Curriculum" },
 ] as const;
 
 export function AppHeader() {
@@ -16,26 +16,43 @@ export function AppHeader() {
   return (
     <header class={styles.header}>
       <div class={["container", styles.inner]}>
-        <a href={paths()} class={styles.brand}>
-          <span class={styles.brandLong}>Christoph</span>
-          <span class={styles.brandShort}>C.</span>
-          <span class={styles.brandAccent}>Stach</span>
+        <a
+          id="header-brand"
+          href={paths()}
+          class={styles.brand}
+          aria-label="Christoph Stach — Home"
+        >
+          <span class={styles.brandLong} aria-hidden="true">
+            Christoph
+          </span>
+          <span class={styles.brandShort} aria-hidden="true">
+            C.
+          </span>
+          <span class={styles.brandAccent} aria-hidden="true">
+            Stach
+          </span>
         </a>
 
-        <nav class={styles.nav}>
-          <For each={LINKS}>
-            {(link) => (
-              <a
-                href={link.to}
-                class={[styles.link, { [styles.active ?? ""]: location.pathname === link.to }]}
-              >
-                {link.text}
-              </a>
-            )}
-          </For>
+        <div class={styles.actions}>
+          <nav id="primary-nav" class={styles.nav} aria-label="Primary">
+            <For each={LINKS}>
+              {(link) => (
+                <a
+                  id={link.id}
+                  href={link.to}
+                  aria-current={location.pathname === link.to ? "page" : undefined}
+                  class={[styles.link, { [styles.active ?? ""]: location.pathname === link.to }]}
+                >
+                  {link.text}
+                </a>
+              )}
+            </For>
+          </nav>
 
-          <ThemeToggle initial={getColorMode()} />
-        </nav>
+          <div id="header-theme-control" class={styles.control}>
+            <ThemeToggle initial={getColorMode()} />
+          </div>
+        </div>
       </div>
     </header>
   );

@@ -75,6 +75,7 @@
   --text-sm: 0.8125rem;
   --text-base: 0.95rem;
   --text-lg: 1.0625rem;
+  --text-xl: 1.25rem;
   --text-2xl: 1.5rem;
   --text-3xl: 1.9rem;
   --text-4xl: 2.4rem;
@@ -88,8 +89,10 @@
 
   --leading-tight: 1.1;
   --leading-snug: 1.3;
+  --leading-normal: 1.55;
   --leading-relaxed: 1.7;
 
+  --tracking-display: -0.03em;
   --tracking-tight: -0.01em;
   --tracking-wide: 0.05em;
 
@@ -114,23 +117,17 @@
   --radius-lg: 0.25rem;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-md: 0 4px 10px -2px rgb(0 0 0 / 0.4);
-  --shadow-lg: 0 16px 30px -10px rgb(0 0 0 / 0.5);
-
   /* Layout */
   --container-max: 68rem;
   --content-max: 46rem;
   --header-height: 3.5rem;
 
   /* Motion */
-  --transition-fast: 130ms ease;
+  --duration-fast: 130ms;
+  --transition-fast: var(--duration-fast) ease;
 
   /* Z-index */
   --z-header: 20;
-
-  /* Effects */
-  --glow-accent: 0 0 0.4em color-mix(in srgb, var(--color-accent) 55%, transparent);
 
   /* ---------- Semantic aliases (light: "daylight terminal") ---------- */
 
@@ -159,8 +156,13 @@
   --color-accent-strong: var(--phosphor-800);
   --color-accent-contrast: var(--slate-50);
   --color-accent-subtle-bg: var(--phosphor-100);
-  --color-accent-subtle-text: var(--phosphor-700);
+  --color-accent-subtle-text: var(--phosphor-800);
   --color-ring: rgb(8 122 94 / 0.3);
+
+  /* Shadows and effects calibrated for daylight surfaces. */
+  --shadow-md: 0 4px 12px -2px rgb(11 21 20 / 0.1);
+  --shadow-lg: 0 16px 32px -12px rgb(11 21 20 / 0.14), 0 2px 6px -1px rgb(11 21 20 / 0.08);
+  --glow-accent: 0 0 0.35em color-mix(in srgb, var(--color-accent) 20%, transparent);
 
   --color-signal: var(--amber-700);
   --color-danger: var(--red-700);
@@ -228,6 +230,10 @@
   --color-step-3: var(--blue-400);
   --color-step-4: var(--blue-300);
   --color-step-5: var(--blue-200);
+
+  --shadow-md: 0 4px 10px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 16px 30px -10px rgb(0 0 0 / 0.5);
+  --glow-accent: 0 0 0.4em color-mix(in srgb, var(--color-accent) 55%, transparent);
 
   --color-paper-shadow: 0 0 0 1px rgb(255 255 255 / 0.04), 0 16px 40px -12px rgb(0 0 0 / 0.6);
 }

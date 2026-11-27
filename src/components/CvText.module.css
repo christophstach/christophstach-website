@@ -1,4 +1,13 @@
 .link {
-  color: inherit;
+  color: var(--color-accent);
+  font-weight: var(--font-medium);
   text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  transition: text-decoration-color var(--transition-fast);
+}
+
+.link:hover {
+  text-decoration-color: var(--color-accent);
 }

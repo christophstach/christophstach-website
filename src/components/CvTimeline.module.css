@@ -83,7 +83,7 @@
   margin-top: var(--space-4);
   list-style: none;
   font-size: var(--text-base);
-  line-height: var(--leading-snug);
+  line-height: var(--leading-normal);
   color: var(--color-text-soft);
 }
 

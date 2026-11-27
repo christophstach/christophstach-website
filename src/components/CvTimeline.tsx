@@ -42,10 +42,11 @@ export function CvTimeline(props: CvTimelineProps) {
             </h3>
 
             <p class={styles.timeline__meta}>
-              <time>
-                {formatMonth(entry.from)} –{" "}
-                {isOngoing(entry.to) ? "Now" : formatMonth(entry.to ?? "")}
-              </time>
+              <time datetime={entry.from}>{formatMonth(entry.from)}</time>
+              {" – "}
+              <Show when={!isOngoing(entry.to) ? entry.to : undefined} fallback="Now">
+                {(to) => <time datetime={to()}>{formatMonth(to())}</time>}
+              </Show>
               <Show when={entry.location}>
                 {(location) => (
                   <span class={styles.timeline__location}>
