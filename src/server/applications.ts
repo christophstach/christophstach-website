@@ -4,20 +4,19 @@ import type { Application, ApplicationRecord, SentSummary } from "../data/applic
 import { applications, coverLetters } from "../../server/db/schema";
 import { asc, desc, eq } from "drizzle-orm";
 import {
-  BadRequestError,
+  type BadRequestError,
   type ConfigError,
   ConflictError,
   type Database,
-  DatabaseError,
+  type DatabaseError,
   NotFoundError,
   dbQuery,
   isPgErrorCode,
   runServerEffect,
 } from "./effect";
-import { HttpError } from "./http";
 import { SALARY_CURRENCIES } from "../data/postings";
 import { readSentCopy } from "../data/sent-copy";
-import { requireLinkedCv } from "./cvs";
+import { requireLinkedCvEffect } from "./cvs";
 
 type ApplicationRow = typeof applications.$inferSelect;
 
@@ -134,20 +133,6 @@ function findApplication(id: string): Promise<Application | undefined> {
 
 function applicationColumns(application: Application) {
   return { ...application, cvId: application.cvId || null, updatedAt: new Date() };
-}
-
-function requireLinkedCvEffect(cvId: string): Effect.Effect<void, BadRequestError | DatabaseError> {
-  return Effect.tryPromise({
-    try: () => requireLinkedCv(cvId),
-    catch: (cause) =>
-      cause instanceof HttpError && cause.status === 400
-        ? new BadRequestError({ message: cause.message, cause })
-        : new DatabaseError({
-            message:
-              cause instanceof HttpError ? cause.message : `Failed to verify linked CV "${cvId}".`,
-            cause,
-          }),
-  });
 }
 
 /** Creates an application (409 if the id is taken) or updates one (404 if missing). */

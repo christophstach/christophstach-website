@@ -1,6 +1,5 @@
 import "server-only";
 import { Schema } from "effect";
-import { int, literal, maximum, minimum, nullable, refine } from "zod/mini";
 import { SALARY_CURRENCIES, WORKPLACES } from "../data/postings";
 import type { JobTerms } from "../data/postings";
 
@@ -42,40 +41,11 @@ function jobTermsSchema(message = "Invalid job terms.") {
 
 const JobTermsSchema = jobTermsSchema();
 
-// ---------------------------------------------------------------------------
-// Temporary W3 compat until W4/W5 migrate (application-body.ts, desk-postings.ts)
-// ---------------------------------------------------------------------------
-
-// Temporary W3 compat until W4/W5 migrate
-const salary = int("A salary is a whole number.").check(
-  minimum(0, "A salary isn't negative."),
-  maximum(SALARY_MAX, "That salary is too large."),
-);
-
-/** Temporary W3 compat until W4/W5 migrate: workplace and salary fields of a zod/mini object schema. */
-function jobTermsShape(message: string) {
-  return {
-    workplace: literal(["", ...WORKPLACES], message),
-    salaryMin: nullable(salary),
-    salaryMax: nullable(salary),
-    salaryCurrency: literal(["", ...SALARY_CURRENCIES], message),
-  };
-}
-
-/** Temporary W3 compat until W4/W5 migrate: salary ordering check for zod/mini schemas. */
-const salaryInOrder = refine<Pick<JobTerms, "salaryMin" | "salaryMax">>(
-  (terms: Pick<JobTerms, "salaryMin" | "salaryMax">) =>
-    terms.salaryMin === null || terms.salaryMax === null || terms.salaryMin <= terms.salaryMax,
-  "The salary's lower end is above its upper one.",
-);
-
 export {
   JobTermsSchema,
   SALARY_MAX,
   jobTermsFields,
   jobTermsSchema,
-  jobTermsShape,
-  salaryInOrder,
   salaryInOrderCheck,
   salarySchema,
 };

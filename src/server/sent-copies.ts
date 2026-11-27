@@ -2,16 +2,16 @@ import "server-only";
 import { Effect } from "effect";
 import { applications, coverLetters } from "../../server/db/schema";
 import { eq } from "drizzle-orm";
-import { printStoredCv, requireCv } from "./cvs";
+import { printStoredCvEffect, requireCvEffect } from "./cvs";
 import {
+  type BadRequestError,
   type ConfigError,
   type Database,
-  DatabaseError,
+  type DatabaseError,
   NotFoundError,
   dbQuery,
   runServerEffect,
 } from "./effect";
-import { HttpError } from "./http";
 import type { SentCopy } from "../data/sent-copy";
 import { findApplicationEffect } from "./applications";
 import { printCoverLetterEffect } from "./cover-letters";
@@ -41,7 +41,7 @@ function freeEventId(events: { id: string }[]): string {
  */
 function markSentEffect(
   id: string,
-): Effect.Effect<void, NotFoundError | DatabaseError | ConfigError, Database> {
+): Effect.Effect<void, BadRequestError | NotFoundError | DatabaseError | ConfigError, Database> {
   return Effect.gen(function* () {
     const application = yield* findApplicationEffect(id);
 
@@ -49,22 +49,7 @@ function markSentEffect(
       return yield* new NotFoundError({ message: `No application "${id}".` });
     }
 
-    const cv =
-      application.cvId === ""
-        ? undefined
-        : yield* Effect.tryPromise({
-            try: () => requireCv(application.cvId),
-            catch: (cause) =>
-              cause instanceof HttpError && cause.status === 404
-                ? new NotFoundError({ message: cause.message, cause })
-                : new DatabaseError({
-                    message:
-                      cause instanceof HttpError
-                        ? cause.message
-                        : `Failed to load CV "${application.cvId}".`,
-                    cause,
-                  }),
-          });
+    const cv = application.cvId === "" ? undefined : yield* requireCvEffect(application.cvId);
     // At most one; kept as a list in the copy.
     const letters = yield* dbQuery(
       (db) =>
@@ -76,19 +61,7 @@ function markSentEffect(
     );
     const [printedCv, printedLetters] = yield* Effect.all(
       [
-        cv === undefined
-          ? Effect.succeed(null)
-          : Effect.tryPromise({
-              try: () => printStoredCv(cv),
-              catch: (cause) =>
-                new DatabaseError({
-                  message:
-                    cause instanceof HttpError
-                      ? cause.message
-                      : `Failed to render CV "${cv.id}" for sent copy.`,
-                  cause,
-                }),
-            }),
+        cv === undefined ? Effect.succeed(null) : printStoredCvEffect(cv),
         Effect.forEach(
           letters,
           (letter) =>

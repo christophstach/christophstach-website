@@ -12,7 +12,7 @@ import type { JobPosting } from "../data/postings";
 import { SALARY_SYMBOLS, WORKPLACE_LABELS } from "../data/postings";
 import { companiesByKey, companyFacts } from "../lib/company";
 import { companyKey } from "../lib/posting";
-import { fillAdTextsQuietly } from "./ad-texts";
+import { fillAdTextsQuietlyEffect } from "./ad-texts";
 import { listCompaniesEffect } from "./companies";
 import { loadCvContentEffect } from "./cv-content";
 import { listCvsEffect } from "./cvs";
@@ -533,14 +533,7 @@ function textThenScoreEffect(
 ): Effect.Effect<void, never, Database> {
   return Effect.gen(function* () {
     // The search leaves the score one call's time.
-    yield* Effect.tryPromise({
-      try: () => fillAdTextsQuietly({ deadline: deadline - MIN_CALL_MS - 5000, ids }),
-      catch: (cause) =>
-        new AiScoringError({
-          message: failure(cause),
-          cause,
-        }),
-    }).pipe(Effect.ignore);
+    yield* fillAdTextsQuietlyEffect({ deadline: deadline - MIN_CALL_MS - 5000, ids });
     // scorePostingsEffect never fails: a failure only ends the run.
     yield* scorePostingsEffect({ deadline, ids });
   });

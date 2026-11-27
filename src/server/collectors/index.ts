@@ -16,7 +16,6 @@ export { PUSH_COLLECTORS };
 export { readUrl, readUrlEffect } from "./url";
 export {
   AtsBoardSchema,
-  atsBoardSchema,
   decodeAtsBoardEffect,
   decodeAtsBoardOption,
   matchesBoard,

@@ -1,11 +1,8 @@
 import "server-only";
 import { Effect, type Schema } from "effect";
 import { getRequestEvent } from "@solidjs/web";
-import type { ZodMiniType, output } from "zod/mini";
 import { type BadRequestError, ExternalFetchError } from "./effect/errors";
-import { runServerEffect } from "./effect/runtime";
 import { decodeUnknownEffect } from "./effect/schema";
-import { parseInput } from "./input";
 
 const PUBLIC_FETCH_TIMEOUT = "10 seconds" as const;
 
@@ -94,15 +91,4 @@ function fetchPublicEffect<S extends Schema.ConstraintDecoder<unknown>>(
   });
 }
 
-/**
- * Temporary W2 compat: reads a public data endpoint and parses it with a
- * zod/mini schema. Will be removed once W5 migrates `src/routes/(site)/index.tsx`
- * and `curriculum.tsx` to `fetchPublicEffect` with Effect v4 Schemas.
- */
-async function fetchPublic<S extends ZodMiniType>(path: string, schema: S): Promise<output<S>> {
-  const body = await runServerEffect(fetchPublicJsonEffect(path));
-
-  return parseInput(schema, body);
-}
-
-export { fetchPublic, fetchPublicEffect };
+export { fetchPublicEffect };

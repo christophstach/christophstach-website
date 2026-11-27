@@ -1,7 +1,6 @@
 // The public data endpoints' answers, shared by the routes that build them
 // and the pages that read them (through the ISR cache, so they arrive as JSON).
 import { Schema } from "effect";
-import { array, object, optional, string } from "zod/mini";
 
 const MutableStringsSchema = Schema.mutable(Schema.Array(Schema.String));
 
@@ -63,37 +62,6 @@ type CvWebsiteProject = typeof ProjectSchema.Type;
 const decodeCvHome = Schema.decodeUnknownResult(CvHomeSchema);
 const decodeCvWebsite = Schema.decodeUnknownResult(CvWebsiteSchema);
 
-// Temporary W2 compat until W3/W5 callers migrate
-const skillGroupSchema = object({ label: string(), title: string(), items: array(string()) });
-const jobSchema = object({ from: string(), to: optional(string()), organization: string() });
-const cvHomeSchema = object({ experience: array(jobSchema), skills: array(skillGroupSchema) });
-const stringsSchema = array(string());
-const linkSchema = object({ text: string(), href: string() });
-const linksSchema = array(linkSchema);
-const printedEntrySchema = object({
-  id: string(),
-  title: string(),
-  organization: string(),
-  location: optional(string()),
-  from: string(),
-  to: optional(string()),
-  tech: optional(stringsSchema),
-  bullets: stringsSchema,
-  links: optional(linksSchema),
-});
-const projectSchema = object({
-  id: string(),
-  title: string(),
-  description: string(),
-  tech: array(string()),
-  url: string(),
-});
-const cvWebsiteSchema = object({
-  experience: array(printedEntrySchema),
-  education: array(printedEntrySchema),
-  projects: array(projectSchema),
-});
-
 export type { CvHome, CvWebsite, CvWebsiteEntry, CvWebsiteProject };
 export {
   CvHomeSchema,
@@ -101,9 +69,6 @@ export {
   PrintedEntrySchema,
   ProjectSchema,
   SkillGroupSchema,
-  cvHomeSchema,
-  cvWebsiteSchema,
   decodeCvHome,
   decodeCvWebsite,
-  skillGroupSchema,
 };

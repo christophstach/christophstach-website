@@ -49,19 +49,27 @@ Database: the schema is `server/db/schema.ts`; after changing it run `pnpm db:ge
 commit the SQL migration in `server/db/migrations`. `pnpm db:migrate` applies migrations to
 `DATABASE_URL_UNPOOLED` (or `DATABASE_URL`). Data changes that must ship with the code are
 custom migrations (`drizzle-kit generate --custom`). The schema is strict: every rule the app's
-zod schemas enforce (enum values, slugs, ISO dates, non-empty names, salary ranges) is also a
+Effect schemas enforce (enum values, slugs, ISO dates, non-empty names, salary ranges) is also a
 named CHECK there, built with the helpers at the top of `schema.ts`; a new rule goes into both,
 and never one stricter than what the app writes. A partial unique index allows one primary and
 one website CV, so `markCv` clears a role before it sets it.
 
 Tooling is **TypeScript 7** (`tsc`, strict plus `noUncheckedIndexedAccess`,
-`exactOptionalPropertyTypes`), **oxlint** (type-aware, via `oxlint-tsgolint`;
-`oxlint.config.ts`) and **oxfmt** (`oxfmt.config.ts`). No `any` and no unchecked `as` casts: input from
-outside (request bodies, server function arguments, query strings, fetched JSON, env) is parsed
-with **zod/mini** schemas.
+`exactOptionalPropertyTypes`, patched with **@effect/tsgo** via `pnpm prepare`), **oxlint**
+(type-aware, via `oxlint-tsgolint` and `@effect/tsgo/oxlint-presets`; `oxlint.config.ts`) and
+**oxfmt** (`oxfmt.config.ts`). No `any` and no unchecked `as` casts: input from outside (request
+bodies, server function arguments, query strings, fetched JSON, env) is decoded with **Effect v4**
+(`effect` 4.1.6) `effect/Schema` (`Schema` from `"effect"`, request-body helpers in
+`src/server/input.ts` and `src/server/effect/schema.ts`).
 
-Environment variables are declared and validated in `env.ts` (read at server start, imported
-from `virtual:solid-env/server`); `.env.example` lists them.
+Server operations compose typed **Effect v4** effects backed by `src/server/effect/` (`Database`
+service with `dbQuery`/`dbTransaction` in `db.ts`, tagged `AppError` hierarchy and `toHttpError` in
+`errors.ts`, `AppLayer`/`runServerEffect`/`runApiEffect` in `runtime.ts`, and `decodeUnknownEffect`/
+`decodeJsonEffect` in `schema.ts`).
+
+Environment variables are declared and validated with Effect `Schema` (via Standard Schema V1) in
+`env.ts` (read at server start, imported from `virtual:solid-env/server`); `.env.example` lists
+them.
 
 ## Branches and commits
 
@@ -204,7 +212,7 @@ fixed lists in `src/data/applications.ts`; `src/lib/application.ts` says when a 
 An application has at most one cover letter (unique `cover_letters.application_id`), and
 deleting it deletes the letter. "Mark as sent" freezes the CV and letter as they print then
 into `applications.sent` (`src/server/sent-copies.ts`; the copy keeps a list of letters, at most
-one); it's read through the zod schema in `src/data/sent-copy.ts`, since the renderers may
+one); it's read through the Effect schema in `src/data/sent-copy.ts`, since the renderers may
 change after it was stored, and printed from `/desk/sent-print/<id>` and `/desk/sent-print/<id>/<letter>`.
 
 **Postings** are job ads to apply to (`job_postings`, `src/server/postings.ts`, the inbox at

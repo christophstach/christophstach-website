@@ -1,10 +1,9 @@
 import "server-only";
 import { Effect } from "effect";
 import { listEntriesEffect, listSkillGroupsEffect, loadProfileEffect } from "./cv-content";
-import { DatabaseError, runServerEffect } from "./effect";
-import { HttpError } from "./http";
+import { runServerEffect } from "./effect";
 import { listApplicationsEffect } from "./applications";
-import { listCollectors } from "./collector-store";
+import { listCollectorsEffect } from "./collector-store";
 import { listCompaniesEffect } from "./companies";
 import { listCoverLettersEffect } from "./cover-letters";
 import { listCvsEffect } from "./cvs";
@@ -119,14 +118,7 @@ function deskCollectorsEffect() {
   return Effect.gen(function* () {
     yield* requireUserEffect();
 
-    return yield* Effect.tryPromise({
-      try: () => listCollectors(),
-      catch: (cause) =>
-        new DatabaseError({
-          message: cause instanceof HttpError ? cause.message : "Failed to list collectors.",
-          cause,
-        }),
-    });
+    return yield* listCollectorsEffect();
   });
 }
 

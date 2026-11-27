@@ -1,21 +1,7 @@
 import "server-only";
 import { Effect, Schema, SchemaTransformation } from "effect";
-import type { ZodMiniType, output } from "zod/mini";
-import {
-  array,
-  literal,
-  minLength,
-  pipe,
-  regex,
-  safeParse,
-  string,
-  transform,
-  trim,
-  union,
-} from "zod/mini";
 import { BadRequestError } from "./effect/errors";
 import { decodeUnknownEffect } from "./effect/schema";
-import { HttpError } from "./http";
 
 // URL slug: lowercase words joined by single hyphens, e.g. "ai-platform".
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
@@ -176,100 +162,21 @@ function requireUniqueEffect(
   });
 }
 
-// ---------------------------------------------------------------------------
-// Temporary W3 compatibility helpers (zod/mini) — to be removed in W6 once
-// all body parsers and callers have migrated to Effect v4 Schemas.
-// ---------------------------------------------------------------------------
-
-/**
- * Temporary W3 compat: parses input with a zod/mini schema; the first problem
- * becomes a 400 with the schema's message. Remove in W6.
- */
-function parseInput<S extends ZodMiniType>(schema: S, value: unknown): output<S> {
-  const result = safeParse(schema, value);
-
-  if (!result.success) {
-    throw new HttpError(400, result.error.issues[0]?.message ?? "Invalid input.");
-  }
-
-  return result.data;
-}
-
-/** Temporary W3 compat: a string, trimmed. Remove in W6. */
-function trimmed(message: string) {
-  return string(message).check(trim());
-}
-
-/** Temporary W3 compat: a string that isn't empty once trimmed. Remove in W6. */
-function text(message: string) {
-  return string(message).check(trim(), minLength(1, message));
-}
-
-/** Temporary W3 compat: a string matching a pattern. Remove in W6. */
-function matching(pattern: RegExp, message: string) {
-  return string(message).check(regex(pattern, message));
-}
-
-/** Temporary W3 compat: an empty string, or one matching a pattern. Remove in W6. */
-function emptyOrMatching(pattern: RegExp, message: string) {
-  const empty = literal("", message);
-
-  return union([empty, matching(pattern, message)], message);
-}
-
-/** Temporary W3 compat: a list of strings, trimmed, without empty items. Remove in W6. */
-function stringList(message: string) {
-  return pipe(
-    array(string(message), message),
-    transform((items: string[]) => items.map((item) => item.trim()).filter((item) => item !== "")),
-  );
-}
-
-/** Temporary W3 compat: throws a 400 unless the id is a URL slug. Remove in W6. */
-function requireSlug(id: string): string {
-  if (!SLUG_PATTERN.test(id)) {
-    throw new HttpError(400, `"${id}" is no valid id: use lowercase letters, digits and hyphens.`);
-  }
-
-  return id;
-}
-
-/** Temporary W3 compat: throws a 400 when an id appears twice. Remove in W6. */
-function requireUnique(ids: string[], what: string) {
-  const seen = new Set<string>();
-
-  for (const id of ids) {
-    if (seen.has(id)) {
-      throw new HttpError(400, `The ${what} id "${id}" is used twice.`);
-    }
-
-    seen.add(id);
-  }
-}
-
 export {
   ISO_DATE_PATTERN,
   SLUG_PATTERN,
   decodeBodyEffect,
-  emptyOrMatching,
   emptyOrMatchingSchema,
   isoDateSchema,
-  matching,
   matchingSchema,
-  parseInput,
   positiveIntSchema,
   readJsonBodyEffect,
   readJsonEffect,
-  requireSlug,
   requireSlugEffect,
-  requireUnique,
   requireUniqueEffect,
   slugSchema,
-  stringList,
   stringListSchema,
-  text,
   textSchema,
-  trimmed,
   trimmedSchema,
   urlSchema,
 };

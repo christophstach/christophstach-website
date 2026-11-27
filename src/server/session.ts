@@ -3,6 +3,7 @@ import { Effect, Option, Schema } from "effect";
 import { H3Event, clearSession, getSession, updateSession } from "nitro/h3";
 import type { SessionConfig } from "nitro/h3";
 import { env } from "virtual:solid-env/server";
+import { DeskUserSchema } from "../data/desk-user";
 import type { DeskUser } from "../data/desk-user";
 import { ConfigError } from "./effect/errors";
 import { runServerEffect } from "./effect/runtime";
@@ -13,14 +14,6 @@ import { runServerEffect } from "./effect/runtime";
 
 const SESSION_NAME = "desk-session";
 const MAX_AGE = 60 * 60 * 24 * 7;
-
-// Inline Effect v4 Schema matching DeskUser (avoids coupling to src/data/desk-user.ts
-// during parallel migration; W6 will point directly to DeskUserSchema).
-const sessionUserSchema = Schema.Struct({
-  githubId: Schema.Finite,
-  login: Schema.String,
-  avatarUrl: Schema.String,
-});
 
 function secrets(): string[] {
   return env.SESSION_SECRET.split(",")
@@ -50,7 +43,7 @@ function readSessionEffect(request: Request): Effect.Effect<DeskUser | undefined
     );
 
     for (const session of sessions) {
-      const decoded = Schema.decodeUnknownOption(sessionUserSchema)(session.data.user);
+      const decoded = Schema.decodeUnknownOption(DeskUserSchema)(session.data.user);
 
       if (Option.isSome(decoded)) {
         return decoded.value;

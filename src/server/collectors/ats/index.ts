@@ -1,7 +1,6 @@
 import "server-only";
 import type { Effect } from "effect";
 import { Schema } from "effect";
-import { literal, object } from "zod/mini";
 import { ATS_PROVIDERS, WORKPLACE_LABELS } from "../../../data/postings";
 import type { AtsBoard, AtsProvider } from "../../../data/postings";
 import type { AtsReader } from "./types";
@@ -14,14 +13,7 @@ import {
   decodeUnknownEffect,
   runServerEffect,
 } from "../../effect";
-import {
-  matching,
-  matchingSchema,
-  stringList,
-  stringListSchema,
-  text,
-  textSchema,
-} from "../../input";
+import { matchingSchema, stringListSchema, textSchema } from "../../input";
 import { ashby } from "./ashby";
 import { mapBoardNotFound } from "./fetch";
 import { greenhouse } from "./greenhouse";
@@ -50,22 +42,6 @@ const decodeAtsBoardOption = Schema.decodeUnknownOption(AtsBoardSchema);
 function decodeAtsBoardEffect(value: unknown): Effect.Effect<AtsBoard, BadRequestError> {
   return decodeUnknownEffect(AtsBoardSchema, value);
 }
-
-/**
- * Temporary W4/W5 compat until `collector-store.ts` and `desk-postings.ts`
- * migrate to `AtsBoardSchema`. Remove in W6.
- */
-const atsBoardSchema = object(
-  {
-    provider: literal(ATS_PROVIDERS, "Pick the board's provider."),
-    board: matching(BOARD_NAME, "The board's name is letters, digits, dots and hyphens."),
-    company: text("The board needs the company's name."),
-    titleIncludes: stringList(NOT_BOARD),
-    titleExcludes: stringList(NOT_BOARD),
-    locations: stringList(NOT_BOARD),
-  },
-  NOT_BOARD,
-);
 
 /** Whether a text has one of the words, ignoring case. */
 function hasAny(value: string, words: string[]): boolean {
@@ -105,7 +81,6 @@ function rereadBoardJob(raw: string, board: AtsBoard): FoundPosting | undefined 
 
 export {
   AtsBoardSchema,
-  atsBoardSchema,
   decodeAtsBoardEffect,
   decodeAtsBoardOption,
   matchesBoard,

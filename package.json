@@ -33,8 +33,7 @@
     "postgres": "^4.1.1",
     "puppeteer-core": "25.19.0",
     "solid-js": "2.0.4",
-    "unpdf": "2.2.3",
-    "zod": "4.6.7"
+    "unpdf": "2.2.3"
   },
   "devDependencies": {
     "@effect/tsgo": "0.73.7",

@@ -3,22 +3,21 @@ import { Effect } from "effect";
 import type { CoverLetter, CoverLetterRecord, PrintedCoverLetter } from "../data/cover-letters";
 import { applications, coverLetters } from "../../server/db/schema";
 import { and, asc, desc, eq, ne } from "drizzle-orm";
-import { currentBuild, requireCv } from "./cvs";
+import { currentBuild, requireCvEffect } from "./cvs";
 import {
   BadRequestError,
   type ConfigError,
   ConflictError,
   type Database,
-  DatabaseError,
+  type DatabaseError,
   NotFoundError,
   dbQuery,
   dbTransaction,
   isPgErrorCode,
   runServerEffect,
 } from "./effect";
-import { HttpError } from "./http";
 import { findApplicationEffect } from "./applications";
-import { loadProfile } from "./cv-content";
+import { loadProfileEffect } from "./cv-content";
 import { printedLetter } from "../lib/cover-letter";
 
 type LetterRow = typeof coverLetters.$inferSelect;
@@ -246,34 +245,11 @@ function printCoverLetterEffect(
   return Effect.gen(function* () {
     const letter = yield* requireCoverLetterEffect(id);
     const [profile, application] = yield* Effect.all(
-      [
-        Effect.tryPromise({
-          try: () => loadProfile(),
-          catch: (cause) =>
-            new DatabaseError({
-              message: cause instanceof HttpError ? cause.message : "Failed to load CV profile.",
-              cause,
-            }),
-        }),
-        findApplicationEffect(letter.applicationId),
-      ],
+      [loadProfileEffect(), findApplicationEffect(letter.applicationId)],
       { concurrency: "unbounded" },
     );
     const cvId = application?.cvId ?? "";
-    const cv =
-      cvId === ""
-        ? undefined
-        : yield* Effect.tryPromise({
-            try: () => requireCv(cvId),
-            catch: (cause) =>
-              cause instanceof HttpError && cause.status === 404
-                ? new NotFoundError({ message: cause.message, cause })
-                : new DatabaseError({
-                    message:
-                      cause instanceof HttpError ? cause.message : `Failed to load CV "${cvId}".`,
-                    cause,
-                  }),
-          });
+    const cv = cvId === "" ? undefined : yield* requireCvEffect(cvId);
 
     return printedLetter(letter, profile, cv?.role);
   });

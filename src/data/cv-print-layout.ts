@@ -1,6 +1,5 @@
 // Relative imports only: the server checks and stores layouts with this too.
 import { Effect, Result, Schema } from "effect";
-import { custom, object } from "zod/mini";
 
 /**
  * How a CV's PDF uses its pages: fixed steps on the one design, so a
@@ -85,25 +84,12 @@ function sameLayout(one: CvLayout, other: CvLayout): boolean {
   );
 }
 
-// Temporary W2 compat until W3/W5 callers migrate
-function layoutStep<Key extends keyof CvLayoutSteps>(key: Key) {
-  return custom<CvLayout[Key]>((value) => isLayoutStep(key, value), `Unknown ${key} step.`);
-}
-
-// Temporary W2 compat until W3/W5 callers migrate
-const cvLayoutSchema = object({
-  spacing: layoutStep("spacing"),
-  textSize: layoutStep("textSize"),
-  margin: layoutStep("margin"),
-});
-
 export type { CvLayout };
 export {
   CV_LAYOUT_STEPS,
   CvLayoutSchema,
   DEFAULT_CV_LAYOUT,
   StoredCvLayoutSchema,
-  cvLayoutSchema,
   decodeCvLayout,
   isLayoutStep,
   layoutFromQuery,

@@ -57,16 +57,5 @@ function tryUseDb(): DatabaseClient | undefined {
   return database;
 }
 
-/** The database, connected on first use. Vercel's Neon integration sets DATABASE_URL. */
-function useDb(): DatabaseClient {
-  const client = tryUseDb();
-
-  if (client === undefined) {
-    throw new Error("No database configured: set DATABASE_URL (see .env.example).");
-  }
-
-  return client;
-}
-
-export { tryUseDb, useDb };
+export { tryUseDb };
 export type { DatabaseClient, DatabaseTransaction };
