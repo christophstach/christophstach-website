@@ -1,14 +1,25 @@
 import "server-only";
-import type { Cv, EntryPick } from "../data/cvs";
-import { DEFAULT_CV_LAYOUT, normalizeCvLayout } from "../data/cv-print-layout";
+import { Effect } from "effect";
 import { asc, eq, ne, sql } from "drizzle-orm";
 import { cvEntryPicks, cvs } from "../../server/db/schema";
 import { BUILD_ID } from "../build-id";
-import { HttpError } from "./http";
+import { DEFAULT_CV_LAYOUT, normalizeCvLayout } from "../data/cv-print-layout";
+import type { Cv, EntryPick } from "../data/cvs";
+import { type PrintedCv, printCvEffect } from "../lib/cv";
 import type { CvBody } from "./cv-body";
-import { loadCvContent } from "./cv-content";
-import { printCv } from "../lib/cv";
-import { useDb } from "./db";
+import { loadCvContentEffect } from "./cv-content";
+import {
+  BadRequestError,
+  type ConfigError,
+  ConflictError,
+  type Database,
+  DatabaseError,
+  NotFoundError,
+  dbQuery,
+  dbTransaction,
+  isPgErrorCode,
+  runServerEffect,
+} from "./effect";
 
 type Section = "experience" | "education";
 /** The two public roles a CV can hold, each held by exactly one CV. */
@@ -16,6 +27,8 @@ type Mark = "isPrimary" | "isWebsite";
 type CvRow = typeof cvs.$inferSelect & {
   entries: (typeof cvEntryPicks.$inferSelect)[];
 };
+
+type SaveCvOutcome = { ok: true } | { ok: false; reason: "conflict" | "not_found" };
 
 const SECTIONS: Section[] = ["experience", "education"];
 
@@ -42,67 +55,13 @@ function toCv(row: CvRow): Cv {
   };
 }
 
-function notFound(id: string) {
-  return new HttpError(404, `No CV "${id}".`);
+function cvNotFound(id: string): NotFoundError {
+  return new NotFoundError({ message: `No CV "${id}".` });
 }
 
 /** This deployment's build; page checks from other builds are out of date. */
 function currentBuild(): string {
   return BUILD_ID;
-}
-
-/**
- * All CVs, oldest first, each with when it was last saved and its last
- * page check (empty if there was none on this build); and the ids of the
- * primary and the website one.
- */
-async function listCvs() {
-  const build = currentBuild();
-  const rows = await useDb().query.cvs.findMany({
-    with: { entries: true },
-    orderBy: [asc(cvs.createdAt), asc(cvs.id)],
-  });
-
-  return {
-    cvs: rows.map((row) => ({
-      ...toCv(row),
-      updatedAt: row.updatedAt.toISOString(),
-      pageFills: row.pageFillsBuild === build ? row.pageFills : [],
-    })),
-    primaryId: rows.find((row) => row.isPrimary)?.id ?? "",
-    websiteId: rows.find((row) => row.isWebsite)?.id ?? "",
-  };
-}
-
-/** The CV with this id; a 404 error if there is none. */
-async function requireCv(id: string): Promise<Cv> {
-  const row = await useDb().query.cvs.findFirst({
-    where: eq(cvs.id, id),
-    with: { entries: true },
-  });
-
-  if (!row) {
-    throw notFound(id);
-  }
-
-  return toCv(row);
-}
-
-/**
- * The CV holding a public role: isPrimary for /cv-print and the
- * downloadable PDF, isWebsite for /curriculum.
- */
-async function requireMarkedCv(mark: Mark): Promise<Cv> {
-  const row = await useDb().query.cvs.findFirst({
-    where: eq(cvs[mark], true),
-    with: { entries: true },
-  });
-
-  if (!row) {
-    throw new HttpError(500, `No CV is marked ${mark}.`);
-  }
-
-  return toCv(row);
 }
 
 function entryRows(cv: CvBody) {
@@ -134,116 +93,342 @@ function cvColumns(cv: CvBody) {
 }
 
 /**
+ * All CVs, oldest first, each with when it was last saved and its last
+ * page check (empty if there was none on this build); and the ids of the
+ * primary and the website one.
+ */
+function listCvsEffect() {
+  return Effect.gen(function* () {
+    const build = currentBuild();
+    const rows = yield* dbQuery(
+      (db) =>
+        db.query.cvs.findMany({
+          with: { entries: true },
+          orderBy: [asc(cvs.createdAt), asc(cvs.id)],
+        }),
+      "Failed to list CVs.",
+    );
+
+    return {
+      cvs: rows.map((row) => ({
+        ...toCv(row),
+        updatedAt: row.updatedAt.toISOString(),
+        pageFills: row.pageFillsBuild === build ? row.pageFills : [],
+      })),
+      primaryId: rows.find((row) => row.isPrimary)?.id ?? "",
+      websiteId: rows.find((row) => row.isWebsite)?.id ?? "",
+    };
+  });
+}
+
+/**
+ * All CVs, oldest first, each with when it was last saved and its last
+ * page check (empty if there was none on this build); and the ids of the
+ * primary and the website one.
+ */
+function listCvs() {
+  return runServerEffect(listCvsEffect());
+}
+
+/** The CV with this id; a 404 error if there is none. */
+function requireCvEffect(
+  id: string,
+): Effect.Effect<Cv, NotFoundError | DatabaseError | ConfigError, Database> {
+  return Effect.gen(function* () {
+    const row = yield* dbQuery(
+      (db) =>
+        db.query.cvs.findFirst({
+          where: eq(cvs.id, id),
+          with: { entries: true },
+        }),
+      `Failed to load CV "${id}".`,
+    );
+
+    if (!row) {
+      return yield* cvNotFound(id);
+    }
+
+    return toCv(row);
+  });
+}
+
+/** The CV with this id; a 404 error if there is none. */
+function requireCv(id: string): Promise<Cv> {
+  return runServerEffect(requireCvEffect(id));
+}
+
+/**
+ * The CV holding a public role: isPrimary for /cv-print and the
+ * downloadable PDF, isWebsite for /curriculum.
+ */
+function requireMarkedCvEffect(
+  mark: Mark,
+): Effect.Effect<Cv, DatabaseError | ConfigError, Database> {
+  return Effect.gen(function* () {
+    const row = yield* dbQuery(
+      (db) =>
+        db.query.cvs.findFirst({
+          where: eq(cvs[mark], true),
+          with: { entries: true },
+        }),
+      `Failed to load CV marked ${mark}.`,
+    );
+
+    if (!row) {
+      return yield* new DatabaseError({ message: `No CV is marked ${mark}.` });
+    }
+
+    return toCv(row);
+  });
+}
+
+/**
+ * The CV holding a public role: isPrimary for /cv-print and the
+ * downloadable PDF, isWebsite for /curriculum.
+ */
+function requireMarkedCv(mark: Mark): Promise<Cv> {
+  return runServerEffect(requireMarkedCvEffect(mark));
+}
+
+/**
  * Writes a CV and replaces its entries in one transaction. Content is
  * checked against cv.ts first, so a stored CV always prints.
  */
-async function saveCv(cv: CvBody, { create }: { create: boolean }) {
-  const content = await loadCvContent();
+function saveCvEffect(
+  cv: CvBody,
+  { create }: { create: boolean },
+): Effect.Effect<
+  void,
+  BadRequestError | ConflictError | NotFoundError | DatabaseError | ConfigError,
+  Database
+> {
+  return Effect.gen(function* () {
+    const content = yield* loadCvContentEffect();
 
-  try {
-    printCv(
+    yield* printCvEffect(
       {
         ...cv,
         coreTechnologies: cv.coreTechnologies ?? [],
         layout: cv.layout ?? DEFAULT_CV_LAYOUT,
       },
       content,
+    ).pipe(
+      Effect.catchTag(
+        "CvPrintError",
+        (error) => new BadRequestError({ message: error.message, cause: error }),
+      ),
     );
-  } catch (error) {
-    throw new HttpError(400, error instanceof Error ? error.message : String(error));
-  }
 
-  await useDb().transaction(async (tx) => {
-    const written = create
-      ? await tx
-          .insert(cvs)
-          .values({ id: cv.id, ...cvColumns(cv) })
-          .onConflictDoNothing()
-          .returning({ id: cvs.id })
-      : await tx.update(cvs).set(cvColumns(cv)).where(eq(cvs.id, cv.id)).returning({ id: cvs.id });
+    const outcome = yield* dbTransaction<SaveCvOutcome>(async (tx) => {
+      const written = create
+        ? await tx
+            .insert(cvs)
+            .values({ id: cv.id, ...cvColumns(cv) })
+            .onConflictDoNothing()
+            .returning({ id: cvs.id })
+        : await tx
+            .update(cvs)
+            .set(cvColumns(cv))
+            .where(eq(cvs.id, cv.id))
+            .returning({ id: cvs.id });
 
-    if (written.length === 0) {
-      throw create ? new HttpError(409, `CV "${cv.id}" exists.`) : notFound(cv.id);
+      if (written.length === 0) {
+        return { ok: false, reason: create ? "conflict" : "not_found" };
+      }
+
+      const rows = entryRows(cv);
+
+      await tx.delete(cvEntryPicks).where(eq(cvEntryPicks.cvId, cv.id));
+
+      if (rows.length > 0) {
+        await tx.insert(cvEntryPicks).values(rows);
+      }
+
+      return { ok: true };
+    }, `Failed to save CV "${cv.id}".`).pipe(
+      Effect.catchTag(
+        "DatabaseError",
+        (error): Effect.Effect<never, ConflictError | DatabaseError> =>
+          isPgErrorCode(error, "23505")
+            ? new ConflictError({ message: `CV "${cv.id}" exists.`, cause: error })
+            : error,
+      ),
+    );
+
+    if (!outcome.ok) {
+      if (outcome.reason === "conflict") {
+        return yield* new ConflictError({ message: `CV "${cv.id}" exists.` });
+      }
+
+      return yield* cvNotFound(cv.id);
     }
 
-    const rows = entryRows(cv);
+    return undefined;
+  });
+}
 
-    await tx.delete(cvEntryPicks).where(eq(cvEntryPicks.cvId, cv.id));
+/**
+ * Writes a CV and replaces its entries in one transaction. Content is
+ * checked against cv.ts first, so a stored CV always prints.
+ */
+function saveCv(cv: CvBody, options: { create: boolean }): Promise<void> {
+  return runServerEffect(saveCvEffect(cv, options));
+}
 
-    if (rows.length > 0) {
-      await tx.insert(cvEntryPicks).values(rows);
-    }
+/** A CV's printed content, resolved against the content in the database. */
+function printStoredCvEffect(
+  cv: Cv,
+): Effect.Effect<PrintedCv, BadRequestError | DatabaseError | ConfigError, Database> {
+  return Effect.gen(function* () {
+    const content = yield* loadCvContentEffect();
+
+    return yield* printCvEffect(cv, content).pipe(
+      Effect.catchTag(
+        "CvPrintError",
+        (error) => new BadRequestError({ message: error.message, cause: error }),
+      ),
+    );
   });
 }
 
 /** A CV's printed content, resolved against the content in the database. */
-async function printStoredCv(cv: Cv) {
-  return printCv(cv, await loadCvContent());
+function printStoredCv(cv: Cv): Promise<PrintedCv> {
+  return runServerEffect(printStoredCvEffect(cv));
 }
 
 /** Remembers the result of a page check, so the desk overview can show it. */
-async function storePageFills(id: string, fills: number[]) {
-  await useDb()
-    .update(cvs)
-    .set({ pageFills: fills, pageFillsBuild: currentBuild() })
-    .where(eq(cvs.id, id));
+function storePageFillsEffect(
+  id: string,
+  fills: number[],
+): Effect.Effect<void, DatabaseError | ConfigError, Database> {
+  return dbQuery(
+    (db) =>
+      db
+        .update(cvs)
+        .set({ pageFills: fills, pageFillsBuild: currentBuild() })
+        .where(eq(cvs.id, id)),
+    `Failed to store page fills for CV "${id}".`,
+  ).pipe(Effect.asVoid);
+}
+
+/** Remembers the result of a page check, so the desk overview can show it. */
+function storePageFills(id: string, fills: number[]): Promise<void> {
+  return runServerEffect(storePageFillsEffect(id, fills));
 }
 
 /** Gives this CV a public role; the CV that held it loses it. */
-async function markCv(id: string, mark: Mark) {
-  await requireCv(id);
-  // In two steps: a unique index allows one CV per role, and Postgres checks it row by row.
-  await useDb().transaction(async (tx) => {
-    await tx
-      .update(cvs)
-      .set({ [mark]: false })
-      .where(ne(cvs.id, id));
-    await tx
-      .update(cvs)
-      .set({ [mark]: true })
-      .where(eq(cvs.id, id));
+function markCvEffect(
+  id: string,
+  mark: Mark,
+): Effect.Effect<void, NotFoundError | ConflictError | DatabaseError | ConfigError, Database> {
+  return Effect.gen(function* () {
+    yield* requireCvEffect(id);
+
+    // In two steps: a unique index allows one CV per role, and Postgres checks it row by row.
+    yield* dbTransaction(async (tx) => {
+      await tx
+        .update(cvs)
+        .set({ [mark]: false })
+        .where(ne(cvs.id, id));
+      await tx
+        .update(cvs)
+        .set({ [mark]: true })
+        .where(eq(cvs.id, id));
+    }, `Failed to mark CV "${id}" as ${mark}.`).pipe(
+      Effect.catchTag(
+        "DatabaseError",
+        (error): Effect.Effect<never, ConflictError | DatabaseError> =>
+          isPgErrorCode(error, "23505")
+            ? new ConflictError({ message: `Another CV already holds ${mark}.`, cause: error })
+            : error,
+      ),
+    );
+  });
+}
+
+/** Gives this CV a public role; the CV that held it loses it. */
+function markCv(id: string, mark: Mark): Promise<void> {
+  return runServerEffect(markCvEffect(id, mark));
+}
+
+/** Deletes a CV, but never one with a public role: the site needs it. */
+function deleteCvEffect(
+  id: string,
+): Effect.Effect<void, NotFoundError | ConflictError | DatabaseError | ConfigError, Database> {
+  return Effect.gen(function* () {
+    const deleted = yield* dbQuery(
+      (db) =>
+        db
+          .delete(cvs)
+          .where(sql`${cvs.id} = ${id} and not ${cvs.isPrimary} and not ${cvs.isWebsite}`)
+          .returning({ id: cvs.id }),
+      `Failed to delete CV "${id}".`,
+    );
+
+    if (deleted.length === 0) {
+      yield* requireCvEffect(id);
+
+      return yield* new ConflictError({
+        message:
+          "The primary and the website CV can't be deleted. Give the role to another CV first.",
+      });
+    }
+
+    return undefined;
   });
 }
 
 /** Deletes a CV, but never one with a public role: the site needs it. */
-async function deleteCv(id: string) {
-  const deleted = await useDb()
-    .delete(cvs)
-    .where(sql`${cvs.id} = ${id} and not ${cvs.isPrimary} and not ${cvs.isWebsite}`)
-    .returning({ id: cvs.id });
+function deleteCv(id: string): Promise<void> {
+  return runServerEffect(deleteCvEffect(id));
+}
 
-  if (deleted.length === 0) {
-    await requireCv(id);
+/** Fails with 400 unless the id is empty or names a stored CV. */
+function requireLinkedCvEffect(
+  cvId: string,
+): Effect.Effect<void, BadRequestError | DatabaseError | ConfigError, Database> {
+  return Effect.gen(function* () {
+    if (!cvId) {
+      return undefined;
+    }
 
-    throw new HttpError(
-      409,
-      "The primary and the website CV can't be deleted. Give the role to another CV first.",
+    const [row] = yield* dbQuery(
+      (db) => db.select({ id: cvs.id }).from(cvs).where(eq(cvs.id, cvId)),
+      `Failed to verify linked CV "${cvId}".`,
     );
-  }
+
+    if (!row) {
+      return yield* new BadRequestError({ message: `No CV "${cvId}".` });
+    }
+
+    return undefined;
+  });
 }
 
 /** Throws a 400 unless the id is empty or names a stored CV. */
-async function requireLinkedCv(cvId: string) {
-  if (!cvId) {
-    return;
-  }
-
-  const [row] = await useDb().select({ id: cvs.id }).from(cvs).where(eq(cvs.id, cvId));
-
-  if (!row) {
-    throw new HttpError(400, `No CV "${cvId}".`);
-  }
+function requireLinkedCv(cvId: string): Promise<void> {
+  return runServerEffect(requireLinkedCvEffect(cvId));
 }
 
+export type { Mark };
 export {
   currentBuild,
   deleteCv,
+  deleteCvEffect,
   listCvs,
+  listCvsEffect,
   markCv,
+  markCvEffect,
   printStoredCv,
-  requireMarkedCv,
+  printStoredCvEffect,
   requireCv,
+  requireCvEffect,
   requireLinkedCv,
+  requireLinkedCvEffect,
+  requireMarkedCv,
+  requireMarkedCvEffect,
   saveCv,
+  saveCvEffect,
   storePageFills,
+  storePageFillsEffect,
 };
