@@ -1,23 +1,32 @@
 import "server-only";
+import { Cache, Clock, Duration, Effect, Exit, Schema } from "effect";
 import { Output, generateText } from "ai";
 import { and, desc, eq, isNotNull, isNull, lt, ne, notInArray, or } from "drizzle-orm";
-import { array, number, object, record, string, unknown } from "zod/mini";
-import { applications, jobPostings } from "../../server/db/schema";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { companiesByKey, companyFacts } from "../lib/company";
+import { getRequestEvent } from "@solidjs/web";
+import { env } from "virtual:solid-env/server";
+import { applications, jobPostings } from "../../server/db/schema";
+import type { CompanyRecord } from "../data/companies";
 import type { CvContent, TimelineEntry } from "../data/cv";
 import type { JobPosting } from "../data/postings";
 import { SALARY_SYMBOLS, WORKPLACE_LABELS } from "../data/postings";
+import { companiesByKey, companyFacts } from "../lib/company";
 import { companyKey } from "../lib/posting";
-import { env } from "virtual:solid-env/server";
 import { fillAdTextsQuietly } from "./ad-texts";
-import { getRequestEvent } from "@solidjs/web";
-import { listCompanies } from "./companies";
-import { listCvs } from "./cvs";
-import { loadCvContent } from "./cv-content";
-import { loadJobSearch } from "./job-search";
-import { requirePosting } from "./postings";
-import { useDb } from "./db";
+import { listCompaniesEffect } from "./companies";
+import { loadCvContentEffect } from "./cv-content";
+import { listCvsEffect } from "./cvs";
+import {
+  AiScoringError,
+  type ConfigError,
+  type Database,
+  type DatabaseError,
+  ExternalFetchError,
+  dbQuery,
+  runServerEffect,
+} from "./effect";
+import { loadJobSearchEffect } from "./job-search";
+import { requirePostingEffect } from "./postings";
 
 // Scores how well each posting fits, with a language model on OpenRouter
 // (through the Vercel AI SDK): the CV content and the desk's search notes
@@ -44,21 +53,35 @@ const CALL_TIMEOUT_MS = 45_000;
 const MIN_CALL_MS = 25_000;
 
 /** A model's prices are read again after this long. */
-const PRICE_CHECK_MS = 60 * 60 * 1000;
+const PRICE_CHECK_TTL = "1 hour" as const;
 
-const endpointsSchema = object({
-  data: object({
-    endpoints: array(object({ pricing: record(string(), unknown()) })),
+const PRICE_CHECK_TIMEOUT = "10 seconds" as const;
+
+const PRICE_CHECK_CAPACITY = 32;
+
+const endpointsSchema = Schema.Struct({
+  data: Schema.Struct({
+    endpoints: Schema.Array(
+      Schema.Struct({
+        pricing: Schema.Record(Schema.String, Schema.Unknown),
+      }),
+    ),
   }),
 });
 
+const decodeEndpoints = Schema.decodeUnknownEffect(endpointsSchema);
+
 /** What the model answers; lenient on purpose, cleaned up in toScore. */
-const answerSchema = object({
-  score: number(),
-  reasons: array(string()),
-  concerns: array(string()),
-  cvId: string(),
+const answerSchema = Schema.Struct({
+  score: Schema.Finite,
+  reasons: Schema.Array(Schema.String),
+  concerns: Schema.Array(Schema.String),
+  cvId: Schema.String,
 });
+
+type Answer = Schema.Schema.Type<typeof answerSchema>;
+
+const aiAnswerSchema = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(answerSchema));
 
 interface ScoreRun {
   model: string;
@@ -70,43 +93,123 @@ interface ScoreRun {
   left: number;
 }
 
+interface Brief {
+  readonly context: string;
+  readonly cvIds: ReadonlySet<string>;
+  readonly companies: ReadonlyMap<string, CompanyRecord>;
+  readonly notesAt: string;
+}
+
+type ScoreModel = ReturnType<ReturnType<typeof createOpenRouter>["chat"]>;
+
 function scoreModel(): string {
   return env.JOB_SCORE_MODEL ?? DEFAULT_MODEL;
 }
 
-const freeChecks = new Map<string, { free: boolean; at: number }>();
-
 function isZero(price: unknown): boolean {
   return (typeof price === "string" || typeof price === "number") && Number(price) === 0;
+}
+
+/** Why a run failed, in plain words; the SDK's messages carry terminal colours. */
+function failure(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return "Scoring failed.";
+  }
+
+  // oxlint-disable-next-line no-control-regex -- strips ANSI colour codes
+  return error.message.replaceAll(/\u001b\[\d+m/gu, "");
+}
+
+function checkModelFreeEffect(model: string): Effect.Effect<boolean, ExternalFetchError> {
+  const url = `${OPENROUTER}/models/${model}/endpoints`;
+
+  return Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: (signal) => fetch(url, { signal }),
+      catch: (cause) =>
+        new ExternalFetchError({
+          message: `Could not check OpenRouter pricing for "${model}".`,
+          url,
+          cause,
+        }),
+    });
+
+    if (!response.ok) {
+      return yield* new ExternalFetchError({
+        message: `OpenRouter doesn't list "${model}" (${response.status}).`,
+        url,
+        upstreamStatus: response.status,
+      });
+    }
+
+    const body = yield* Effect.tryPromise({
+      try: (): Promise<unknown> => response.json(),
+      catch: (cause) =>
+        new ExternalFetchError({
+          message: `OpenRouter pricing for "${model}" was not valid JSON.`,
+          url,
+          cause,
+        }),
+    });
+    const parsed = yield* decodeEndpoints(body).pipe(
+      Effect.mapError(
+        (cause) =>
+          new ExternalFetchError({
+            message: `OpenRouter pricing for "${model}" had an unexpected shape.`,
+            url,
+            cause,
+          }),
+      ),
+    );
+    const { endpoints } = parsed.data;
+
+    return (
+      endpoints.length > 0 &&
+      endpoints.every((endpoint) => Object.values(endpoint.pricing).every(isZero))
+    );
+  }).pipe(
+    Effect.timeout(PRICE_CHECK_TIMEOUT),
+    Effect.catchTag(
+      "TimeoutError",
+      (cause) =>
+        new ExternalFetchError({
+          message: `OpenRouter pricing check for "${model}" timed out.`,
+          url,
+          cause,
+        }),
+    ),
+  );
+}
+
+type FreeCheckCache = Cache.Cache<string, boolean, ExternalFetchError>;
+
+let freeCheckCache: FreeCheckCache | undefined;
+
+function getFreeCheckCacheEffect(): Effect.Effect<FreeCheckCache> {
+  return Effect.gen(function* () {
+    if (freeCheckCache !== undefined) {
+      return freeCheckCache;
+    }
+
+    // Only cache successful price checks for 1 hour; failed lookups expire
+    // immediately so transient OpenRouter outages aren't sticky.
+    const created = yield* Cache.makeWith(checkModelFreeEffect, {
+      capacity: PRICE_CHECK_CAPACITY,
+      timeToLive: (exit) => (Exit.isSuccess(exit) ? PRICE_CHECK_TTL : Duration.zero),
+    });
+
+    freeCheckCache ??= created;
+
+    return freeCheckCache;
+  });
 }
 
 /**
  * Whether every endpoint OpenRouter may route the model to is free. A model
  * free at one provider and paid at another isn't: OpenRouter may pick either.
  */
-async function isFree(model: string): Promise<boolean> {
-  const known = freeChecks.get(model);
-
-  if (known !== undefined && Date.now() - known.at < PRICE_CHECK_MS) {
-    return known.free;
-  }
-
-  const response = await fetch(`${OPENROUTER}/models/${model}/endpoints`, {
-    signal: AbortSignal.timeout(10_000),
-  });
-
-  if (!response.ok) {
-    throw new Error(`OpenRouter doesn't list "${model}" (${response.status}).`);
-  }
-
-  const { endpoints } = endpointsSchema.parse(await response.json()).data;
-  const free =
-    endpoints.length > 0 &&
-    endpoints.every((endpoint) => Object.values(endpoint.pricing).every(isZero));
-
-  freeChecks.set(model, { free, at: Date.now() });
-
-  return free;
+function isFreeEffect(model: string): Effect.Effect<boolean, ExternalFetchError> {
+  return Effect.flatMap(getFreeCheckCacheEffect(), (cache) => Cache.get(cache, model));
 }
 
 function period(entry: TimelineEntry): string {
@@ -189,82 +292,105 @@ Answer in English:
 - cvId: the id of the CV that suits this job best, exactly as listed; empty if none is listed.`;
 
 /** Up to three non-empty lines. */
-function cleanLines(items: string[]): string[] {
+function cleanLines(items: readonly string[]): string[] {
   return items
     .map((item) => item.trim())
     .filter((item) => item !== "")
     .slice(0, 3);
 }
 
-function toScore(answer: unknown, cvIds: ReadonlySet<string>) {
-  const parsed = answerSchema.parse(answer);
-
+function toScore(answer: Answer, cvIds: ReadonlySet<string>) {
   return {
-    score: Math.min(100, Math.max(0, Math.round(parsed.score))),
-    reasons: cleanLines(parsed.reasons),
-    concerns: cleanLines(parsed.concerns),
-    cvId: cvIds.has(parsed.cvId) ? parsed.cvId : "",
+    score: Math.min(100, Math.max(0, Math.round(answer.score))),
+    reasons: cleanLines(answer.reasons),
+    concerns: cleanLines(answer.concerns),
+    cvId: cvIds.has(answer.cvId) ? answer.cvId : "",
   };
 }
 
 /** What every posting is scored against; read once per run. */
-async function loadBrief() {
-  const [content, { cvs }, search, companies] = await Promise.all([
-    loadCvContent(),
-    listCvs(),
-    loadJobSearch(),
-    listCompanies(),
-  ]);
-  const cvList = cvs
-    .map(
-      (cv) =>
-        `- ${cv.id}: ${cv.label}. ${[cv.role, cv.summary, cv.note].filter(Boolean).join(" ")}`,
-    )
-    .join("\n");
+function loadBriefEffect(): Effect.Effect<Brief, DatabaseError | ConfigError, Database> {
+  return Effect.gen(function* () {
+    const [content, { cvs }, search, companies] = yield* Effect.all(
+      [loadCvContentEffect(), listCvsEffect(), loadJobSearchEffect(), listCompaniesEffect()],
+      { concurrency: "unbounded" },
+    );
+    const cvList = cvs
+      .map(
+        (cv) =>
+          `- ${cv.id}: ${cv.label}. ${[cv.role, cv.summary, cv.note].filter(Boolean).join(" ")}`,
+      )
+      .join("\n");
 
-  return {
-    context: [
-      "# CV content",
-      contentText(content),
-      "# What they look for (their own notes)",
-      search.notes.trim() || "No notes; judge by the CV.",
-      "# Their CVs",
-      cvList || "None.",
-    ].join("\n\n"),
-    cvIds: new Set(cvs.map((cv) => cv.id)),
-    companies: companiesByKey(companies),
-    notesAt: search.updatedAt,
-  };
+    return {
+      context: [
+        "# CV content",
+        contentText(content),
+        "# What they look for (their own notes)",
+        search.notes.trim() || "No notes; judge by the CV.",
+        "# Their CVs",
+        cvList || "None.",
+      ].join("\n\n"),
+      cvIds: new Set(cvs.map((cv) => cv.id)),
+      companies: companiesByKey(companies),
+      notesAt: search.updatedAt,
+    };
+  });
 }
 
-type Brief = Awaited<ReturnType<typeof loadBrief>>;
+function scoreOneEffect(
+  brief: Brief,
+  posting: JobPosting,
+  model: ScoreModel,
+  timeout: number,
+): Effect.Effect<void, AiScoringError | DatabaseError | ConfigError, Database> {
+  return Effect.gen(function* () {
+    const company = brief.companies.get(companyKey(posting.company));
+    const { output } = yield* Effect.tryPromise({
+      try: (abortSignal) =>
+        generateText({
+          model,
+          instructions: INSTRUCTIONS,
+          prompt: `${brief.context}\n\n# The job ad\n\n${postingText(posting, company === undefined ? "" : companyFacts(company))}`,
+          output: Output.object({ schema: aiAnswerSchema, name: "fit" }),
+          reasoning: "high",
+          maxRetries: 1,
+          abortSignal,
+        }),
+      catch: (cause) =>
+        new AiScoringError({
+          message: failure(cause),
+          cause,
+        }),
+    }).pipe(
+      Effect.timeout(Duration.millis(timeout)),
+      Effect.catchTag(
+        "TimeoutError",
+        (cause) =>
+          new AiScoringError({
+            message: "Scoring timed out.",
+            cause,
+          }),
+      ),
+    );
+    const score = toScore(output, brief.cvIds);
 
-type Model = ReturnType<ReturnType<typeof createOpenRouter>["chat"]>;
-
-async function scoreOne(brief: Brief, posting: JobPosting, model: Model, timeout: number) {
-  const company = brief.companies.get(companyKey(posting.company));
-  const { output } = await generateText({
-    model,
-    instructions: INSTRUCTIONS,
-    prompt: `${brief.context}\n\n# The job ad\n\n${postingText(posting, company === undefined ? "" : companyFacts(company))}`,
-    output: Output.object({ schema: answerSchema, name: "fit" }),
-    reasoning: "high",
-    maxRetries: 1,
-    timeout,
+    yield* dbQuery(
+      (db) =>
+        db
+          .update(jobPostings)
+          .set({
+            score: score.score,
+            scoreReasons: score.reasons,
+            scoreConcerns: score.concerns,
+            scoreCvId: score.cvId,
+            scoreModel: model.modelId,
+            scoredAt: new Date(),
+          })
+          .where(eq(jobPostings.id, posting.id)),
+      "Could not save posting score.",
+    );
   });
-  const score = toScore(output, brief.cvIds);
-
-  await useDb()
-    .update(jobPostings)
-    .set({
-      score: score.score,
-      scoreReasons: score.reasons,
-      scoreConcerns: score.concerns,
-      scoreCvId: score.cvId,
-      scoreModel: model.modelId,
-      scoredAt: new Date(),
-    })
-    .where(eq(jobPostings.id, posting.id));
 }
 
 /**
@@ -272,37 +398,36 @@ async function scoreOne(brief: Brief, posting: JobPosting, model: Model, timeout
  * and unscored or scored before the search notes last changed. With ids,
  * those, also if scored.
  */
-async function dueIds(notesAt: string, ids: string[] | undefined): Promise<string[]> {
+function dueIdsEffect(
+  notesAt: string,
+  ids: readonly string[] | undefined,
+): Effect.Effect<readonly string[], DatabaseError | ConfigError, Database> {
   if (ids !== undefined) {
-    return ids;
+    return Effect.succeed(ids);
   }
 
-  const applied = useDb()
-    .select({ postingId: applications.postingId })
-    .from(applications)
-    .where(isNotNull(applications.postingId));
-  const stale =
-    notesAt === ""
-      ? isNull(jobPostings.scoredAt)
-      : or(isNull(jobPostings.scoredAt), lt(jobPostings.scoredAt, new Date(notesAt)));
-  const rows = await useDb()
-    .select({ id: jobPostings.id })
-    .from(jobPostings)
-    .where(and(ne(jobPostings.status, "dismissed"), stale, notInArray(jobPostings.id, applied)))
-    // Unscored first, then the stale ones; newest first within each.
-    .orderBy(desc(isNull(jobPostings.scoredAt)), desc(jobPostings.createdAt), desc(jobPostings.id));
+  return dbQuery(async (db) => {
+    const applied = db
+      .select({ postingId: applications.postingId })
+      .from(applications)
+      .where(isNotNull(applications.postingId));
+    const stale =
+      notesAt === ""
+        ? isNull(jobPostings.scoredAt)
+        : or(isNull(jobPostings.scoredAt), lt(jobPostings.scoredAt, new Date(notesAt)));
+    const rows = await db
+      .select({ id: jobPostings.id })
+      .from(jobPostings)
+      .where(and(ne(jobPostings.status, "dismissed"), stale, notInArray(jobPostings.id, applied)))
+      // Unscored first, then the stale ones; newest first within each.
+      .orderBy(
+        desc(isNull(jobPostings.scoredAt)),
+        desc(jobPostings.createdAt),
+        desc(jobPostings.id),
+      );
 
-  return rows.map((row) => row.id);
-}
-
-/** Why a run failed, in plain words; the SDK's messages carry terminal colours. */
-function failure(error: unknown): string {
-  if (!(error instanceof Error)) {
-    return "Scoring failed.";
-  }
-
-  // oxlint-disable-next-line no-control-regex -- strips ANSI colour codes
-  return error.message.replaceAll(/\u001b\[\d+m/gu, "");
+    return rows.map((row) => row.id);
+  }, "Could not load postings due for scoring.");
 }
 
 /**
@@ -310,60 +435,84 @@ function failure(error: unknown): string {
  * given ones. Stops at the first failure: the next would most likely fail
  * the same way (no sign-in, no network, the model gone).
  */
-async function scorePostings({
+function scorePostingsEffect({
   deadline,
   ids,
 }: {
   deadline: number;
-  ids?: string[];
-}): Promise<ScoreRun> {
-  const model = scoreModel();
-  const run: ScoreRun = { model, scored: [], error: "", left: 0 };
+  ids?: string[] | undefined;
+}): Effect.Effect<ScoreRun, never, Database> {
+  return Effect.gen(function* () {
+    const model = scoreModel();
+    const run: ScoreRun = { model, scored: [], error: "", left: 0 };
+    const apiKey = env.OPENROUTER_API_KEY;
 
-  const apiKey = env.OPENROUTER_API_KEY;
-
-  if (apiKey === undefined) {
-    return Object.assign(run, {
-      error: "Set OPENROUTER_API_KEY: a key from an OpenRouter account without credit.",
-    });
-  }
-
-  try {
-    if (!(await isFree(model))) {
+    if (apiKey === undefined) {
       return Object.assign(run, {
-        error: `"${model}" isn't free at every provider, so it doesn't run. Set JOB_SCORE_MODEL to a free model.`,
+        error: "Set OPENROUTER_API_KEY: a key from an OpenRouter account without credit.",
       });
     }
 
-    const llm = createOpenRouter({ apiKey }).chat(model);
-    const brief = await loadBrief();
-    const due = await dueIds(brief.notesAt, ids);
+    const execute = Effect.gen(function* () {
+      const free = yield* isFreeEffect(model);
 
-    run.left = due.length;
+      if (!free) {
+        run.error = `"${model}" isn't free at every provider, so it doesn't run. Set JOB_SCORE_MODEL to a free model.`;
 
-    async function scoreNext(id: string) {
-      const remaining = deadline - Date.now();
-
-      if (remaining < MIN_CALL_MS) {
         return;
       }
 
-      await scoreOne(brief, await requirePosting(id), llm, Math.min(CALL_TIMEOUT_MS, remaining));
-      run.scored.push(id);
-      run.left -= 1;
-    }
+      const llm = createOpenRouter({ apiKey }).chat(model);
+      const brief = yield* loadBriefEffect();
+      const due = yield* dueIdsEffect(brief.notesAt, ids);
 
-    // One at a time on purpose: free models allow 20 requests a minute. A
-    // failure rejects the chain, so the rest are skipped.
-    await due.reduce<Promise<void>>(
-      (previous, id) => previous.then(() => scoreNext(id)),
-      Promise.resolve(),
+      run.left = due.length;
+
+      // One at a time on purpose: free models allow 20 requests a minute. A
+      // failure ends the loop, so the rest are skipped.
+      yield* Effect.forEach(
+        due,
+        (id) =>
+          Effect.gen(function* () {
+            const now = yield* Clock.currentTimeMillis;
+            const remaining = deadline - now;
+
+            if (remaining < MIN_CALL_MS) {
+              return;
+            }
+
+            const posting = yield* requirePostingEffect(id);
+
+            yield* scoreOneEffect(brief, posting, llm, Math.min(CALL_TIMEOUT_MS, remaining));
+            run.scored.push(id);
+            run.left -= 1;
+          }),
+        { concurrency: 1, discard: true },
+      );
+    });
+
+    yield* execute.pipe(
+      Effect.catch((error) =>
+        Effect.sync(() => {
+          run.error = error.message;
+        }),
+      ),
     );
-  } catch (error) {
-    run.error = failure(error);
-  }
 
-  return run;
+    return run;
+  });
+}
+
+/**
+ * Scores postings one at a time until the deadline: the ones due, or the
+ * given ones. Stops at the first failure: the next would most likely fail
+ * the same way (no sign-in, no network, the model gone).
+ */
+async function scorePostings(options: {
+  deadline: number;
+  ids?: string[] | undefined;
+}): Promise<ScoreRun> {
+  return runServerEffect(scorePostingsEffect(options));
 }
 
 /** A request on Vercel can keep its function running after the response. */
@@ -378,6 +527,54 @@ function canLinger(request: Request): request is Request & Lingering {
 /** A function ends after 60 s (maxDuration in vite.config.ts), the time after its response included. */
 const FUNCTION_MS = 55_000;
 
+function textThenScoreEffect(
+  ids: string[],
+  deadline: number,
+): Effect.Effect<void, never, Database> {
+  return Effect.gen(function* () {
+    // The search leaves the score one call's time.
+    yield* Effect.tryPromise({
+      try: () => fillAdTextsQuietly({ deadline: deadline - MIN_CALL_MS - 5000, ids }),
+      catch: (cause) =>
+        new AiScoringError({
+          message: failure(cause),
+          cause,
+        }),
+    }).pipe(Effect.ignore);
+    // scorePostingsEffect never fails: a failure only ends the run.
+    yield* scorePostingsEffect({ deadline, ids });
+  });
+}
+
+/**
+ * Scores postings that just came in, so a new posting needn't wait for the
+ * scheduled job: first their ad's text from the company's board where they
+ * came without one, then the score. Where the platform lets the function run
+ * on after the response (Vercel's waitUntil), that happens in the background;
+ * elsewhere the caller waits. `started` is when the request began: all of it
+ * ends inside the function's time. What doesn't fit the time or the day's
+ * requests stays due for the scheduled job.
+ */
+function scoreSoonEffect(
+  ids: string[],
+  { started, request }: { started: number; request?: Request | undefined },
+): Effect.Effect<void, never, Database> {
+  if (ids.length === 0) {
+    return Effect.void;
+  }
+
+  const deadline = started + FUNCTION_MS;
+  const from = request ?? getRequestEvent()?.request;
+
+  if (from !== undefined && canLinger(from)) {
+    return Effect.sync(() => {
+      from.waitUntil(runServerEffect(textThenScoreEffect(ids, deadline)));
+    });
+  }
+
+  return textThenScoreEffect(ids, deadline);
+}
+
 /**
  * Scores postings that just came in, so a new posting needn't wait for the
  * scheduled job: first their ad's text from the company's board where they
@@ -389,32 +586,19 @@ const FUNCTION_MS = 55_000;
  */
 async function scoreSoon(
   ids: string[],
-  { started, request }: { started: number; request?: Request },
+  options: { started: number; request?: Request | undefined },
 ): Promise<void> {
-  if (ids.length === 0) {
-    return;
-  }
-
-  const deadline = started + FUNCTION_MS;
-
-  async function textThenScore() {
-    // The search leaves the score one call's time.
-    await fillAdTextsQuietly({ deadline: deadline - MIN_CALL_MS - 5000, ids });
-    // scorePostings never throws: a failure only ends the run.
-    await scorePostings({ deadline, ids });
-  }
-
-  const run = textThenScore();
-  const from = request ?? getRequestEvent()?.request;
-
-  if (from !== undefined && canLinger(from)) {
-    from.waitUntil(run);
-
-    return;
-  }
-
-  await run;
+  return runServerEffect(scoreSoonEffect(ids, options));
 }
 
-export { scoreModel, scorePostings, scoreSoon };
-export type { ScoreRun };
+export {
+  isFreeEffect,
+  loadBriefEffect,
+  scoreModel,
+  scoreOneEffect,
+  scorePostings,
+  scorePostingsEffect,
+  scoreSoon,
+  scoreSoonEffect,
+};
+export type { Brief, ScoreModel, ScoreRun };
