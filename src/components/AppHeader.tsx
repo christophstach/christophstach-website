@@ -1,6 +1,5 @@
 import { For } from "solid-js";
 import { ThemeToggle } from "./ThemeToggle";
-import { getColorMode } from "../lib/color-mode";
 import { paths } from "../router";
 import styles from "./AppHeader.module.css";
 import { useLocation } from "@solidjs/router";
@@ -50,7 +49,7 @@ export function AppHeader() {
           </nav>
 
           <div id="header-theme-control" class={styles.control}>
-            <ThemeToggle initial={getColorMode()} />
+            <ThemeToggle />
           </div>
         </div>
       </div>

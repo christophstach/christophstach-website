@@ -46,7 +46,7 @@ jobs:
         run: pnpm test
 
       - name: Scan for secrets
-        run: pnpm exec secretlint "**/*"
+        run: git ls-files -z | xargs -0 pnpm exec secretlint --maskSecrets
 
       - name: Build
         run: pnpm build

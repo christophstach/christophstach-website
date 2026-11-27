@@ -1,7 +1,14 @@
-import { COLOR_MODES, THEME_COLORS, colorModeCookie } from "../lib/color-mode";
+import {
+  COLOR_MODES,
+  COLOR_MODE_COOKIE,
+  THEME_COLORS,
+  colorModeCookie,
+  parseColorMode,
+} from "../lib/color-mode";
 import { IconDeviceDesktop, IconMoon, IconSun } from "./icons";
 import { createSignal, onSettled } from "solid-js";
 import type { ColorMode } from "../lib/color-mode";
+import { readCookie } from "../lib/cookies";
 import { dynamic } from "@solidjs/web";
 
 const ICONS = { system: IconDeviceDesktop, light: IconSun, dark: IconMoon };
@@ -19,10 +26,12 @@ function applyColorMode(mode: ColorMode) {
   }
 }
 
-// Cycles system → light → dark. `initial` is the mode the server rendered,
-// so the hydrated button matches the server markup.
-export function ThemeToggle(props: { initial: ColorMode }) {
-  const [mode, setMode] = createSignal(() => props.initial);
+// Cycles system → light → dark. Starts at "system" on SSR and initial
+// hydration so public pages stay cookie-independent for Edge-ISR, then syncs
+// with the saved browser cookie on mount (the inline head script already
+// applied the class before first paint).
+export function ThemeToggle() {
+  const [mode, setMode] = createSignal<ColorMode>("system");
 
   const cycle = () => {
     const next = COLOR_MODES[(COLOR_MODES.indexOf(mode()) + 1) % COLOR_MODES.length] ?? "system";
@@ -40,6 +49,11 @@ export function ThemeToggle(props: { initial: ColorMode }) {
   };
 
   onSettled(() => {
+    const saved = parseColorMode(readCookie(document.cookie, COLOR_MODE_COOKIE));
+
+    setMode(saved);
+    applyColorMode(saved);
+
     const media = matchMedia(DARK_QUERY);
 
     media.addEventListener("change", follow);

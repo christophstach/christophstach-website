@@ -1,7 +1,6 @@
 import { IconLogout } from "../icons";
 import { ThemeToggle } from "../ThemeToggle";
 import { createMemo } from "solid-js";
-import { getColorMode } from "../../lib/color-mode";
 import { getDeskUser } from "../../lib/desk/queries";
 import { paths } from "../../router";
 import { signOut } from "../../lib/desk/session";
@@ -41,7 +40,7 @@ export function DeskSession(props: { collapsed: boolean }) {
           <span class={styles.desk__label}>Sign out</span>
         </button>
 
-        <ThemeToggle initial={getColorMode()} />
+        <ThemeToggle />
       </div>
     </div>
   );

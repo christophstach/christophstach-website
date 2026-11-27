@@ -1,7 +1,7 @@
-// The color mode is remembered in a cookie, so the server can render the
-// page in the visitor's choice. "system" (also a missing or unknown value)
-// leaves it to the browser: the head script in src/color-mode-script.ts.
-import { pageCookie } from "./cookies";
+// The color mode is remembered in a browser cookie. SSR stays cookie-free so
+// public pages can be cached at the edge (ISR): the inline head script in
+// src/color-mode-script.ts resolves the cookie (or device preference) before
+// first paint, and ThemeToggle syncs its control state after hydration.
 
 export type ColorMode = "light" | "dark" | "system";
 
@@ -23,10 +23,4 @@ export function colorModeCookie(mode: ColorMode): string {
   const secure = typeof window !== "undefined" && window.location.protocol === "https:";
 
   return `${COLOR_MODE_COOKIE}=${mode}; ${COLOR_MODE_COOKIE_ATTRIBUTES}${secure ? "; Secure" : ""}`;
-}
-
-// The server reads the request cookie; the client reads the same cookie from
-// the document, so both sides of a hydration agree.
-export function getColorMode(): ColorMode {
-  return parseColorMode(pageCookie(COLOR_MODE_COOKIE));
 }

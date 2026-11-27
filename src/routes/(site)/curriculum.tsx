@@ -30,7 +30,10 @@ export default async function Curriculum() {
   return () => (
     <div class={["container", styles.page]}>
       <p class={[styles.page__kicker, "reveal"]}>
-        <span class={styles.terminal__prompt}>$</span> cat curriculum.md
+        <span class={styles.terminal__prompt} aria-hidden="true">
+          $
+        </span>{" "}
+        cat curriculum.md
       </p>
 
       <h1 class={styles.page__title}>Curriculum</h1>
