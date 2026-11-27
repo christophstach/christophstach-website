@@ -1,258 +1,411 @@
 import "server-only";
-import { checkCompaniesQuietly } from "./company-check";
-import { COLLECTOR_TYPES, POSTING_STATUSES } from "../data/postings";
-import { jobTermsShape, salaryInOrder } from "./job-terms";
-import type { CollectorType, PostingEdit } from "../data/postings";
-import {
-  addPostings,
-  deletePosting,
-  postingId,
-  requirePosting,
-  savePosting,
-  setPostingsStatus,
-} from "./postings";
-import { array, boolean, exactOptional, literal, object, string } from "zod/mini";
-import {
-  createCollector,
-  deleteCollector,
-  renewSecret,
-  rereadCollector,
-  runCollector,
-  updateCollector,
-} from "./collector-store";
-import { atsBoardSchema, readUrl } from "./collectors";
-import type { CollectorRun } from "./collector-store";
-import { emptyOrMatching, parseInput, requireSlug, text, trimmed } from "./input";
-import { applicationIds, linkPosting, saveApplication } from "./applications";
+import { Clock, Effect, Schema } from "effect";
 import type { Application } from "../data/applications";
-import { requireUser } from "./auth";
-import { companyKey } from "../lib/posting";
+import { COLLECTOR_TYPES, POSTING_STATUSES } from "../data/postings";
+import type { CollectorType, PostingEdit } from "../data/postings";
 import { slugify } from "../lib/cover-letter";
-import { loadJobSearch, saveJobSearch } from "./job-search";
-import { scoreModel, scorePostings, scoreSoon } from "./posting-score";
+import { companyKey } from "../lib/posting";
+import { applicationIdsEffect, linkPostingEffect, saveApplicationEffect } from "./applications";
+import { requireUserEffect } from "./auth";
+import {
+  createCollectorEffect,
+  deleteCollectorEffect,
+  renewSecretEffect,
+  rereadCollectorEffect,
+  runCollectorEffect,
+  updateCollectorEffect,
+} from "./collector-store";
+import type { CollectorRun } from "./collector-store";
+import { AtsBoardSchema, readUrlEffect } from "./collectors";
+import { checkCompaniesQuietlyEffect } from "./company-check";
+import { listCvsEffect } from "./cvs";
+import { runServerEffect } from "./effect";
+import {
+  ISO_DATE_PATTERN,
+  decodeBodyEffect,
+  emptyOrMatchingSchema,
+  requireSlugEffect,
+  textSchema,
+  trimmedSchema,
+} from "./input";
+import { loadJobSearchEffect, saveJobSearchEffect } from "./job-search";
+import { jobTermsFields, salaryInOrderCheck } from "./job-terms";
+import { scoreModel, scorePostingsEffect, scoreSoonEffect } from "./posting-score";
 import type { ScoreRun } from "./posting-score";
-import { listCvs } from "./cvs";
+import {
+  addPostingsEffect,
+  deletePostingEffect,
+  postingId,
+  requirePostingEffect,
+  savePostingEffect,
+  setPostingsStatusEffect,
+} from "./postings";
 
 // The desk's posting and collector writes. Each checks the session first and
 // parses its input.
 
 const NOT_POSTING = "Not a posting.";
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
 
-const editSchema = object(
-  {
-    company: trimmed(NOT_POSTING),
-    title: trimmed(NOT_POSTING),
-    location: trimmed(NOT_POSTING),
-    description: trimmed(NOT_POSTING),
-    postedOn: emptyOrMatching(ISO_DATE, NOT_POSTING),
-    ...jobTermsShape(NOT_POSTING),
-    status: literal(POSTING_STATUSES, NOT_POSTING),
-  },
-  NOT_POSTING,
-).check(salaryInOrder);
+const PostingUrlSchema = textSchema("Paste the job's address.");
+const JobSearchNotesSchema = trimmedSchema("Notes are text.");
 
-const statusSchema = object({
-  ids: array(string(NOT_POSTING), NOT_POSTING),
-  status: literal(POSTING_STATUSES, NOT_POSTING),
+const EditSchema = Schema.Struct({
+  company: trimmedSchema(NOT_POSTING),
+  title: trimmedSchema(NOT_POSTING),
+  location: trimmedSchema(NOT_POSTING),
+  description: trimmedSchema(NOT_POSTING),
+  postedOn: emptyOrMatchingSchema(ISO_DATE_PATTERN, NOT_POSTING),
+  ...jobTermsFields(NOT_POSTING),
+  status: Schema.Literals(POSTING_STATUSES).annotate({ message: NOT_POSTING }),
+})
+  .annotate({ message: NOT_POSTING })
+  .pipe(Schema.check(salaryInOrderCheck));
+
+const StatusSchema = Schema.Struct({
+  ids: Schema.mutable(
+    Schema.Array(Schema.String.annotate({ message: NOT_POSTING })).annotate({
+      message: NOT_POSTING,
+    }),
+  ),
+  status: Schema.Literals(POSTING_STATUSES).annotate({ message: NOT_POSTING }),
+}).annotate({ message: NOT_POSTING });
+
+const CollectorSchema = Schema.Struct({
+  type: Schema.Literals(COLLECTOR_TYPES).annotate({ message: "Pick a collector type." }),
+  label: textSchema("The collector needs a name."),
+  board: Schema.optionalKey(AtsBoardSchema),
 });
 
-const collectorSchema = object({
-  type: literal(COLLECTOR_TYPES, "Pick a collector type."),
-  label: text("The collector needs a name."),
-  board: exactOptional(atsBoardSchema),
-});
-
-const collectorChangeSchema = object({
-  label: text("The collector needs a name."),
-  active: boolean("Active is yes or no."),
-  board: exactOptional(atsBoardSchema),
+const CollectorChangeSchema = Schema.Struct({
+  label: textSchema("The collector needs a name."),
+  active: Schema.Boolean.annotate({ message: "Active is yes or no." }),
+  board: Schema.optionalKey(AtsBoardSchema),
 });
 
 /** Reads the job ad at an address into the inbox; answers its posting's id, also if it was there. */
-async function addDeskPostingByUrl(url: unknown): Promise<string> {
-  const started = Date.now();
+function addDeskPostingByUrlEffect(url: unknown) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  await requireUser();
+    const started = yield* Clock.currentTimeMillis;
+    const address = yield* decodeBodyEffect(PostingUrlSchema, url);
+    const found = yield* readUrlEffect(address);
 
-  const found = await readUrl(parseInput(text("Paste the job's address."), url));
+    // A posting the desk has already keeps its id and status.
+    const added = yield* addPostingsEffect([found], null);
+    const now = yield* Clock.currentTimeMillis;
 
-  // A posting the desk has already keeps its id and status.
-  const added = await addPostings([found], null);
+    yield* checkCompaniesQuietlyEffect({
+      deadline: now + 15_000,
+      keys: new Set([companyKey(found.company)]),
+      // Its ad may say more now than when the company was last checked.
+      force: true,
+    });
+    yield* scoreSoonEffect(added, { started });
 
-  await checkCompaniesQuietly({
-    deadline: Date.now() + 15_000,
-    keys: new Set([companyKey(found.company)]),
-    // Its ad may say more now than when the company was last checked.
-    force: true,
+    return postingId(found);
   });
-  await scoreSoon(added, { started });
-
-  return postingId(found);
 }
 
-async function saveDeskPosting(id: string, edit: unknown): Promise<PostingEdit> {
-  await requireUser();
+/** Reads the job ad at an address into the inbox; answers its posting's id, also if it was there. */
+function addDeskPostingByUrl(url: unknown): Promise<string> {
+  return runServerEffect(addDeskPostingByUrlEffect(url));
+}
 
-  const parsed = parseInput(editSchema, edit);
+function saveDeskPostingEffect(id: string, edit: unknown) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  await savePosting(id, parsed);
-  await checkCompaniesQuietly({
-    deadline: Date.now() + 15_000,
-    keys: new Set([companyKey(parsed.company)]),
-    // Its ad may say more now than when the company was last checked.
-    force: true,
+    const parsed: PostingEdit = yield* decodeBodyEffect(EditSchema, edit);
+
+    yield* savePostingEffect(id, parsed);
+
+    const now = yield* Clock.currentTimeMillis;
+
+    yield* checkCompaniesQuietlyEffect({
+      deadline: now + 15_000,
+      keys: new Set([companyKey(parsed.company)]),
+      // Its ad may say more now than when the company was last checked.
+      force: true,
+    });
+
+    return parsed;
   });
-
-  return parsed;
 }
 
-async function setDeskPostingsStatus(change: unknown) {
-  await requireUser();
-
-  const { ids, status } = parseInput(statusSchema, change);
-
-  await setPostingsStatus(ids, status);
+function saveDeskPosting(id: string, edit: unknown): Promise<PostingEdit> {
+  return runServerEffect(saveDeskPostingEffect(id, edit));
 }
 
-async function deleteDeskPosting(id: string) {
-  await requireUser();
-  await deletePosting(id);
+function setDeskPostingsStatusEffect(change: unknown) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+
+    const { ids, status } = yield* decodeBodyEffect(StatusSchema, change);
+
+    yield* setPostingsStatusEffect(ids, status);
+  });
+}
+
+function setDeskPostingsStatus(change: unknown): Promise<void> {
+  return runServerEffect(setDeskPostingsStatusEffect(change));
+}
+
+function deleteDeskPostingEffect(id: string) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+    yield* deletePostingEffect(id);
+  });
+}
+
+function deleteDeskPosting(id: string): Promise<void> {
+  return runServerEffect(deleteDeskPostingEffect(id));
 }
 
 /** An application id that is free: the slug, or the slug with a number. */
-async function freeApplicationId(slug: string): Promise<string> {
-  const taken = new Set(await applicationIds());
+function freeApplicationIdEffect(slug: string) {
+  return Effect.gen(function* () {
+    const taken = new Set(yield* applicationIdsEffect());
 
-  for (let number = 1; ; number += 1) {
-    const id = number === 1 ? slug : `${slug}-${number}`;
+    for (let number = 1; ; number += 1) {
+      const id = number === 1 ? slug : `${slug}-${number}`;
 
-    if (!taken.has(id)) {
-      return id;
+      if (!taken.has(id)) {
+        return id;
+      }
     }
-  }
+  });
 }
 
 /**
  * Makes an application from a posting, its job fields copied. The link marks
  * the posting as applied to. Answers the application's id.
  */
-async function applyToDeskPosting(id: string): Promise<string> {
-  await requireUser();
+function applyToDeskPostingEffect(id: string) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  const posting = await requirePosting(id);
-  const slug = slugify(`${posting.company} ${posting.title}`) || posting.id;
-  const applicationId = await freeApplicationId(slug);
-  // The CV its score suggests, while that CV still exists.
-  const { cvs } = await listCvs();
-  const cvId = cvs.some((cv) => cv.id === posting.score?.cvId) ? (posting.score?.cvId ?? "") : "";
-  const application: Application = {
-    id: applicationId,
-    company: posting.company || "Unknown company",
-    jobTitle: posting.title,
-    jobUrl: posting.url,
-    jobDescription: posting.description,
-    location: posting.location,
-    workplace: posting.workplace,
-    salaryMin: posting.salaryMin,
-    salaryMax: posting.salaryMax,
-    salaryCurrency: posting.salaryCurrency,
-    source: posting.source === "linkedin" ? "linkedin" : "direct",
-    status: "preparing",
-    cvId,
-    appliedOn: "",
-    nextStep: "",
-    nextStepOn: "",
-    contacts: [],
-    events: [],
-    note: "",
-  };
+    const posting = yield* requirePostingEffect(id);
+    const slug = slugify(`${posting.company} ${posting.title}`) || posting.id;
+    const [applicationId, { cvs }] = yield* Effect.all(
+      [freeApplicationIdEffect(slug), listCvsEffect()],
+      { concurrency: "unbounded" },
+    );
+    // The CV its score suggests, while that CV still exists.
+    const cvId = cvs.some((cv) => cv.id === posting.score?.cvId) ? (posting.score?.cvId ?? "") : "";
+    const application: Application = {
+      id: applicationId,
+      company: posting.company || "Unknown company",
+      jobTitle: posting.title,
+      jobUrl: posting.url,
+      jobDescription: posting.description,
+      location: posting.location,
+      workplace: posting.workplace,
+      salaryMin: posting.salaryMin,
+      salaryMax: posting.salaryMax,
+      salaryCurrency: posting.salaryCurrency,
+      source: posting.source === "linkedin" ? "linkedin" : "direct",
+      status: "preparing",
+      cvId,
+      appliedOn: "",
+      nextStep: "",
+      nextStepOn: "",
+      contacts: [],
+      events: [],
+      note: "",
+    };
 
-  await saveApplication(application, { create: true });
-  await linkPosting(applicationId, posting.id);
+    yield* saveApplicationEffect(application, { create: true });
+    yield* linkPostingEffect(applicationId, posting.id);
 
-  return applicationId;
+    return applicationId;
+  });
+}
+
+/**
+ * Makes an application from a posting, its job fields copied. The link marks
+ * the posting as applied to. Answers the application's id.
+ */
+function applyToDeskPosting(id: string): Promise<string> {
+  return runServerEffect(applyToDeskPostingEffect(id));
 }
 
 /** Scores one posting now, also if it has a score; answers how the run went. */
-async function scoreDeskPosting(id: string): Promise<ScoreRun> {
-  await requireUser();
-  await requirePosting(id);
+function scoreDeskPostingEffect(id: string) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+    yield* requirePostingEffect(id);
 
-  return scorePostings({ deadline: Date.now() + 50_000, ids: [id] });
+    const now = yield* Clock.currentTimeMillis;
+
+    return yield* scorePostingsEffect({ deadline: now + 50_000, ids: [id] });
+  });
+}
+
+/** Scores one posting now, also if it has a score; answers how the run went. */
+function scoreDeskPosting(id: string): Promise<ScoreRun> {
+  return runServerEffect(scoreDeskPostingEffect(id));
 }
 
 /** Scores the postings due for it, for about a minute; the scheduled job takes the rest. */
-async function scoreDeskPostings(): Promise<ScoreRun> {
-  await requireUser();
+function scoreDeskPostingsEffect() {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  return scorePostings({ deadline: Date.now() + 50_000 });
+    const now = yield* Clock.currentTimeMillis;
+
+    return yield* scorePostingsEffect({ deadline: now + 50_000 });
+  });
+}
+
+/** Scores the postings due for it, for about a minute; the scheduled job takes the rest. */
+function scoreDeskPostings(): Promise<ScoreRun> {
+  return runServerEffect(scoreDeskPostingsEffect());
 }
 
 /** What the desk looks for, and the model that scores against it. */
-async function deskJobSearch() {
-  await requireUser();
+function deskJobSearchEffect() {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  return { ...(await loadJobSearch()), model: scoreModel() };
+    const search = yield* loadJobSearchEffect();
+
+    return { ...search, model: scoreModel() };
+  });
 }
 
-async function saveDeskJobSearch(notes: unknown) {
-  await requireUser();
-  await saveJobSearch(parseInput(string("Notes are text."), notes).trim());
+/** What the desk looks for, and the model that scores against it. */
+function deskJobSearch() {
+  return runServerEffect(deskJobSearchEffect());
+}
+
+function saveDeskJobSearchEffect(notes: unknown) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+
+    const parsed = yield* decodeBodyEffect(JobSearchNotesSchema, notes);
+
+    yield* saveJobSearchEffect(parsed);
+  });
+}
+
+function saveDeskJobSearch(notes: unknown): Promise<void> {
+  return runServerEffect(saveDeskJobSearchEffect(notes));
 }
 
 /** Makes a collector; answers its secret, shown once. */
-async function createDeskCollector(id: string, body: unknown): Promise<string> {
-  await requireUser();
+function createDeskCollectorEffect(id: string, body: unknown) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  const { type, label, board } = parseInput(collectorSchema, body);
+    const { type, label, board } = yield* decodeBodyEffect(CollectorSchema, body);
+    const slug = yield* requireSlugEffect(id);
 
-  return createCollector(requireSlug(id), type satisfies CollectorType, label, board ?? null);
+    return yield* createCollectorEffect(slug, type satisfies CollectorType, label, board ?? null);
+  });
 }
 
-async function updateDeskCollector(id: string, change: unknown) {
-  await requireUser();
-  await updateCollector(id, parseInput(collectorChangeSchema, change));
+/** Makes a collector; answers its secret, shown once. */
+function createDeskCollector(id: string, body: unknown): Promise<string> {
+  return runServerEffect(createDeskCollectorEffect(id, body));
+}
+
+function updateDeskCollectorEffect(id: string, change: unknown) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+
+    const parsed = yield* decodeBodyEffect(CollectorChangeSchema, change);
+
+    yield* updateCollectorEffect(id, parsed);
+  });
+}
+
+function updateDeskCollector(id: string, change: unknown): Promise<void> {
+  return runServerEffect(updateDeskCollectorEffect(id, change));
 }
 
 /** Runs a job board collector now; answers what it found. */
-async function runDeskCollector(id: string): Promise<CollectorRun> {
-  await requireUser();
+function runDeskCollectorEffect(id: string) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  return runCollector(id);
+    return yield* runCollectorEffect(id);
+  });
 }
 
-async function renewDeskCollectorSecret(id: string): Promise<string> {
-  await requireUser();
-
-  return renewSecret(id);
+/** Runs a job board collector now; answers what it found. */
+function runDeskCollector(id: string): Promise<CollectorRun> {
+  return runServerEffect(runDeskCollectorEffect(id));
 }
 
-async function deleteDeskCollector(id: string) {
-  await requireUser();
-  await deleteCollector(id);
+function renewDeskCollectorSecretEffect(id: string) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+
+    return yield* renewSecretEffect(id);
+  });
 }
 
-async function rereadDeskCollector(id: string): Promise<number> {
-  await requireUser();
+function renewDeskCollectorSecret(id: string): Promise<string> {
+  return runServerEffect(renewDeskCollectorSecretEffect(id));
+}
 
-  return rereadCollector(id);
+function deleteDeskCollectorEffect(id: string) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+    yield* deleteCollectorEffect(id);
+  });
+}
+
+function deleteDeskCollector(id: string): Promise<void> {
+  return runServerEffect(deleteDeskCollectorEffect(id));
+}
+
+function rereadDeskCollectorEffect(id: string) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+
+    return yield* rereadCollectorEffect(id);
+  });
+}
+
+function rereadDeskCollector(id: string): Promise<number> {
+  return runServerEffect(rereadDeskCollectorEffect(id));
 }
 
 export {
+  CollectorChangeSchema,
+  CollectorSchema,
+  EditSchema,
+  StatusSchema,
   addDeskPostingByUrl,
+  addDeskPostingByUrlEffect,
   applyToDeskPosting,
+  applyToDeskPostingEffect,
   createDeskCollector,
+  createDeskCollectorEffect,
   deleteDeskCollector,
+  deleteDeskCollectorEffect,
   deleteDeskPosting,
+  deleteDeskPostingEffect,
   deskJobSearch,
+  deskJobSearchEffect,
   renewDeskCollectorSecret,
+  renewDeskCollectorSecretEffect,
   rereadDeskCollector,
+  rereadDeskCollectorEffect,
   runDeskCollector,
+  runDeskCollectorEffect,
   saveDeskJobSearch,
+  saveDeskJobSearchEffect,
   saveDeskPosting,
+  saveDeskPostingEffect,
   scoreDeskPosting,
+  scoreDeskPostingEffect,
   scoreDeskPostings,
+  scoreDeskPostingsEffect,
   setDeskPostingsStatus,
+  setDeskPostingsStatusEffect,
   updateDeskCollector,
+  updateDeskCollectorEffect,
 };
