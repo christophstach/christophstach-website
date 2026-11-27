@@ -1,7 +1,10 @@
 User-agent: *
 Allow: /
-Disallow: /cv-print
+Disallow: /api/
+Disallow: /auth/
+Disallow: /desk/
 Disallow: /desk
 Disallow: /login
+Disallow: /cv-print
 
 Sitemap: https://christophstach.de/sitemap.xml
