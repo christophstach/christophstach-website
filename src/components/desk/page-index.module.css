@@ -150,8 +150,15 @@
   transition: background-color var(--transition-fast);
 }
 
-.chart__week:hover {
+.chart__week:hover,
+.chart__week:focus-within,
+.chart__week:active {
   background-color: color-mix(in srgb, var(--color-border) 60%, transparent);
+}
+
+.chart__week:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }
 
 /* Segments from the bottom up, a 2px gap of surface between them. */
@@ -198,7 +205,7 @@
   color: var(--color-text-muted);
 }
 
-/* The count above its bar: always for this week, on hover for the rest. */
+/* The count above its bar: always for this week; on hover, focus or tap for the rest. */
 .chart__value {
   position: absolute;
   bottom: calc(var(--bar) + var(--space-1));
@@ -210,6 +217,8 @@
 }
 
 .chart__week:hover .chart__value,
+.chart__week:focus-within .chart__value,
+.chart__week:active .chart__value,
 .chart__week--current .chart__value {
   visibility: visible;
 }

@@ -110,6 +110,7 @@ export function DeskCvPdf(props: DeskCvPdfProps) {
           href={props.primary ? CV_PDF_PATH : deskCvPdfPath(props.cv)}
           class="text-link"
           target="_blank"
+          rel="noopener noreferrer"
         >
           Open the PDF
         </a>

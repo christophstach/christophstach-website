@@ -87,7 +87,12 @@ export function DeskCoverLetterPages(props: DeskCoverLetterPagesProps) {
       </Show>
 
       <p class={styles["letter-pages__note"]}>
-        <a href={deskLetterPdfPath(props.id)} class="text-link" target="_blank">
+        <a
+          href={deskLetterPdfPath(props.id)}
+          class="text-link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           Open the PDF
         </a>{" "}
         (the last saved version).

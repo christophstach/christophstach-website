@@ -2,8 +2,10 @@
   position: fixed;
   inset: auto;
   min-inline-size: 13rem;
+  max-block-size: calc(100dvh - 1rem);
   padding: var(--space-1);
   margin: 0;
+  overflow-y: auto;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   background-color: var(--color-surface);
@@ -40,7 +42,12 @@
   color: var(--color-hover-text);
 }
 
+.menu__item:focus-visible {
+  outline-offset: -2px;
+}
+
 .menu__item--danger,
-.menu__item--danger:hover {
+.menu__item--danger:hover,
+.menu__item--danger:focus-visible {
   color: var(--color-danger);
 }
