@@ -9,6 +9,7 @@ import { checkDeskLetterPages } from "../../lib/desk/letters";
 import { checkCvPages } from "../../lib/desk/cvs";
 import { pageCookie } from "../../lib/cookies";
 import { paths } from "../../router";
+import "../../assets/css/desk.css";
 import styles from "./DeskLayout.module.css";
 
 // A cookie rather than localStorage, so the server renders the sidebar in the

@@ -30,20 +30,21 @@ versioned with them; read the matching one before changing code:
 Personal CV website for Christoph Stach (christophstach.de), built with **Solid 2**
 (`solid-js`, `@solidjs/web`, `@solidjs/router`) in the SSR start mode of
 `@solidjs/vite-plugin`, with **Nitro 3** (`nitro/vite`)
-as the Vercel adapter. The public pages are server-rendered per request; their data and the CV
-PDF are cached with ISR. The private `/desk` area is server-rendered behind GitHub auth. CV
-content (entries, bullets, skills, projects) and the CVs, which pick from it for
-`/curriculum` and the printed CV, live in Postgres (Neon), accessed with Drizzle ORM and
-edited in the desk. Styling is a hand-rolled pure-CSS design system.
+as the Vercel adapter. The public pages (`/`, `/curriculum`), `/sitemap.xml`, their data
+endpoints, and the CV PDF are cached at the edge with ISR. The private `/desk` area is
+server-rendered behind GitHub auth. CV content (entries, bullets, skills, projects) and the CVs,
+which pick from it for `/curriculum` and the printed CV, live in Postgres (Neon), accessed with
+Drizzle ORM and edited in the desk. Styling is a hand-rolled pure-CSS design system.
 
 ## Commands
 
 Package manager is **pnpm**; the Node version is pinned in `.node-version`. See `package.json`
 for the script list.
 
-There is no test suite. `pnpm build` is the deploy build: Vite builds the client and the SSR
-handler, Nitro wraps them into `.vercel/output`. On Vercel the `vercel-build` script runs
-`drizzle-kit migrate`, then `vite build`.
+Unit tests run with zero extra dependencies via Node's built-in test runner: `pnpm test`
+(`node --test tests/*.test.ts`, covering `tests/`). `pnpm build` is the deploy build: Vite builds
+the client and the SSR handler, Nitro wraps them into `.vercel/output`. On Vercel the
+`vercel-build` script runs `drizzle-kit migrate`, then `vite build`.
 
 Database: the schema is `server/db/schema.ts`; after changing it run `pnpm db:generate` and
 commit the SQL migration in `server/db/migrations`. `pnpm db:migrate` applies migrations to
@@ -149,19 +150,18 @@ them through `CvText.tsx`. Dates are ISO month strings formatted with `formatMon
 **Design direction** (the look, wording and motion, and the brief for the frontend-design
 skill) is in `DESIGN.md`. Read it before changing or adding UI.
 
-**CSS design system is layered, imported once via `src/assets/css/main.css`:**
+**CSS design system is layered, imported via `src/assets/css/main.css` (public + shared) and `src/assets/css/desk.css` (loaded by `DeskShell.tsx` so public pages never ship desk/form CSS):**
 
-1. `fonts.css` — the two site fonts from Fontsource, static weights 400–700.
+1. `fonts.css` — the two site fonts from Fontsource (latin + latin-ext subsets), static weights 400–700.
 2. `tokens.css` — two tiers: _primitives_ (raw scales) and _semantic aliases_
    (`--color-text`, `--color-accent`, …). **Components must consume only semantic aliases,
    never primitives.** Dark mode overrides the semantic aliases under `.dark`.
 3. `base.css` — reset / element defaults.
-4. `forms.css` — form controls drawn the same on every device: `.field` (label, hint),
-   `.input` (text inputs, selects, textareas) and every `<input type="checkbox">`. Controls stay
-   native; don't restyle them per component.
-5. `components.css` — shared global classes (`.button`, `.chip`, `.icon-button`, `.panel`,
+4. `components.css` — shared global classes (`.button`, `.chip`, `.icon-button`,
    `.section-label`, `.text-link`, …). Reuse these before inventing new styles.
-6. `utilities.css` — layout helpers (`.container`).
+5. `utilities.css` — layout helpers (`.container`).
+6. `desk.css` (importing `forms.css`) — desk-only panels (`.panel`, `.desk-page`, `.desk-head`,
+   `.role-tag`, `.desk-status`, …) and native form controls (`.field`, `.input`, `<input type="checkbox">`). Controls stay native; don't restyle them per component.
 
 Per-component styling is a CSS Module next to the component (`Name.module.css`, desk pages in
 `src/components/desk/page-*.module.css`); global classes are written as plain strings, module
@@ -169,19 +169,22 @@ classes through `styles.x` or `styles["x--y"]`. Don't mix them up: a global clas
 through `styles` is `undefined`, a module class written as a string never matches.
 
 **Dark mode** is a `color-mode` cookie (`light`/`dark`/`system`, `src/lib/color-mode.ts`).
-The server reads it and renders `<html class="dark">` for `dark`; for `system` (or no cookie) a
-tiny blocking script in the head (`src/color-mode-script.ts`) checks `prefers-color-scheme`.
+SSR stays cookie-independent (`src/Document.tsx`) so public pages can be Edge-ISR cached without
+varying by cookie; a tiny blocking inline script as the first child of `<head>`
+(`src/color-mode-script.ts`) reads the `color-mode` cookie (or `prefers-color-scheme` when
+`system`/unset) and toggles `<html class="dark">` synchronously before first paint.
 `ThemeToggle.tsx` cycles system → light → dark and writes the cookie.
 
 **Icons** are Tabler SVG paths inlined as components in `src/components/icons.tsx`; no icon
 runtime ships.
 
 **Caching and route rules** live in `nitro({ routeRules })` in `vite.config.ts`: ISR on
-`/api/cv-home`, `/api/cv-website` and `/christoph-stach-cv.pdf`; `X-Robots-Tag` on `/cv-print`,
-`/desk/**` and `/login`; `/about-me` 301-redirects to `/`; `maxDuration: 60` for the PDF. When
-the desk changes content, `revalidatePaths` (`src/server/cv-pdf.ts`, paths from
-`src/server/cv-public-paths.ts`) renews those caches with `ISR_BYPASS_TOKEN`. Add new public
-pages to `public/sitemap.xml` too (hand-maintained).
+`/`, `/curriculum`, `/sitemap.xml`, `/api/cv-home`, `/api/cv-website` and `/christoph-stach-cv.pdf`;
+`X-Robots-Tag` on `/api/**`, `/auth/**`, `/cv-print`, `/desk/**` and `/login`; long-lived
+`Cache-Control` on `/images/**` and `/favicon.svg`; `/about-me` 301-redirects to `/`;
+`maxDuration: 60` for the PDF. When the desk changes content, `revalidatePaths`
+(`src/server/cv-pdf.ts`, paths from `src/server/cv-public-paths.ts`) renews those caches with
+`ISR_BYPASS_TOKEN`. The sitemap is served dynamically from `src/routes/sitemap.xml.ts`.
 
 **Desk and auth.** GitHub OAuth (`src/routes/auth/github.ts`, with a `state` cookie) creates a
 session only for `DESK_GITHUB_USER_ID`. The session is h3's sealed cookie, from `nitro/h3`

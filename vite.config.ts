@@ -36,17 +36,28 @@ export default defineConfig({
       // which import tracing alone doesn't copy: ship the whole package.
       traceDeps: ["@sparticuz/chromium*"],
       routeRules: {
-        // The public data and the CV PDF are cached (ISR) until the next
-        // deployment or until the desk changes them (on-demand revalidation
-        // with the bypass token). The pages that read the data render per
-        // request, so they can honour the color-mode cookie.
+        // The public pages, sitemap, data endpoints, and CV PDF are cached at
+        // the edge (ISR) until the next deployment or until the desk renews
+        // them on demand with the bypass token. Theme selection is resolved by
+        // the inline head script before first paint, keeping SSR cookie-free.
+        "/": { isr: true },
+        "/curriculum": { isr: true },
+        "/sitemap.xml": { isr: true },
         "/api/cv-home": { isr: true },
         "/api/cv-website": { isr: true },
         "/christoph-stach-cv.pdf": { isr: true },
         "/about-me": { redirect: { to: "/", status: 301 } },
+        "/api/**": { headers: { "X-Robots-Tag": "noindex" } },
+        "/auth/**": { headers: { "X-Robots-Tag": "noindex" } },
         "/cv-print": { headers: { "X-Robots-Tag": "noindex, nofollow" } },
         "/desk/**": { headers: { "X-Robots-Tag": "noindex, nofollow" } },
         "/login": { headers: { "X-Robots-Tag": "noindex, nofollow" } },
+        "/images/**": {
+          headers: { "Cache-Control": "public, max-age=604800, stale-while-revalidate=2592000" },
+        },
+        "/favicon.svg": {
+          headers: { "Cache-Control": "public, max-age=604800, stale-while-revalidate=2592000" },
+        },
       },
       vercel: {
         // Read at build time: Vercel only revalidates ISR routes on demand for
@@ -77,6 +88,6 @@ export default defineConfig({
     port: 3000,
   },
   build: {
-    target: "esnext",
+    target: "baseline-widely-available",
   },
 });

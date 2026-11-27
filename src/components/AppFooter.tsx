@@ -1,4 +1,6 @@
-import { IconBrandGithub, IconBrandLinkedin } from "./icons";
+import { IconBrandGithub, IconBrandLinkedin, IconMail } from "./icons";
+import { SITE_OWNER } from "../lib/site";
+import { paths } from "../router";
 import styles from "./AppFooter.module.css";
 
 export function AppFooter() {
@@ -7,11 +9,31 @@ export function AppFooter() {
   return (
     <footer class={styles.footer}>
       <div class={["container", styles.inner]}>
-        <small>© 2022–{year} Christoph Stach</small>
+        <div class={styles.meta}>
+          <small>
+            © 2022–{year} {SITE_OWNER.name}
+          </small>
+
+          <nav class={styles.legal} aria-label="Legal">
+            <a href={paths.impressum()} class={styles.legal__link}>
+              Impressum
+            </a>
+            <a href={paths.datenschutz()} class={styles.legal__link}>
+              Datenschutz
+            </a>
+          </nav>
+        </div>
 
         <div class={styles.social}>
           <a
-            href="https://www.linkedin.com/in/christoph-stach-7586b958"
+            href={`mailto:${SITE_OWNER.email}`}
+            aria-label={`Email ${SITE_OWNER.name}`}
+            class="icon-button"
+          >
+            <IconMail size={20} />
+          </a>
+          <a
+            href={SITE_OWNER.linkedinUrl}
             target="_blank"
             rel="noopener"
             aria-label="LinkedIn profile"
@@ -20,7 +42,7 @@ export function AppFooter() {
             <IconBrandLinkedin size={20} />
           </a>
           <a
-            href="https://github.com/christophstach"
+            href={SITE_OWNER.githubUrl}
             target="_blank"
             rel="noopener"
             aria-label="GitHub profile"

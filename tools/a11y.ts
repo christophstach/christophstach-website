@@ -1,5 +1,5 @@
-// Runs axe (WCAG 2.1 AA plus best practices) on the public pages, once in the
-// light and once in the dark theme, so contrast is checked in both.
+// Runs axe (WCAG 2.1 AA plus best practices) on the public pages in both
+// light and dark themes and across desktop and mobile viewports.
 // Start the dev server first, then: pnpm a11y [base URL]
 import type { AxeResults, Result as AxeViolation } from "axe-core";
 import { Cause, Data, Effect, Exit, Result } from "effect";
@@ -17,13 +17,27 @@ declare global {
 const BASE_URL = process.argv[2] ?? "http://localhost:3000";
 const CHROME = process.env.CV_PDF_CHROME_PATH ?? "/usr/bin/google-chrome";
 // shortcut: hand-kept list (a script can't import the typed router), add new public pages here.
-const PAGES = ["/", "/curriculum", "/login", "/cv-print", "/no-such-page"];
+const PAGES = [
+  "/",
+  "/curriculum",
+  "/impressum",
+  "/datenschutz",
+  "/login",
+  "/cv-print",
+  "/no-such-page",
+];
 const MODES = ["light", "dark"] as const;
+const VIEWPORTS = [
+  { name: "desktop", width: 1280, height: 800 },
+  { name: "mobile", width: 375, height: 812 },
+] as const;
 
 type Mode = (typeof MODES)[number];
+type Viewport = (typeof VIEWPORTS)[number];
 
 interface AuditRun {
   readonly mode: Mode;
+  readonly viewport: Viewport;
   readonly path: string;
 }
 
@@ -41,6 +55,7 @@ class A11yAuditError extends Data.TaggedError("A11yAuditError")<{
   readonly message: string;
   readonly path?: string | undefined;
   readonly mode?: Mode | undefined;
+  readonly viewport?: Viewport["name"] | undefined;
   readonly cause?: unknown;
 }> {}
 
@@ -68,6 +83,10 @@ function parseBaseUrl(rawUrl: string): Effect.Effect<URL, A11yAuditError> {
         cause,
       }),
   });
+}
+
+function runLabel(run: AuditRun): string {
+  return `${run.path} (${run.mode}, ${run.viewport.name})`;
 }
 
 function report(label: string, violations: readonly AxeViolation[]) {
@@ -121,7 +140,7 @@ function acquireContext(browser: Browser, run: AuditRun) {
       try: () => browser.createBrowserContext(),
       catch: (cause) =>
         new A11yBrowserError({
-          message: `Failed to create browser context for ${run.path} (${run.mode}).`,
+          message: `Failed to create browser context for ${runLabel(run)}.`,
           cause,
         }),
     }),
@@ -131,7 +150,7 @@ function acquireContext(browser: Browser, run: AuditRun) {
           try: () => context.close(),
           catch: (cause) =>
             new A11yBrowserError({
-              message: `Failed to close browser context for ${run.path} (${run.mode}).`,
+              message: `Failed to close browser context for ${runLabel(run)}.`,
               cause,
             }),
         }),
@@ -145,7 +164,7 @@ function acquirePage(context: BrowserContext, run: AuditRun) {
       try: () => context.newPage(),
       catch: (cause) =>
         new A11yBrowserError({
-          message: `Failed to open browser page for ${run.path} (${run.mode}).`,
+          message: `Failed to open browser page for ${runLabel(run)}.`,
           cause,
         }),
     }),
@@ -155,7 +174,7 @@ function acquirePage(context: BrowserContext, run: AuditRun) {
           try: () => page.close(),
           catch: (cause) =>
             new A11yBrowserError({
-              message: `Failed to close browser page for ${run.path} (${run.mode}).`,
+              message: `Failed to close browser page for ${runLabel(run)}.`,
               cause,
             }),
         }),
@@ -163,7 +182,7 @@ function acquirePage(context: BrowserContext, run: AuditRun) {
   );
 }
 
-/** One page in one theme; each theme gets its own browser context for its cookie. */
+/** One page in one theme and viewport; each run gets its own context for its cookie. */
 function check(
   browser: Browser,
   axeSource: string,
@@ -183,7 +202,7 @@ function check(
           }),
         catch: (cause) =>
           new A11yBrowserError({
-            message: `Failed to set color-mode cookie for ${run.path} (${run.mode}).`,
+            message: `Failed to set color-mode cookie for ${runLabel(run)}.`,
             cause,
           }),
       });
@@ -191,12 +210,25 @@ function check(
       const page = yield* acquirePage(context, run);
       const targetUrl = new URL(run.path, baseUrl).href;
 
+      yield* Effect.tryPromise({
+        try: () =>
+          page.setViewport({
+            width: run.viewport.width,
+            height: run.viewport.height,
+          }),
+        catch: (cause) =>
+          new A11yBrowserError({
+            message: `Failed to set viewport for ${runLabel(run)}.`,
+            cause,
+          }),
+      });
+
       // Reveal animations would be measured half-faded; reduced motion turns them off.
       yield* Effect.tryPromise({
         try: () => page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]),
         catch: (cause) =>
           new A11yBrowserError({
-            message: `Failed to emulate reduced motion for ${run.path} (${run.mode}).`,
+            message: `Failed to emulate reduced motion for ${runLabel(run)}.`,
             cause,
           }),
       });
@@ -205,9 +237,10 @@ function check(
         try: () => page.goto(targetUrl, { waitUntil: "networkidle0" }),
         catch: (cause) =>
           new A11yAuditError({
-            message: `Failed to navigate to ${targetUrl} (${run.mode}).`,
+            message: `Failed to navigate to ${targetUrl} (${run.mode}, ${run.viewport.name}).`,
             path: run.path,
             mode: run.mode,
+            viewport: run.viewport.name,
             cause,
           }),
       });
@@ -216,9 +249,10 @@ function check(
         try: () => page.addScriptTag({ content: axeSource }),
         catch: (cause) =>
           new A11yAuditError({
-            message: `Failed to inject axe-core into ${run.path} (${run.mode}).`,
+            message: `Failed to inject axe-core into ${runLabel(run)}.`,
             path: run.path,
             mode: run.mode,
+            viewport: run.viewport.name,
             cause,
           }),
       });
@@ -232,9 +266,10 @@ function check(
           ),
         catch: (cause) =>
           new A11yAuditError({
-            message: `Failed to run axe audit on ${run.path} (${run.mode}).`,
+            message: `Failed to run axe audit on ${runLabel(run)}.`,
             path: run.path,
             mode: run.mode,
+            viewport: run.viewport.name,
             cause,
           }),
       });
@@ -250,8 +285,8 @@ const program = Effect.scoped(
     const axeSource = yield* loadAxeSource;
     const browser = yield* acquireBrowser;
 
-    const runs: readonly AuditRun[] = MODES.flatMap((mode) =>
-      PAGES.map((path) => ({ mode, path })),
+    const runs: readonly AuditRun[] = VIEWPORTS.flatMap((viewport) =>
+      MODES.flatMap((mode) => PAGES.map((path) => ({ mode, viewport, path }))),
     );
 
     const outcomes = yield* Effect.forEach(runs, (run) => check(browser, axeSource, baseUrl, run), {
@@ -263,7 +298,7 @@ const program = Effect.scoped(
 
     for (const { run, results } of outcomes) {
       yield* Effect.sync(() => {
-        report(`${run.path} (${run.mode})`, results.violations);
+        report(runLabel(run), results.violations);
       });
 
       if (results.violations.length > 0) {

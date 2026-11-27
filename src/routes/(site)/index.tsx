@@ -1,31 +1,37 @@
-import { CV_HOME_API_PATH } from "../../data/endpoints";
+import type { Slot } from "@solidjs/web/frames";
+import { dynamicComponent } from "@solidjs/web";
+import { query, type RouteDefinition } from "@solidjs/router";
+import { CV_PDF_PATH } from "../../data/endpoints";
 import { HomeAbout } from "../../components/home/HomeAbout";
+import { HomeContactCta, type HomeContactCtaProps } from "../../components/home/HomeContactCta";
 import { HomeHero } from "../../components/home/HomeHero";
 import { HomeStack } from "../../components/home/HomeStack";
 import { HomeStats } from "../../components/home/HomeStats";
+import { SITE_OWNER } from "../../lib/site";
 import { monthsBetween } from "../../lib/format";
 import { routePaths } from "../../route-paths";
 
-// A server page: rendered on the server per request, its code never reaches
-// the browser. Jobs and skill groups come from /api/cv-home, which the CDN
-// caches (ISR) until the desk changes them.
-export default async function Home() {
+interface HomeServerProps {
+  contact: Slot<HomeContactCtaProps>;
+}
+
+// Server component: reads the lean CV summary directly from Postgres (cached at
+// the edge via ISR) without an internal HTTP loopback; only the interactive
+// contact CTA hydrates in the browser through the `contact` slot.
+const getHomeView = query(async () => {
   "use server";
 
   // Imported here, inside the server function, so the client build never
-  // resolves the server-only modules or Effect runtime schemas.
-  const [{ fetchPublicEffect }, { runServerEffect }, { CvHomeSchema }] = await Promise.all([
-    import("../../server/fetch-public"),
+  // resolves the server-only modules or Effect runtime.
+  const [{ loadCvHomeEffect }, { runServerEffect }] = await Promise.all([
+    import("../../server/cv-content"),
     import("../../server/effect"),
-    import("../../data/public-api"),
   ]);
   // Not from src/router.ts, which imports this page (see src/route-paths.ts).
   const paths = routePaths();
-  const { experience, skills } = await runServerEffect(
-    fetchPublicEffect(CV_HOME_API_PATH, CvHomeSchema),
-  );
+  const { experience, degreeCount, skillGroups } = await runServerEffect(loadCvHomeEffect());
 
-  const totalSkills = skills.reduce((sum, group) => sum + group.items.length, 0);
+  const totalSkills = skillGroups.reduce((sum, group) => sum + group.items.length, 0);
 
   // Counted as time actually employed, so the career gap between SLH and
   // DERICON is not billed as experience.
@@ -40,16 +46,48 @@ export default async function Home() {
   // A company with several roles on the CV counts once.
   const companyCount = new Set(experience.map((entry) => entry.organization)).size;
 
-  return () => (
+  return (props: HomeServerProps) => (
     <div class="container">
       <HomeHero yearsEmployed={yearsEmployed} curriculumHref={paths.curriculum()} />
       <HomeStats
         yearsEmployed={yearsEmployed}
         companyCount={companyCount}
+        degreeCount={degreeCount}
         totalSkills={totalSkills}
       />
       <HomeAbout />
-      <HomeStack skills={skills} />
+      <HomeStack skills={skillGroups} />
+      <props.contact
+        email={SITE_OWNER.email}
+        githubUrl={SITE_OWNER.githubUrl}
+        linkedinUrl={SITE_OWNER.linkedinUrl}
+        curriculumHref={paths.curriculum()}
+        cvPdfHref={CV_PDF_PATH}
+      />
     </div>
+  );
+}, "home-view");
+
+export const route = {
+  preload: () => {
+    void getHomeView();
+  },
+} satisfies RouteDefinition;
+
+export default function Home() {
+  const View = dynamicComponent(() => getHomeView());
+
+  return (
+    <View
+      contact={(props) => (
+        <HomeContactCta
+          email={props.email}
+          githubUrl={props.githubUrl}
+          linkedinUrl={props.linkedinUrl}
+          curriculumHref={props.curriculumHref}
+          cvPdfHref={props.cvPdfHref}
+        />
+      )}
+    />
   );
 }

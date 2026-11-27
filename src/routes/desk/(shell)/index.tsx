@@ -300,6 +300,8 @@ function WeeklyPanel() {
                   week.current ? styles["chart__week--current"] : undefined,
                 ]}
                 style={{ "--bar": week.height }}
+                // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- focusable chart bar reveals weekly count on keyboard focus
+                tabindex={0}
                 aria-label={`Week of ${week.label}: ${week.count} ${week.count === 1 ? "posting" : "postings"}`}
               >
                 <span class={styles.chart__value} aria-hidden="true">

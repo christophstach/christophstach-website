@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import type { APIHandler } from "filesystem-routing/api";
 import type { CvHome } from "../../data/public-api";
-import { loadCvContentEffect } from "../../server/cv-content";
+import { loadCvHomeEffect } from "../../server/cv-content";
 import { runApiEffect } from "../../server/effect";
 
 // What the home page shows of the CV: when and where each job ran (for the
@@ -9,13 +9,11 @@ import { runApiEffect } from "../../server/effect";
 // ISR, renewed by the desk.
 export const GET: APIHandler = () =>
   runApiEffect(
-    loadCvContentEffect().pipe(
-      Effect.map(({ experience, skills }) => {
+    loadCvHomeEffect().pipe(
+      Effect.map(({ experience, skillGroups }) => {
         const body: CvHome = {
-          experience: experience.map(({ from, to, organization }) =>
-            to === undefined ? { from, organization } : { from, to, organization },
-          ),
-          skills,
+          experience,
+          skills: skillGroups,
         };
 
         return Response.json(body);

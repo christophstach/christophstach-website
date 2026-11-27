@@ -1,5 +1,6 @@
 import { IconArrowRight, IconBrandGithub, IconBrandLinkedin, IconDownload } from "../icons";
 import { CV_PDF_PATH } from "../../data/endpoints";
+import { SITE_OWNER } from "../../lib/site";
 import { cvDownloadVisible } from "../../data/cvs";
 import styles from "./home.module.css";
 
@@ -32,7 +33,7 @@ export function HomeHero(props: HomeHeroProps) {
               </span>{" "}
               whoami
             </p>
-            <h1 class={styles.hero__title}>Christoph Stach</h1>
+            <h1 class={styles.hero__title}>{SITE_OWNER.name}</h1>
             <p class={styles.hero__role}>
               Senior Software Engineer
               <span class={styles.hero__sep} aria-hidden="true">
@@ -72,7 +73,7 @@ export function HomeHero(props: HomeHeroProps) {
               )}
 
               <a
-                href="https://www.linkedin.com/in/christoph-stach-7586b958"
+                href={SITE_OWNER.linkedinUrl}
                 target="_blank"
                 rel="noopener"
                 aria-label="LinkedIn profile"
@@ -82,7 +83,7 @@ export function HomeHero(props: HomeHeroProps) {
               </a>
 
               <a
-                href="https://github.com/christophstach"
+                href={SITE_OWNER.githubUrl}
                 target="_blank"
                 rel="noopener"
                 aria-label="GitHub profile"

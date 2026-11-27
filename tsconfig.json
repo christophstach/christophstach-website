@@ -8,6 +8,7 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "isolatedModules": true,
+    "allowImportingTsExtensions": true,
     "noEmit": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -29,6 +30,7 @@
     "env.ts",
     "vite.config.ts",
     "drizzle.config.ts",
+    "tests",
     "tools",
     "solid-env.d.ts",
     "file-routes.d.ts"
