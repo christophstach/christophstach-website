@@ -1,65 +1,119 @@
 import "server-only";
+import { Effect } from "effect";
 import {
-  deleteCoverLetter,
-  printCoverLetter,
-  requireCoverLetter,
-  saveCoverLetter,
-  storeCoverLetterFills,
+  deleteCoverLetterEffect,
+  printCoverLetterEffect,
+  requireCoverLetterEffect,
+  saveCoverLetterEffect,
+  storeCoverLetterFillsEffect,
 } from "./cover-letters";
-import { pageFills, points } from "./pdf-pages";
+import { pageFillsEffect, points } from "./pdf-pages";
 import { COVER_LETTER_MARGIN_MM } from "../data/cover-letter-wording";
-import { currentRequest } from "./desk-write";
-import { parseCoverLetterBody } from "./cover-letter-body";
+import { currentRequestEffect } from "./desk-write";
+import { parseCoverLetterBodyEffect } from "./cover-letter-body";
 import { paths } from "../router";
-import { renderPdf } from "./cv-pdf";
-import { requireUser } from "./auth";
+import { renderPdfEffect } from "./cv-pdf";
+import { requireUserEffect } from "./auth";
+import { runServerEffect } from "./effect";
 
 // The desk's cover letter writes, prints and page checks. Each checks the
 // session first and parses its input.
 
-async function saveLetter(id: string, body: unknown, { create }: { create: boolean }) {
-  await requireUser();
+function saveLetterEffect(id: string, body: unknown, { create }: { create: boolean }) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  const letter = parseCoverLetterBody(id, body);
+    const letter = yield* parseCoverLetterBodyEffect(id, body);
 
-  await saveCoverLetter(letter, { create });
+    yield* saveCoverLetterEffect(letter, { create });
 
-  return letter;
+    return letter;
+  });
 }
 
-async function deleteLetter(id: string) {
-  await requireUser();
-  await deleteCoverLetter(id);
+function saveLetter(id: string, body: unknown, options: { create: boolean }) {
+  return runServerEffect(saveLetterEffect(id, body, options));
 }
 
-async function printLetter(id: string) {
-  await requireUser();
+function deleteLetterEffect(id: string) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+    yield* deleteCoverLetterEffect(id);
+  });
+}
 
-  return printCoverLetter(id);
+function deleteLetter(id: string) {
+  return runServerEffect(deleteLetterEffect(id));
+}
+
+function printLetterEffect(id: string) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+
+    return yield* printCoverLetterEffect(id);
+  });
+}
+
+function printLetter(id: string) {
+  return runServerEffect(printLetterEffect(id));
 }
 
 /**
  * How full each page of the letter's PDF is; stored with the letter. Checks no
  * session: the caller does, and `request` carries the one Chrome uses.
  */
-async function letterPages(request: Request, id: string) {
-  const letter = await requireCoverLetter(id);
-  const pdf = await renderPdf(request, paths.desk["cover-letter-print"](letter.id)(), true);
-  const pages = await pageFills(pdf, points(COVER_LETTER_MARGIN_MM));
+function letterPagesEffect(request: Request, id: string) {
+  return Effect.gen(function* () {
+    const letter = yield* requireCoverLetterEffect(id);
+    const pdf = yield* renderPdfEffect(
+      request,
+      paths.desk["cover-letter-print"](letter.id)(),
+      true,
+    );
+    const pages = yield* pageFillsEffect(pdf, points(COVER_LETTER_MARGIN_MM));
 
-  await storeCoverLetterFills(
-    letter.id,
-    pages.map((page) => page.fill),
-  );
+    yield* storeCoverLetterFillsEffect(
+      letter.id,
+      pages.map((page) => page.fill),
+    );
 
-  return pages;
+    return pages;
+  });
+}
+
+/**
+ * How full each page of the letter's PDF is; stored with the letter. Checks no
+ * session: the caller does, and `request` carries the one Chrome uses.
+ */
+function letterPages(request: Request, id: string) {
+  return runServerEffect(letterPagesEffect(request, id));
 }
 
 /** How full each page of the letter's PDF is; stored with the letter. */
-async function checkLetterPages(id: string) {
-  await requireUser();
+function checkLetterPagesEffect(id: string) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  return { pages: await letterPages(currentRequest(), id) };
+    const request = yield* currentRequestEffect();
+
+    return { pages: yield* letterPagesEffect(request, id) };
+  });
 }
 
-export { checkLetterPages, deleteLetter, letterPages, printLetter, saveLetter };
+/** How full each page of the letter's PDF is; stored with the letter. */
+function checkLetterPages(id: string) {
+  return runServerEffect(checkLetterPagesEffect(id));
+}
+
+export {
+  checkLetterPages,
+  checkLetterPagesEffect,
+  deleteLetter,
+  deleteLetterEffect,
+  letterPages,
+  letterPagesEffect,
+  printLetter,
+  printLetterEffect,
+  saveLetter,
+  saveLetterEffect,
+};
