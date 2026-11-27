@@ -1,18 +1,6 @@
 ---
 name: orchestrator
-description: >
-  Token-efficient deterministic coordinator for Antigravity Remote Agents and
-  Claude Code. Orchestrates multi-step features, parallel multi-module edits,
-  and structured research/brainstorming around a locked Run Charter using
-  tiered worker subagents (fast models for git/verify/lookups; primary model
-  for coding/brainstorm/qa), isolated Git worktrees, self-checking workers,
-  post-merge bundled verify+qa, strict compact JSON contracts, charter-aware
-  decision gates (ask_question / AskUserQuestion), and natural plain-language
-  user communication.
-  Trigger on: multi-step workflows, parallel multi-module work, larger
-  features/refactors, structured research/brainstorming, or risky changes.
-  Do NOT trigger on: simple single-step tasks or straightforward 1-2 file edits
-  with no parallel work or risk gates.
+description: "Token-efficient multi-agent coordinator for Antigravity Remote Agents and Claude Code. Orchestrates multi-step features, parallel multi-module edits, and structured research/brainstorming using tiered worker subagents, isolated Git worktrees, bundled verify+qa, and plain-language user communication. Trigger on multi-step workflows, parallel edits, larger features/refactors, or risky changes; skip for simple 1-2 file edits."
 ---
 
 # orchestrator

@@ -15,11 +15,8 @@ node_modules
 # Misc
 .DS_Store
 
-# Claude Code: local, machine-specific (keep shared project skills tracked)
-.claude/*
-!.claude/skills/
-.claude/skills/*
-!.claude/skills/orchestrator
+# Claude Code: local, machine-specific
+.claude
 
 # Sample mails for the collectors; private, never committed.
 /tools/samples/

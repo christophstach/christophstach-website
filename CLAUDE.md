@@ -20,10 +20,10 @@ versioned with them; read the matching one before changing code:
 
 ## Orchestrator skill
 
-- `.claude/skills/orchestrator/SKILL.md` (symlinked to `.agents/skills/orchestrator/SKILL.md`) —
-  parallel multi-agent workflow coordinator for larger features, multi-file refactors, or structured
-  research/brainstorming. Follow its Claude Code runtime mapping (Section 2) and the repository
-  policies in `AGENTS.md` (including `delivery_mode: direct_main` and keeping `.worktrees/` ignored).
+- `.agents/skills/orchestrator/SKILL.md` — parallel multi-agent workflow coordinator for larger
+  features, multi-file refactors, or structured research/brainstorming. Follow its Claude Code
+  runtime mapping (Section 2) and the repository policies in `AGENTS.md` (including
+  `delivery_mode: direct_main` and keeping `.worktrees/` ignored).
 
 ## What this is
 
