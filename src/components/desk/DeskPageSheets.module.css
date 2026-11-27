@@ -17,7 +17,7 @@
   inline-size: 4.25rem;
   aspect-ratio: 210 / 297;
   padding: 0.4rem;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   background-color: var(--color-paper);
   box-shadow: var(--color-paper-shadow);
 }

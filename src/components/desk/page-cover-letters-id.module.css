@@ -39,16 +39,27 @@
   color: var(--color-heading);
 }
 
+/* Container-aware A4 frame: scales the 210mm x 297mm sheet to fit the rail or
+   single-column width without clipping or leaving empty space below. */
 .preview__frame {
-  overflow-x: auto;
+  position: relative;
+  container-type: inline-size;
+  inline-size: 100%;
+  max-inline-size: 210mm;
+  aspect-ratio: 210 / 297;
+  overflow: hidden;
+  background-color: var(--color-paper);
+  box-shadow: var(--color-paper-shadow);
 }
 
-/* An A4 sheet at the rail's width: 23.5rem of the sheet's 210mm. */
 .preview__sheet {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
   box-sizing: border-box;
   inline-size: 210mm;
   min-block-size: 297mm;
   background-color: var(--color-paper);
-  box-shadow: var(--color-paper-shadow);
-  zoom: 0.47;
+  transform-origin: top left;
+  transform: scale(tan(atan2(100cqi, 210mm)));
 }

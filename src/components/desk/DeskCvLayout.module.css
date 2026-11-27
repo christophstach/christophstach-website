@@ -115,8 +115,10 @@
 }
 
 .cv-layout__step:has(:focus-visible) {
-  outline: 2px solid var(--color-ring);
+  z-index: 1;
+  outline: 2px solid var(--color-accent);
   outline-offset: 1px;
+  box-shadow: 0 0 0 3px var(--color-ring);
 }
 
 /* The radio stays for the keyboard and screen readers; the label is the button. */
