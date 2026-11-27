@@ -27,12 +27,13 @@ description: "Token-efficient multi-agent coordinator for Antigravity Remote Age
 | **Model Tiering (Speed & Cost)** | **Fast tier (`Model: "flash"`):** `git`, `verify`, simple local `research`. **Primary tier (`Model: "inherit"`):** `coding`, `writer_repo`, `brainstorm`, `qa`, deep `research`, `compute`. | **Fast tier (`haiku`):** `git`, `verify`, simple local `research`. **Primary tier (default `sonnet`/`opus`):** `coding`, `writer_repo`, `brainstorm`, `qa`, deep `research`, `compute`. |
 | **Parallel Dispatch** | Single `invoke_subagent` call (`Workspace: "inherit"`) with all ready steps. | Multiple parallel `Agent` tool calls in one assistant turn (manual `.worktrees/...` or native `isolation: "worktree"`). |
 | **Reuse & Live Steering** | `send_message` to reuse/steer; `manage_subagents` (`list`/`kill`) to stop invalidated workers. Never poll in a loop. | `Agent` `resume` for retries/continuation (`SendMessage` if Agent Teams enabled; else apply on next step). |
+| **Task Mirror** | `task.md` checklist artifact (see §4.1). | `TaskCreate` / `TaskUpdate(addBlockedBy)` (fallback `TodoWrite` / `task.md`). |
 | **Decisions** | `ask_question` (fallback: concise plain-language text). | `AskUserQuestion` (fallback: concise plain-language text). |
 | **State & Scratch** | `<artifact_dir>/orchestrator-state.json` & `<artifact_dir>/scratch/`. | `.worktrees/<run_id>/orchestrator-state.json` & `.worktrees/<run_id>/scratch/` (gitignored). |
 
 - **Worktree Guardrail:** Write/exec workers MUST use **absolute paths** inside `workspace.worktree_path` and set `Cwd = workspace.worktree_path`. Never read/write/mutate the main checkout (except `git` lifecycle commands and `verify`'s read-only `git status --porcelain` check).
 - **Worker Reuse & Live Steering:** Reuse **1** `git` worker across the entire run (`DISCOVERY` -> `PROVISIONING` -> `INTEGRATING` -> `CLEANUP`), and reuse `coding`/`writer_repo` workers on retries via `send_message`/`resume` so context is preserved. On reactive wakeups (user pivot or peer findings affecting active workers), forward concise course-corrections immediately via `send_message` or `kill` invalidated workers.
-- **State Ledger & Recovery:** Update `orchestrator-state.json` on Run State changes and decisions (`run_id`, `mode`, `delivery_mode`, `base_branch`, `base_commit`, `run_state`, `loop_count`, `approved_decisions`, `steps`, `active_worktrees`). On resume after compaction/interruption, read the ledger and have `git` run `git worktree list` / `git worktree prune`.
+- **State Ledger & Recovery:** Update `orchestrator-state.json` on Run State changes and decisions (`run_id`, `mode`, `delivery_mode`, `base_branch`, `base_commit`, `run_state`, `loop_count`, `plan_rev`, `approved_decisions`, `graph`, `active_worktrees`). On resume after compaction/interruption, read the ledger and have `git` run `git worktree list` / `git worktree prune`.
 
 ---
 
@@ -48,24 +49,35 @@ Lock before planning implementation:
 
 ---
 
-## 4. Streamlined Run/Step FSM (DAG-Driven & Pipelined)
+## 4. Task Graph & Run/Step FSM (DAG-Driven & Pipelined)
 
-- **Step States (each step has `depends_on: [...]`):** `QUEUED` -> `RUNNING` -> `VERIFYING` -> `VERIFIED` -> `MERGED` (or `PAUSED_FOR_DECISION` / `FAILED`).
-- **No Artificial Barriers:** Dispatch any step the moment its `depends_on` are satisfied (up to concurrency cap). Validate read-only steps (`research`, `brainstorm`, `qa`, `writer_readonly`) directly in-memory—never spawn `verify` for them.
+### 4.1 Task Graph (Single Source of Truth)
+- **Nodes:** The ledger's `graph` holds one node per step: `{ "id": "S03", "title": "<plain 2–5 words, user's language>", "role", "depends_on": [...], "owned_paths": [...], "tier": "fast|primary", "size": "S|M|L", "status" }`. Dispatch packets are **derived** from nodes (never re-planned per packet); the node `title` doubles as the subagent's UI name and diagram label.
+- **Validate Before Every Dispatch (in-memory, no worker):** (1) acyclic, (2) every `depends_on` id exists and is not `CANCELLED`, (3) no `owned_paths` overlap between nodes that could run concurrently (i.e., neither reaches the other via `depends_on`), (4) hard sequential boundaries (§5.2) are encoded as explicit edges. On failure, fix the graph (add edge / merge nodes) before dispatching—never dispatch an invalid graph.
+- **Critical-Path Scheduling:** Weight nodes `S=1`, `M=2`, `L=3`. When ready nodes exceed the concurrency cap, dispatch in descending order of **longest remaining weighted path to a sink** (ties: ascending `id`), so the chain that bounds total runtime always starts first.
+- **Dynamic Graph Edits:** Retries, fix steps, wiring steps, and user pivots are graph edits—insert new nodes (`S07`..) with edges, or mark obsolete nodes `CANCELLED` (and `kill` their workers). Every structural edit increments `plan_rev` (feeds `idempotency_key`), re-runs validation, and syncs the mirror and diagram.
+- **Native Task Mirror (Always):** Mirror the graph into the runtime's task UI and update it on every node status change (batch updates per wakeup).
+  - **Antigravity:** `task.md` artifact in `<artifact_dir>`—one checklist line per node with plain title + "wartet auf: …" / "waiting for: …" (`[ ]` queued, `[/]` running, `[x]` done, `~~struck~~` cancelled).
+  - **Claude Code:** `TaskCreate` per node (subject = plain title), `TaskUpdate(addBlockedBy=[...])` for edges, `status` `pending` -> `in_progress` -> `completed` (`deleted` for cancelled). If the Task tools are not exposed in the session, fall back to `TodoWrite`, else to `.worktrees/<run_id>/task.md`.
+- **Plan Diagram (Always):** After `PLANNING` (and after any `plan_rev` change that adds/cancels nodes), show the user a compact mermaid `flowchart LR` with plain-language node labels only (no `S03`/role codes), plus 1 sentence on what runs in parallel. Skip re-rendering for pure status changes—the mirror covers those.
+
+### 4.2 Step States & FSM
+- **Step States:** `QUEUED` -> `RUNNING` -> `VERIFYING` -> `VERIFIED` -> `MERGED` (or `PAUSED_FOR_DECISION` / `FAILED` / `CANCELLED`).
+- **No Artificial Barriers:** Dispatch any node the moment its `depends_on` are satisfied (critical-path order, up to concurrency cap). Validate read-only steps (`research`, `brainstorm`, `qa`, `writer_readonly`) directly in-memory—never spawn `verify` for them.
 
 | From | Guard | To | Action |
 | :--- | :--- | :--- | :--- |
 | `INIT` | Base ref or scope unknown | `DISCOVERY` | Launch `git` inspection + needed `research`/`brainstorm` in 1 parallel dispatch. |
 | `INIT` / `DISCOVERY` | Base ref & Charter unambiguous | `CHARTER_LOCKED` | Lock Charter, `mode`, `delivery_mode`, pre-approved scope, and state ledger. |
 | `DISCOVERY` | Charter ambiguous or `NEEDS_DECISION` | `AWAITING_DECISION` | Record pause origin (`DISCOVERY`); ask user to confirm direction. |
-| `CHARTER_LOCKED` | Charter locked | `PLANNING` | Run **Value-Threshold Parallel Split Check** (Section 5.2); build `depends_on` DAG, disjoint `owned_paths`, upfront interface specs, and wiring steps. |
+| `CHARTER_LOCKED` | Charter locked | `PLANNING` | Run **Value-Threshold Parallel Split Check** (Section 5.2); build the task graph (§4.1) with disjoint `owned_paths`, upfront interface specs, and wiring nodes; validate; create the task mirror; show the plan diagram. |
 | `PLANNING` | Unapproved Big Decision or `BLOCKED` | `AWAITING_DECISION` | Pause dependent steps; record pause origin (`PLANNING`); escalate. |
 | `PLANNING` | Ready steps valid (write/exec vs read-only) | `PROVISIONING` / `DISPATCHED` | Write batch: 1 batched `git` provisioning call -> `DISPATCHED`. Read-only: dispatch directly. |
-| `PROVISIONING` | Worktrees & dep links ready | `DISPATCHED` | Launch all `depends_on`-ready workers in 1 parallel call (respect concurrency cap). |
+| `PROVISIONING` | Worktrees & dep links ready | `DISPATCHED` | Validate graph; launch all ready nodes in 1 parallel call in critical-path order (respect concurrency cap); mark them running in the mirror. |
 | `DISPATCHED` | Read-only step settles | `DISPATCHED` / `PLANNING` / `CLEANUP` | Validate JSON + read-only invariants in-memory; mark `VERIFIED`; immediately launch newly ready downstream steps. |
 | `DISPATCHED` | All write steps in batch settled (`STANDARD` multi-writer) | `INTEGRATING` | Reuse `git` worker to verify each branch's `owned_paths` via `git diff --name-only` and merge sequentially into `orch/<run_id>/integrated`. |
 | `DISPATCHED` / `INTEGRATING` | `LIGHT` write step settled OR `STANDARD`/`STRICT` merge clean | `VERIFYING` | Launch **1 `verify` + 1 `qa` in parallel** on the integrated branch (or `LIGHT` worktree; omit `qa` for trivial `LIGHT` edits). |
-| `VERIFYING` | `verify` or `qa` fails AND `retry_count < 2` AND `loop_count < 5` | `DISPATCHED` | Combine all `verify` violations + `qa` fix items into **1** targeted retry via `send_message`/`resume` to the responsible worker. |
+| `VERIFYING` | `verify` or `qa` fails AND `retry_count < 2` AND `loop_count < 5` | `DISPATCHED` | Combine all `verify` violations + `qa` fix items into **1** targeted retry via `send_message`/`resume` to the responsible worker (or insert a fix node if no single owner; bump `plan_rev`). |
 | `VERIFYING` / `INTEGRATING` | Retries exhausted (`2`), `loop_count >= 5`, merge conflict, or unapproved Big Decision | `AWAITING_DECISION` | Retain worktrees; let unrelated safe in-flight steps finish; record pause origin; escalate. |
 | `VERIFYING` | Both `verify` AND `qa` passed AND more downstream write batches remain | `PROVISIONING` / `DISPATCHED` | In **1** `git` call, remove merged worktrees from completed batch + provision next batch from latest `integrated` commit. |
 | `VERIFYING` | Final batch passed `verify` + `qa` | `CLEANUP` | If `direct_main`, `git` merges/pushes to `origin/main` and deletes `orch/<run_id>/*` branches; remove merged worktrees, retain unmerged/failed ones. |
@@ -122,6 +134,7 @@ Lock before planning implementation:
   "run_id": "run-20261126-225500-f4a9",
   "step_id": "S03",
   "depends_on": ["S01"],
+  "plan_rev": 1,
   "role": "coding",
   "idempotency_key": "run-20261126-225500-f4a9:S03:8c19e2a:r1",
   "timeout_sec": 300,
@@ -182,6 +195,7 @@ Lock before planning implementation:
 - **Decisions:** Prefer `ask_question` (Antigravity) / `AskUserQuestion` (Claude Code) with a short natural question in the user's language and 2–4 plain options (recommended first, brief trade-off). Text fallback: brief heading, 1–2 sentence context, numbered plain options—**zero** internal codes (`D01`, `S03`, `OPT-1`, `DECISION_RULE_*`).
 - **`STANDARD` Report (Default, adapt headings to user's language):**
   - **Summary:** 1–2 plain sentences on outcome & goal status.
+  - **Plan:** *(final state of the plan diagram if it changed during the run; else omit)*.
   - **What Changed:** Bullet list with clickable file links + branch/commit info (`main` if `direct_main`, else feature/integration branch).
   - **Verification:** Plain-language check status (e.g., lint, typecheck, build, review passed).
   - **Decisions Made:** *(omit if none)* plain summary.
