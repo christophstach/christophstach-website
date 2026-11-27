@@ -1,5 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="14" fill="#0f1514" />
   <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.25" fill="none" stroke="#2a3331" stroke-width="1.5" />
-  <text x="32" y="43.5" font-family="JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="32" font-weight="700" letter-spacing="-1.5" fill="#34e6a3" text-anchor="middle">CS</text>
+  <g fill="none" stroke="#34e6a3" stroke-width="4.5" stroke-linecap="butt">
+    <path d="M27.75 27.75C27.75 24.4 25.1 22.25 21.75 22.25C18.4 22.25 15.75 24.4 15.75 27.75V36.25C15.75 39.6 18.4 41.75 21.75 41.75C25.1 41.75 27.75 39.6 27.75 36.25" />
+    <path d="M48 27C48 24 45.5 22.25 42.25 22.25C39 22.25 36.5 23.9 36.5 26.75C36.5 29.7 39 31 42.25 32C45.5 33 48.25 34.3 48.25 37.25C48.25 40.1 45.6 41.75 42.25 41.75C38.9 41.75 36.25 40 36.25 37" />
+  </g>
 </svg>

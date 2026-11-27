@@ -20,7 +20,9 @@ export function parseColorMode(value: string | null | undefined): ColorMode {
 }
 
 export function colorModeCookie(mode: ColorMode): string {
-  return `${COLOR_MODE_COOKIE}=${mode}; ${COLOR_MODE_COOKIE_ATTRIBUTES}`;
+  const secure = typeof window !== "undefined" && window.location.protocol === "https:";
+
+  return `${COLOR_MODE_COOKIE}=${mode}; ${COLOR_MODE_COOKIE_ATTRIBUTES}${secure ? "; Secure" : ""}`;
 }
 
 // The server reads the request cookie; the client reads the same cookie from

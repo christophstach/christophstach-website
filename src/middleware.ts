@@ -34,6 +34,43 @@ function guardedPathEffect(request: Request, path: string): Effect.Effect<string
   });
 }
 
+const SECURITY_HEADERS: ReadonlyArray<readonly [string, string]> = [
+  ["X-Content-Type-Options", "nosniff"],
+  ["Referrer-Policy", "strict-origin-when-cross-origin"],
+  ["X-Frame-Options", "DENY"],
+  ["Permissions-Policy", "camera=(), microphone=(), geolocation=()"],
+  [
+    "Content-Security-Policy",
+    "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'",
+  ],
+];
+
+const HSTS_HEADER = "max-age=31536000; includeSubDomains";
+
+/** Attaches baseline HTTP security headers without mutating immutable responses. */
+const securityHeaders: StartMiddleware = async (event, next) => {
+  const response = await next();
+  const headers = new Headers(response.headers);
+
+  for (const [name, value] of SECURITY_HEADERS) {
+    if (!headers.has(name)) {
+      headers.set(name, value);
+    }
+  }
+
+  const url = new URL(event.request.url);
+
+  if (url.protocol === "https:" && !headers.has("Strict-Transport-Security")) {
+    headers.set("Strict-Transport-Security", HSTS_HEADER);
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+};
+
 const deskGuard: StartMiddleware = async (event, next) => {
   const url = new URL(event.request.url);
   const target = await Effect.runPromise(guardedPathEffect(event.request, url.pathname));
@@ -41,4 +78,4 @@ const deskGuard: StartMiddleware = async (event, next) => {
   return target === undefined ? next() : Response.redirect(new URL(target, url), 302);
 };
 
-export default [deskGuard, createAPIHandler(routes)] satisfies StartMiddleware[];
+export default [securityHeaders, deskGuard, createAPIHandler(routes)] satisfies StartMiddleware[];
