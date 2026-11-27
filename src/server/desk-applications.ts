@@ -1,44 +1,63 @@
 import "server-only";
-import { deleteApplication, findApplication, saveApplication } from "./applications";
-import { matching, parseInput } from "./input";
-import { literal, object } from "zod/mini";
-import { markSent, requireSentCopy } from "./sent-copies";
-import { HttpError } from "./http";
-import { parseApplicationBody } from "./application-body";
-import { requireUser } from "./auth";
+import { Effect, Schema } from "effect";
+import {
+  deleteApplicationEffect,
+  findApplicationEffect,
+  saveApplicationEffect,
+} from "./applications";
+import { decodeBodyEffect, isoDateSchema } from "./input";
+import { markSentEffect, requireSentCopyEffect } from "./sent-copies";
+import { NotFoundError, runServerEffect } from "./effect";
+import { parseApplicationBodyEffect } from "./application-body";
+import { requireUserEffect } from "./auth";
 
 // The desk's application writes. Each checks the session first and parses
 // its input. Applications are private: no public page to renew.
 
-async function saveDeskApplication(id: string, body: unknown, { create }: { create: boolean }) {
-  await requireUser();
+function saveDeskApplicationEffect(id: string, body: unknown, { create }: { create: boolean }) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  const application = parseApplicationBody(id, body);
+    const application = yield* parseApplicationBodyEffect(id, body);
 
-  await saveApplication(application, { create });
+    yield* saveApplicationEffect(application, { create });
 
-  return application;
+    return application;
+  });
 }
 
-async function deleteDeskApplication(id: string) {
-  await requireUser();
-  await deleteApplication(id);
+function saveDeskApplication(id: string, body: unknown, options: { create: boolean }) {
+  return runServerEffect(saveDeskApplicationEffect(id, body, options));
 }
 
-async function markDeskApplicationSent(id: string) {
-  await requireUser();
-  await markSent(id);
+function deleteDeskApplicationEffect(id: string) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+    yield* deleteApplicationEffect(id);
+  });
 }
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
+function deleteDeskApplication(id: string) {
+  return runServerEffect(deleteDeskApplicationEffect(id));
+}
 
-const settleSchema = object(
-  {
-    action: literal(["done", "later"], "Not a next-step action."),
-    today: matching(ISO_DATE, "Not a day."),
-  },
-  "Not a next-step action.",
-);
+function markDeskApplicationSentEffect(id: string) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+    yield* markSentEffect(id);
+  });
+}
+
+function markDeskApplicationSent(id: string) {
+  return runServerEffect(markDeskApplicationSentEffect(id));
+}
+
+const SettleNextStepSchema = Schema.Struct({
+  action: Schema.Literals(["done", "later"]).annotate({
+    message: "Not a next-step action.",
+  }),
+  today: isoDateSchema("Not a day."),
+}).annotate({ message: "Not a next-step action." });
 
 /** How many days "later" moves a next step on. */
 const LATER_DAYS = 3;
@@ -69,62 +88,102 @@ function freeEventId(events: { id: string }[]): string {
  * the history (dated `today`, the browser's day) and clears it; "later" moves
  * it three days past today.
  */
-async function settleDeskNextStep(id: string, body: unknown) {
-  await requireUser();
+function settleDeskNextStepEffect(id: string, body: unknown) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  const { action, today } = parseInput(settleSchema, body);
-  const application = await findApplication(id);
+    const { action, today } = yield* decodeBodyEffect(SettleNextStepSchema, body);
+    const application = yield* findApplicationEffect(id);
 
-  if (application === undefined) {
-    throw new HttpError(404, `No application "${id}".`);
-  }
+    if (application === undefined) {
+      return yield* new NotFoundError({ message: `No application "${id}".` });
+    }
 
-  if (action === "later") {
-    application.nextStepOn = addDays(today, LATER_DAYS);
-  } else {
-    application.events.push({
-      id: freeEventId(application.events),
-      date: today,
-      text: application.nextStep || "Next step done",
-    });
-    application.nextStep = "";
-    application.nextStepOn = "";
-  }
+    const updated =
+      action === "later"
+        ? { ...application, nextStepOn: addDays(today, LATER_DAYS) }
+        : {
+            ...application,
+            events: [
+              ...application.events,
+              {
+                id: freeEventId(application.events),
+                date: today,
+                text: application.nextStep || "Next step done",
+              },
+            ],
+            nextStep: "",
+            nextStepOn: "",
+          };
 
-  await saveApplication(application, { create: false });
+    return yield* saveApplicationEffect(updated, { create: false });
+  });
+}
+
+/**
+ * Settles an application's next step from the overview: "done" writes it into
+ * the history (dated `today`, the browser's day) and clears it; "later" moves
+ * it three days past today.
+ */
+function settleDeskNextStep(id: string, body: unknown) {
+  return runServerEffect(settleDeskNextStepEffect(id, body));
 }
 
 /** The CV the application sent, as it printed then. */
-async function sentCv(id: string) {
-  await requireUser();
+function sentCvEffect(id: string) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  const { cv } = await requireSentCopy(id);
+    const { cv } = yield* requireSentCopyEffect(id);
 
-  if (cv === null) {
-    throw new HttpError(404, `Application "${id}" sent no CV.`);
-  }
+    if (cv === null) {
+      return yield* new NotFoundError({ message: `Application "${id}" sent no CV.` });
+    }
 
-  return cv;
+    return cv;
+  });
+}
+
+/** The CV the application sent, as it printed then. */
+function sentCv(id: string) {
+  return runServerEffect(sentCvEffect(id));
 }
 
 /** A cover letter the application sent, as it printed then. */
-async function sentLetter(id: string, letterId: string) {
-  await requireUser();
+function sentLetterEffect(id: string, letterId: string) {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  const sent = (await requireSentCopy(id)).letters.find((letter) => letter.id === letterId);
+    const copy = yield* requireSentCopyEffect(id);
+    const sent = copy.letters.find((letter) => letter.id === letterId);
 
-  if (sent === undefined) {
-    throw new HttpError(404, `Application "${id}" sent no cover letter "${letterId}".`);
-  }
+    if (sent === undefined) {
+      return yield* new NotFoundError({
+        message: `Application "${id}" sent no cover letter "${letterId}".`,
+      });
+    }
 
-  return sent.letter;
+    return sent.letter;
+  });
+}
+
+/** A cover letter the application sent, as it printed then. */
+function sentLetter(id: string, letterId: string) {
+  return runServerEffect(sentLetterEffect(id, letterId));
 }
 
 export {
+  SettleNextStepSchema,
   deleteDeskApplication,
+  deleteDeskApplicationEffect,
   markDeskApplicationSent,
+  markDeskApplicationSentEffect,
   saveDeskApplication,
+  saveDeskApplicationEffect,
   sentCv,
+  sentCvEffect,
   sentLetter,
+  sentLetterEffect,
   settleDeskNextStep,
+  settleDeskNextStepEffect,
 };

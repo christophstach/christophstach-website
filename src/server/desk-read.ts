@@ -1,83 +1,157 @@
 import "server-only";
-import { listEntries, listSkillGroups, loadProfile } from "./cv-content";
-import { listApplications } from "./applications";
-import { listCoverLetters } from "./cover-letters";
+import { Effect } from "effect";
+import { listEntriesEffect, listSkillGroupsEffect, loadProfileEffect } from "./cv-content";
+import { DatabaseError, runServerEffect } from "./effect";
+import { HttpError } from "./http";
+import { listApplicationsEffect } from "./applications";
 import { listCollectors } from "./collector-store";
-import { listCompanies } from "./companies";
-import { listPostings } from "./postings";
-import { listProjects } from "./projects";
-import { listCvs } from "./cvs";
-
-import { requireUser } from "./auth";
+import { listCompaniesEffect } from "./companies";
+import { listCoverLettersEffect } from "./cover-letters";
+import { listCvsEffect } from "./cvs";
+import { listPostingsEffect } from "./postings";
+import { listProjectsEffect } from "./projects";
+import { requireUserEffect } from "./auth";
 
 // The desk's reads. Each checks the session first: the page guard doesn't
 // cover server functions, which anyone can call.
 
-async function deskCvs() {
-  await requireUser();
+function deskCvsEffect() {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  return listCvs();
+    return yield* listCvsEffect();
+  });
 }
 
-async function deskApplications() {
-  await requireUser();
-
-  return listApplications();
+function deskCvs() {
+  return runServerEffect(deskCvsEffect());
 }
 
-async function deskCoverLetters() {
-  await requireUser();
+function deskApplicationsEffect() {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  return listCoverLetters();
+    return yield* listApplicationsEffect();
+  });
 }
 
-async function deskContent() {
-  await requireUser();
-
-  const [entries, skills] = await Promise.all([listEntries(), listSkillGroups()]);
-
-  return { entries, skills };
+function deskApplications() {
+  return runServerEffect(deskApplicationsEffect());
 }
 
-async function deskProfile() {
-  await requireUser();
+function deskCoverLettersEffect() {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  return loadProfile();
+    return yield* listCoverLettersEffect();
+  });
 }
 
-async function deskProjects() {
-  await requireUser();
-
-  return listProjects();
+function deskCoverLetters() {
+  return runServerEffect(deskCoverLettersEffect());
 }
 
-async function deskPostings() {
-  await requireUser();
+function deskContentEffect() {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  return listPostings();
+    const [entries, skills] = yield* Effect.all([listEntriesEffect(), listSkillGroupsEffect()], {
+      concurrency: "unbounded",
+    });
+
+    return { entries, skills };
+  });
 }
 
-async function deskCompanies() {
-  await requireUser();
-
-  return listCompanies();
+function deskContent() {
+  return runServerEffect(deskContentEffect());
 }
 
-async function deskCollectors() {
-  await requireUser();
+function deskProfileEffect() {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
 
-  return listCollectors();
+    return yield* loadProfileEffect();
+  });
+}
+
+function deskProfile() {
+  return runServerEffect(deskProfileEffect());
+}
+
+function deskProjectsEffect() {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+
+    return yield* listProjectsEffect();
+  });
+}
+
+function deskProjects() {
+  return runServerEffect(deskProjectsEffect());
+}
+
+function deskPostingsEffect() {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+
+    return yield* listPostingsEffect();
+  });
+}
+
+function deskPostings() {
+  return runServerEffect(deskPostingsEffect());
+}
+
+function deskCompaniesEffect() {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+
+    return yield* listCompaniesEffect();
+  });
+}
+
+function deskCompanies() {
+  return runServerEffect(deskCompaniesEffect());
+}
+
+function deskCollectorsEffect() {
+  return Effect.gen(function* () {
+    yield* requireUserEffect();
+
+    return yield* Effect.tryPromise({
+      try: () => listCollectors(),
+      catch: (cause) =>
+        new DatabaseError({
+          message: cause instanceof HttpError ? cause.message : "Failed to list collectors.",
+          cause,
+        }),
+    });
+  });
+}
+
+function deskCollectors() {
+  return runServerEffect(deskCollectorsEffect());
 }
 
 export {
   deskApplications,
+  deskApplicationsEffect,
   deskCollectors,
+  deskCollectorsEffect,
   deskCompanies,
+  deskCompaniesEffect,
   deskContent,
+  deskContentEffect,
   deskCoverLetters,
+  deskCoverLettersEffect,
   deskCvs,
+  deskCvsEffect,
   deskPostings,
+  deskPostingsEffect,
   deskProfile,
+  deskProfileEffect,
   deskProjects,
+  deskProjectsEffect,
 };
-export { requireUser } from "./auth";
+export { requireUser, requireUserEffect } from "./auth";
