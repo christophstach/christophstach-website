@@ -1,36 +1,33 @@
+import { Effect } from "effect";
 import type { APIHandler } from "filesystem-routing/api";
-import { HttpError } from "../../../../../server/http";
 import { paths } from "../../../../../router";
-import { renderPdf } from "../../../../../server/cv-pdf";
-import { requireSentCopy } from "../../../../../server/sent-copies";
-import { requireUser } from "../../../../../server/auth";
+import { requireUserEffect } from "../../../../../server/auth";
+import { renderPdfEffect } from "../../../../../server/cv-pdf";
+import { NotFoundError, runApiEffect } from "../../../../../server/effect";
+import { requireSentCopyEffect } from "../../../../../server/sent-copies";
 
 // The CV an application sent, as a PDF of how it printed then. Never cached.
-export const GET: APIHandler = async (event) => {
-  try {
-    await requireUser(event.request);
+export const GET: APIHandler = (event) =>
+  runApiEffect(
+    Effect.gen(function* () {
+      yield* requireUserEffect(event.request);
 
-    const id = event.params?.id ?? "";
+      const id = event.params?.id ?? "";
+      const sent = yield* requireSentCopyEffect(id);
 
-    if ((await requireSentCopy(id)).cv === null) {
-      throw new HttpError(404, `Application "${id}" sent no CV.`);
-    }
+      if (sent.cv === null) {
+        return yield* new NotFoundError({ message: `Application "${id}" sent no CV.` });
+      }
 
-    const pdf = await renderPdf(event.request, paths.desk["sent-print"](id)(), true);
+      const pdf = yield* renderPdfEffect(event.request, paths.desk["sent-print"](id)(), true);
 
-    // A copy on a plain ArrayBuffer, which a Response body needs.
-    return new Response(new Uint8Array(pdf), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="christoph-stach-cv-${id}.pdf"`,
-        "Cache-Control": "private, no-store",
-      },
-    });
-  } catch (error) {
-    if (error instanceof HttpError) {
-      return new Response(error.message, { status: error.status });
-    }
-
-    throw error;
-  }
-};
+      // A copy on a plain ArrayBuffer, which a Response body needs.
+      return new Response(new Uint8Array(pdf), {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `inline; filename="christoph-stach-cv-${id}.pdf"`,
+          "Cache-Control": "private, no-store",
+        },
+      });
+    }),
+  );

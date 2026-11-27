@@ -1,17 +1,33 @@
-import { number, object, string } from "zod/mini";
+import { Duration, Effect, Schema } from "effect";
 import type { APIHandler } from "filesystem-routing/api";
 import { GITHUB_SIGN_IN_PATH } from "../../data/endpoints";
-import { env } from "virtual:solid-env/server";
-import { parseInput } from "../../server/input";
 import { paths } from "../../router";
-import { signInCookies } from "../../server/session";
+import {
+  type BadRequestError,
+  ExternalFetchError,
+  decodeUnknownEffect,
+  runApiEffect,
+} from "../../server/effect";
+import { writeSessionEffect } from "../../server/session";
+import { env } from "virtual:solid-env/server";
 
 // GitHub OAuth for the desk: without a code, send the browser to GitHub; with
 // one, exchange it, and sign in only the account in DESK_GITHUB_USER_ID.
 
 const STATE_COOKIE = "oauth-state";
-const tokenSchema = object({ access_token: string() });
-const githubUserSchema = object({ id: number(), login: string(), avatar_url: string() });
+const GITHUB_OAUTH_TIMEOUT = Duration.seconds(10);
+const GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token";
+const GITHUB_USER_URL = "https://api.github.com/user";
+
+const TokenSchema = Schema.Struct({
+  access_token: Schema.String,
+});
+
+const GithubUserSchema = Schema.Struct({
+  id: Schema.Int,
+  login: Schema.String,
+  avatar_url: Schema.String,
+});
 
 function redirect(location: URL, cookies: string[] = []): Response {
   const headers = new Headers({ Location: location.href });
@@ -48,65 +64,130 @@ function authorize(url: URL): Response {
   return redirect(authorizeUrl, [stateCookie(state, 600)]);
 }
 
-/** Exchanges the code for the GitHub account behind it. */
-async function githubUser(url: URL, code: string) {
-  const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
-    method: "POST",
-    headers: { Accept: "application/json", "Content-Type": "application/json" },
-    body: JSON.stringify({
-      client_id: env.GITHUB_CLIENT_ID,
-      client_secret: env.GITHUB_CLIENT_SECRET,
-      code,
-      redirect_uri: new URL(GITHUB_SIGN_IN_PATH, url).href,
-    }),
-  });
-  const token = parseInput(tokenSchema, await tokenResponse.json());
-  const userResponse = await fetch("https://api.github.com/user", {
-    headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${token.access_token}`,
-      "User-Agent": "christophstach.de desk",
-    },
-  });
+function fetchJsonEffect(
+  url: string,
+  init: RequestInit,
+  label: string,
+): Effect.Effect<unknown, ExternalFetchError> {
+  return Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: (signal) => fetch(url, { ...init, signal }),
+      catch: (cause) =>
+        new ExternalFetchError({
+          message: `GitHub ${label} request failed.`,
+          url,
+          cause,
+        }),
+    });
 
-  return parseInput(githubUserSchema, await userResponse.json());
+    if (!response.ok) {
+      return yield* new ExternalFetchError({
+        message: `GitHub ${label} answered ${response.status} ${response.statusText}.`,
+        url,
+        upstreamStatus: response.status,
+      });
+    }
+
+    return yield* Effect.tryPromise({
+      try: (): Promise<unknown> => response.json(),
+      catch: (cause) =>
+        new ExternalFetchError({
+          message: `GitHub ${label} returned unreadable JSON.`,
+          url,
+          cause,
+        }),
+    });
+  }).pipe(
+    Effect.timeout(GITHUB_OAUTH_TIMEOUT),
+    Effect.catchTag(
+      "TimeoutError",
+      (cause) =>
+        new ExternalFetchError({
+          message: `GitHub ${label} request timed out.`,
+          url,
+          cause,
+        }),
+    ),
+  );
+}
+
+/** Exchanges the code for the GitHub account behind it. */
+function githubUserEffect(
+  url: URL,
+  code: string,
+): Effect.Effect<typeof GithubUserSchema.Type, ExternalFetchError | BadRequestError> {
+  return Effect.gen(function* () {
+    const rawToken = yield* fetchJsonEffect(
+      GITHUB_TOKEN_URL,
+      {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: env.GITHUB_CLIENT_ID,
+          client_secret: env.GITHUB_CLIENT_SECRET,
+          code,
+          redirect_uri: new URL(GITHUB_SIGN_IN_PATH, url).href,
+        }),
+      },
+      "OAuth token",
+    );
+    const token = yield* decodeUnknownEffect(TokenSchema, rawToken);
+    const rawUser = yield* fetchJsonEffect(
+      GITHUB_USER_URL,
+      {
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token.access_token}`,
+          "User-Agent": "christophstach.de desk",
+        },
+      },
+      "user profile",
+    );
+
+    return yield* decodeUnknownEffect(GithubUserSchema, rawUser);
+  });
 }
 
 /** Finishes the sign-in with GitHub's code; any failure ends on the login page. */
-async function signIn(request: Request, url: URL, code: string): Promise<Response> {
+function signInEffect(request: Request, url: URL, code: string): Effect.Effect<Response> {
   const clearState = stateCookie("", 0);
 
-  try {
-    const user = await githubUser(url, code);
+  return Effect.gen(function* () {
+    const user = yield* githubUserEffect(url, code);
 
     // The desk is single-user: only the configured GitHub account gets a session.
     if (user.id !== env.DESK_GITHUB_USER_ID) {
       return redirect(new URL(paths.login({ error: "forbidden" }), url), [clearState]);
     }
 
-    const session = await signInCookies(request, {
+    const session = yield* writeSessionEffect(request, {
       githubId: user.id,
       login: user.login,
       avatarUrl: user.avatar_url,
     });
 
     return redirect(new URL(paths.desk(), url), [clearState, ...session]);
-  } catch {
-    return redirect(new URL(paths.login({ error: "oauth" }), url), [clearState]);
-  }
+  }).pipe(
+    Effect.orElseSucceed(() =>
+      redirect(new URL(paths.login({ error: "oauth" }), url), [clearState]),
+    ),
+  );
 }
 
-export const GET: APIHandler = ({ request }) => {
-  const url = new URL(request.url);
-  const code = url.searchParams.get("code");
-  const state = url.searchParams.get("state");
+export const GET: APIHandler = ({ request }) =>
+  runApiEffect(
+    Effect.gen(function* () {
+      const url = new URL(request.url);
+      const code = url.searchParams.get("code");
+      const state = url.searchParams.get("state");
 
-  if (
-    url.searchParams.has("error") ||
-    (code !== null && (state === null || state !== requestState(request)))
-  ) {
-    return redirect(new URL(paths.login({ error: "oauth" }), url), [stateCookie("", 0)]);
-  }
+      if (
+        url.searchParams.has("error") ||
+        (code !== null && (state === null || state !== requestState(request)))
+      ) {
+        return redirect(new URL(paths.login({ error: "oauth" }), url), [stateCookie("", 0)]);
+      }
 
-  return code === null ? authorize(url) : signIn(request, url, code);
-};
+      return code === null ? authorize(url) : yield* signInEffect(request, url, code);
+    }),
+  );
