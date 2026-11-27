@@ -1,17 +1,20 @@
 import "server-only";
+import { Clock, Effect, Result } from "effect";
 import type { CompanyRecord, CompanySource } from "../data/companies";
-import { createCompany, listCompanies, storeFacts } from "./companies";
-import type { FoundFacts } from "./companies";
-import { HttpError } from "./http";
 import type { JobPostingRecord } from "../data/postings";
-import { adFacts } from "./company-facts/ad-text";
-import { companyKey } from "../lib/posting";
-import { listPostings } from "./postings";
-import { loadYcList } from "./company-facts/yc";
-import type { YcFacts } from "./company-facts/yc";
 import { slugify } from "../lib/cover-letter";
-import { wikidataFacts } from "./company-facts/wikidata";
-import type { WikidataFacts } from "./company-facts/wikidata";
+import { companyKey } from "../lib/posting";
+import {
+  type FoundFacts,
+  createCompanyEffect,
+  listCompaniesEffect,
+  storeFactsEffect,
+} from "./companies";
+import { adFacts } from "./company-facts/ad-text";
+import { type WikidataFacts, wikidataFactsEffect } from "./company-facts/wikidata";
+import { type YcFacts, loadYcListEffect } from "./company-facts/yc";
+import { type ConfigError, type Database, type DatabaseError, runServerEffect } from "./effect";
+import { listPostingsEffect } from "./postings";
 
 // Describes the postings' companies on its own, from free sources: the Y
 // Combinator list, Wikidata and the ads' own text. Every company a posting
@@ -23,6 +26,9 @@ const RECHECK_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** At most this many companies a run; the next run takes the rest. */
 const MAX_PER_RUN = 40;
+
+/** Parallel database writes per company-check batch. */
+const WRITE_CONCURRENCY = 8;
 
 interface CompanyCheckRun {
   /** Company ids checked in this run. */
@@ -42,10 +48,10 @@ interface CheckOptions {
 }
 
 /** Adds a company for every name the postings give that has none yet. */
-async function addMissing(
+function addMissingEffect(
   postings: readonly JobPostingRecord[],
   stored: readonly CompanyRecord[],
-): Promise<boolean> {
+): Effect.Effect<boolean, DatabaseError | ConfigError, Database> {
   const known = new Set(stored.map((company) => companyKey(company.name)));
   const taken = new Set(stored.map((company) => company.id));
   const missing = new Map<string, string>();
@@ -58,37 +64,37 @@ async function addMissing(
     }
   }
 
-  await Promise.all(
-    [...missing.values()].map(async (name) => {
-      const slug = slugify(name) || "company";
-      let id = slug;
+  const entries: { id: string; name: string }[] = [];
 
-      for (let number = 2; taken.has(id); number += 1) {
-        id = `${slug}-${number}`;
-      }
+  for (const name of missing.values()) {
+    const slug = slugify(name) || "company";
+    let id = slug;
 
-      taken.add(id);
+    for (let number = 2; taken.has(id); number += 1) {
+      id = `${slug}-${number}`;
+    }
 
-      try {
-        await createCompany({
-          id,
-          name,
-          field: "",
-          headquarters: "",
-          funding: "",
-          website: "",
-          note: "",
-        });
-      } catch (error) {
+    taken.add(id);
+    entries.push({ id, name });
+  }
+
+  return Effect.forEach(
+    entries,
+    ({ id, name }) =>
+      createCompanyEffect({
+        id,
+        name,
+        field: "",
+        headquarters: "",
+        funding: "",
+        website: "",
+        note: "",
+      }).pipe(
         // Another run added it meanwhile.
-        if (!(error instanceof HttpError && error.status === 409)) {
-          throw error;
-        }
-      }
-    }),
-  );
-
-  return missing.size > 0;
+        Effect.catchTag("ConflictError", () => Effect.void),
+      ),
+    { concurrency: WRITE_CONCURRENCY, discard: true },
+  ).pipe(Effect.as(entries.length > 0));
 }
 
 /** Whether a company is due: never checked, checked long ago, or forced. */
@@ -143,77 +149,103 @@ function merge(
 
 /**
  * Describes the due companies from the free sources, until the deadline.
+ * Adds the companies postings name first. Never fails for a source that
+ * fails: it reports it, and the next run tries again.
+ */
+function checkCompaniesEffect(
+  options: CheckOptions,
+): Effect.Effect<CompanyCheckRun, DatabaseError | ConfigError, Database> {
+  return Effect.gen(function* () {
+    const run: CompanyCheckRun = { checked: [], left: 0, failed: [] };
+    const [postings, initialStored] = yield* Effect.all(
+      [listPostingsEffect(), listCompaniesEffect()],
+      { concurrency: "unbounded" },
+    );
+    const addedMissing = yield* addMissingEffect(postings, initialStored);
+    const stored = addedMissing ? yield* listCompaniesEffect() : initialStored;
+
+    const now = yield* Clock.currentTimeMillis;
+    const due = stored
+      .filter((company) => isDue(company, options, now))
+      // Never checked first, then the longest ago.
+      .toSorted((one, other) => one.checkedAt.localeCompare(other.checkedAt));
+    const batch = due.slice(0, MAX_PER_RUN);
+
+    run.left = due.length - batch.length;
+
+    if (batch.length === 0) {
+      return run;
+    }
+
+    const ycResult = yield* Effect.result(loadYcListEffect());
+
+    if (Result.isFailure(ycResult)) {
+      run.failed.push(`yc: ${ycResult.failure.message}`);
+      run.left = due.length;
+
+      return run;
+    }
+
+    const yc = ycResult.success;
+
+    // Wikidata only for the companies YC doesn't know: it rarely knows startups.
+    const outsideYc = batch
+      .map((company) => ({ key: companyKey(company.name), name: company.name }))
+      .filter(({ key }) => !yc.has(key));
+    const wikidataResult = yield* Effect.result(wikidataFactsEffect(outsideYc, options.deadline));
+    let wikidata: ReadonlyMap<string, WikidataFacts | undefined> = new Map();
+
+    if (Result.isSuccess(wikidataResult)) {
+      wikidata = wikidataResult.success;
+    } else {
+      run.failed.push(`wikidata: ${wikidataResult.failure.message}`);
+    }
+
+    const postingsByKey = Map.groupBy(postings, (posting) => companyKey(posting.company));
+
+    yield* Effect.forEach(
+      batch,
+      (company) =>
+        Effect.gen(function* () {
+          const key = companyKey(company.name);
+          const ycFacts = yc.get(key);
+
+          // Not in YC and not searched on Wikidata (out of time, or it failed): next run.
+          if (ycFacts === undefined && !wikidata.has(key)) {
+            run.left += 1;
+
+            return;
+          }
+
+          yield* storeFactsEffect(
+            company.id,
+            merge(company, ycFacts, wikidata.get(key), postingsByKey.get(key) ?? []),
+          );
+          run.checked.push(company.id);
+        }),
+      { concurrency: WRITE_CONCURRENCY, discard: true },
+    );
+
+    return run;
+  });
+}
+
+/**
+ * Checks companies without failing what called it: a collector run, a saved
+ * posting. A company that couldn't be checked stays due; the scheduled job
+ * tries again and reports what failed.
+ */
+function checkCompaniesQuietlyEffect(options: CheckOptions): Effect.Effect<void, never, Database> {
+  return Effect.ignore(checkCompaniesEffect(options));
+}
+
+/**
+ * Describes the due companies from the free sources, until the deadline.
  * Adds the companies postings name first. Never throws for a source that
  * fails: it reports it, and the next run tries again.
  */
 async function checkCompanies(options: CheckOptions): Promise<CompanyCheckRun> {
-  const run: CompanyCheckRun = { checked: [], left: 0, failed: [] };
-  const postings = await listPostings();
-  let stored = await listCompanies();
-
-  if (await addMissing(postings, stored)) {
-    stored = await listCompanies();
-  }
-
-  const now = Date.now();
-  const due = stored
-    .filter((company) => isDue(company, options, now))
-    // Never checked first, then the longest ago.
-    .toSorted((one, other) => one.checkedAt.localeCompare(other.checkedAt));
-  const batch = due.slice(0, MAX_PER_RUN);
-
-  run.left = due.length - batch.length;
-
-  if (batch.length === 0) {
-    return run;
-  }
-
-  let yc: ReadonlyMap<string, YcFacts>;
-
-  try {
-    yc = await loadYcList();
-  } catch (error) {
-    run.failed.push(`yc: ${error instanceof Error ? error.message : "failed"}`);
-    run.left = due.length;
-
-    return run;
-  }
-
-  // Wikidata only for the companies YC doesn't know: it rarely knows startups.
-  const outsideYc = batch
-    .map((company) => ({ key: companyKey(company.name), name: company.name }))
-    .filter(({ key }) => !yc.has(key));
-  let wikidata: ReadonlyMap<string, WikidataFacts | undefined> = new Map();
-
-  try {
-    wikidata = await wikidataFacts(outsideYc, options.deadline);
-  } catch (error) {
-    run.failed.push(`wikidata: ${error instanceof Error ? error.message : "failed"}`);
-  }
-
-  const postingsByKey = Map.groupBy(postings, (posting) => companyKey(posting.company));
-
-  await Promise.all(
-    batch.map(async (company) => {
-      const key = companyKey(company.name);
-      const ycFacts = yc.get(key);
-
-      // Not in YC and not searched on Wikidata (out of time, or it failed): next run.
-      if (ycFacts === undefined && !wikidata.has(key)) {
-        run.left += 1;
-
-        return;
-      }
-
-      await storeFacts(
-        company.id,
-        merge(company, ycFacts, wikidata.get(key), postingsByKey.get(key) ?? []),
-      );
-      run.checked.push(company.id);
-    }),
-  );
-
-  return run;
+  return runServerEffect(checkCompaniesEffect(options));
 }
 
 /**
@@ -222,12 +254,8 @@ async function checkCompanies(options: CheckOptions): Promise<CompanyCheckRun> {
  * tries again and reports what failed.
  */
 async function checkCompaniesQuietly(options: CheckOptions): Promise<void> {
-  try {
-    await checkCompanies(options);
-  } catch {
-    // The scheduled job takes it.
-  }
+  return runServerEffect(checkCompaniesQuietlyEffect(options));
 }
 
-export { checkCompanies, checkCompaniesQuietly };
-export type { CompanyCheckRun };
+export { checkCompanies, checkCompaniesEffect, checkCompaniesQuietly, checkCompaniesQuietlyEffect };
+export type { CheckOptions, CompanyCheckRun };
