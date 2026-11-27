@@ -1,7 +1,8 @@
 import "server-only";
-import { array, object, record, safeParse, string } from "zod/mini";
+import { Clock, Effect, Option, Schema } from "effect";
 import type { CompanyField, CompanyFunding } from "../../data/companies";
 import { companyKey } from "../../lib/posting";
+import { ExternalFetchError, runServerEffect } from "../effect";
 import { webAddress } from "./yc";
 
 // Wikidata, the free database behind Wikipedia: it knows larger companies, with
@@ -10,6 +11,7 @@ import { webAddress } from "./yc";
 // stays well under Wikidata's limits.
 
 const SPARQL_URL = "https://query.wikidata.org/sparql";
+const WIKIDATA_TIMEOUT = "25 seconds" as const;
 
 /** Names a query searches; the next query takes the rest. */
 const NAMES_PER_QUERY = 15;
@@ -24,11 +26,13 @@ interface WikidataFacts {
   url: string;
 }
 
-const sparqlAnswer = object({
-  results: object({
-    bindings: array(record(string(), object({ value: string() }))),
+const sparqlAnswerSchema = Schema.Struct({
+  results: Schema.Struct({
+    bindings: Schema.Array(Schema.Record(Schema.String, Schema.Struct({ value: Schema.String }))),
   }),
 });
+
+const decodeSparqlAnswer = Schema.decodeUnknownOption(sparqlAnswerSchema);
 
 /** Words of Wikidata's industries that mean a field; the first that fits wins. */
 const INDUSTRY_FIELDS: readonly [RegExp, CompanyField][] = [
@@ -86,9 +90,9 @@ function factsQuery(names: readonly string[]): string {
 }
 
 /** One query: the facts of the first business whose label or alias is the name, by key. */
-async function queryNames(
+function queryNamesEffect(
   companies: readonly { key: string; name: string }[],
-): Promise<Map<string, WikidataFacts>> {
+): Effect.Effect<Map<string, WikidataFacts>, ExternalFetchError> {
   const url = new URL(SPARQL_URL);
 
   url.search = new URLSearchParams({
@@ -96,48 +100,126 @@ async function queryNames(
     format: "json",
   }).toString();
 
-  const response = await fetch(url, {
-    headers: {
-      accept: "application/sparql-results+json",
-      "user-agent": "desk-company-facts/1.0",
-    },
-    signal: AbortSignal.timeout(25_000),
-  });
+  return Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: (signal) =>
+        fetch(url, {
+          headers: {
+            accept: "application/sparql-results+json",
+            "user-agent": "desk-company-facts/1.0",
+          },
+          signal,
+        }),
+      catch: (cause) =>
+        new ExternalFetchError({
+          message: "Wikidata did not answer.",
+          url: url.href,
+          cause,
+        }),
+    });
 
-  if (!response.ok) {
-    throw new Error(`Wikidata answered ${response.status}.`);
-  }
-
-  const parsed = safeParse(sparqlAnswer, await response.json());
-  const keyOfName = new Map(companies.map((company) => [company.name, company.key]));
-  const byKey = new Map<string, WikidataFacts>();
-
-  if (!parsed.success) {
-    return byKey;
-  }
-
-  for (const row of parsed.data.results.bindings) {
-    const key = keyOfName.get(row.name?.value ?? "");
-    const id = /Q\d+$/u.exec(row.item?.value ?? "")?.[0];
-    // A hit counts only if one of its names is the company's, legal form aside.
-    const named = (row.names?.value ?? "").split("|").some((alias) => companyKey(alias) === key);
-
-    if (key === undefined || id === undefined || !named || byKey.has(key)) {
-      continue;
+    if (!response.ok) {
+      return yield* new ExternalFetchError({
+        message: `Wikidata answered ${response.status}.`,
+        url: url.href,
+        upstreamStatus: response.status,
+      });
     }
 
-    const code = row.hqCode?.value ?? row.countryCode?.value ?? "";
-
-    byKey.set(key, {
-      field: industryField(row.industries?.value ?? ""),
-      headquarters: /^[A-Z]{2}$/u.test(code) ? code : "",
-      funding: row.listed === undefined ? (row.owner === undefined ? "" : "subsidiary") : "public",
-      website: webAddress(row.website?.value ?? ""),
-      url: `https://www.wikidata.org/wiki/${id}`,
+    const json = yield* Effect.tryPromise({
+      try: (): Promise<unknown> => response.json(),
+      catch: (cause) =>
+        new ExternalFetchError({
+          message: "Wikidata returned invalid JSON.",
+          url: url.href,
+          cause,
+        }),
     });
-  }
 
-  return byKey;
+    const parsed = decodeSparqlAnswer(json);
+    const keyOfName = new Map(companies.map((company) => [company.name, company.key]));
+    const byKey = new Map<string, WikidataFacts>();
+
+    if (Option.isNone(parsed)) {
+      return byKey;
+    }
+
+    for (const row of parsed.value.results.bindings) {
+      const key = keyOfName.get(row.name?.value ?? "");
+      const id = /Q\d+$/u.exec(row.item?.value ?? "")?.[0];
+      // A hit counts only if one of its names is the company's, legal form aside.
+      const named = (row.names?.value ?? "").split("|").some((alias) => companyKey(alias) === key);
+
+      if (key === undefined || id === undefined || !named || byKey.has(key)) {
+        continue;
+      }
+
+      const code = row.hqCode?.value ?? row.countryCode?.value ?? "";
+
+      byKey.set(key, {
+        field: industryField(row.industries?.value ?? ""),
+        headquarters: /^[A-Z]{2}$/u.test(code) ? code : "",
+        funding:
+          row.listed === undefined ? (row.owner === undefined ? "" : "subsidiary") : "public",
+        website: webAddress(row.website?.value ?? ""),
+        url: `https://www.wikidata.org/wiki/${id}`,
+      });
+    }
+
+    return byKey;
+  }).pipe(
+    Effect.timeout(WIKIDATA_TIMEOUT),
+    Effect.catchTag(
+      "TimeoutError",
+      (cause) =>
+        new ExternalFetchError({
+          message: "Wikidata timed out.",
+          url: url.href,
+          cause,
+        }),
+    ),
+  );
+}
+
+/**
+ * The Wikidata facts of the named companies, by key, a query per 15 names
+ * until the deadline. A key searched without a match maps to undefined; one
+ * not searched (out of time) is missing.
+ */
+function wikidataFactsEffect(
+  companies: readonly { key: string; name: string }[],
+  deadline: number,
+): Effect.Effect<ReadonlyMap<string, WikidataFacts | undefined>, ExternalFetchError> {
+  return Effect.gen(function* () {
+    const byKey = new Map<string, WikidataFacts | undefined>();
+    const chunks: { key: string; name: string }[][] = [];
+
+    for (let start = 0; start < companies.length; start += NAMES_PER_QUERY) {
+      chunks.push(companies.slice(start, start + NAMES_PER_QUERY));
+    }
+
+    // One query after the other: the query service asks for few at a time.
+    yield* Effect.forEach(
+      chunks,
+      (chunk) =>
+        Effect.gen(function* () {
+          const now = yield* Clock.currentTimeMillis;
+
+          if (now >= deadline) {
+            return;
+          }
+
+          const found = yield* queryNamesEffect(chunk);
+
+          for (const { key } of chunk) {
+            byKey.set(key, found.get(key));
+          }
+        }),
+      { concurrency: 1, discard: true },
+    );
+
+    return byKey;
+  });
 }
 
 /**
@@ -149,30 +231,8 @@ async function wikidataFacts(
   companies: readonly { key: string; name: string }[],
   deadline: number,
 ): Promise<ReadonlyMap<string, WikidataFacts | undefined>> {
-  const byKey = new Map<string, WikidataFacts | undefined>();
-  const chunks: { key: string; name: string }[][] = [];
-
-  for (let start = 0; start < companies.length; start += NAMES_PER_QUERY) {
-    chunks.push(companies.slice(start, start + NAMES_PER_QUERY));
-  }
-
-  // One query after the other: the query service asks for few at a time.
-  await chunks.reduce(async (previous, chunk) => {
-    await previous;
-
-    if (Date.now() >= deadline) {
-      return;
-    }
-
-    const found = await queryNames(chunk);
-
-    for (const { key } of chunk) {
-      byKey.set(key, found.get(key));
-    }
-  }, Promise.resolve());
-
-  return byKey;
+  return runServerEffect(wikidataFactsEffect(companies, deadline));
 }
 
-export { wikidataFacts };
+export { wikidataFacts, wikidataFactsEffect };
 export type { WikidataFacts };

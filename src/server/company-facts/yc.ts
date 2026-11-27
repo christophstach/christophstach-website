@@ -1,28 +1,35 @@
 import "server-only";
-import { array, object, optional, safeParse, string, unknown } from "zod/mini";
+import { Effect, Option, Schema } from "effect";
 import type { CompanyField, CompanyFunding } from "../../data/companies";
 import { companyKey } from "../../lib/posting";
 import { countryCode } from "../../lib/company";
+import { ExternalFetchError, runServerEffect } from "../effect";
 
 // Y Combinator's companies, from the unofficial yc-oss list: static JSON on
 // GitHub Pages, rebuilt daily from YC's own directory. Free, no key. A company
 // in it raised venture capital: YC itself invests.
 
 const YC_LIST_URL = "https://yc-oss.github.io/api/companies/all.json";
+const YC_FETCH_TIMEOUT = "15 seconds" as const;
 
 /** What the desk reads of a company in the list; other fields are ignored. */
-const ycCompany = object({
-  name: string(),
-  former_names: optional(array(string())),
-  website: optional(string()),
-  batch: optional(string()),
-  regions: optional(array(string())),
-  industry: optional(string()),
-  subindustry: optional(string()),
-  tags: optional(array(string())),
-  url: optional(string()),
-  status: optional(string()),
+const ycCompanySchema = Schema.Struct({
+  name: Schema.String,
+  former_names: Schema.optional(Schema.Array(Schema.String)),
+  website: Schema.optional(Schema.String),
+  batch: Schema.optional(Schema.String),
+  regions: Schema.optional(Schema.Array(Schema.String)),
+  industry: Schema.optional(Schema.String),
+  subindustry: Schema.optional(Schema.String),
+  tags: Schema.optional(Schema.Array(Schema.String)),
+  url: Schema.optional(Schema.String),
+  status: Schema.optional(Schema.String),
 });
+
+const ycListSchema = Schema.Array(Schema.Unknown);
+
+const decodeYcList = Schema.decodeUnknownEffect(ycListSchema);
+const decodeYcCompany = Schema.decodeUnknownOption(ycCompanySchema);
 
 /** The facts a YC company gives. */
 interface YcFacts {
@@ -138,63 +145,115 @@ function webAddress(value: string): string {
   }
 }
 
-/** The YC list by companyKey, current and former names; companies whose key is taken twice are left out. */
-async function loadYcList(): Promise<ReadonlyMap<string, YcFacts>> {
-  const response = await fetch(YC_LIST_URL, {
-    headers: { accept: "application/json", "user-agent": "desk-company-facts/1.0" },
-    signal: AbortSignal.timeout(15_000),
-  });
+function fetchYcJsonEffect(): Effect.Effect<unknown, ExternalFetchError> {
+  return Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: (signal) =>
+        fetch(YC_LIST_URL, {
+          headers: { accept: "application/json", "user-agent": "desk-company-facts/1.0" },
+          signal,
+        }),
+      catch: (cause) =>
+        new ExternalFetchError({
+          message: "The YC list did not answer.",
+          url: YC_LIST_URL,
+          cause,
+        }),
+    });
 
-  if (!response.ok) {
-    throw new Error(`The YC list answered ${response.status}.`);
-  }
-
-  const parsed = safeParse(array(unknown()), await response.json());
-
-  if (!parsed.success) {
-    throw new Error("The YC list isn't a list.");
-  }
-
-  const byKey = new Map<string, YcFacts>();
-  const twice = new Set<string>();
-
-  for (const item of parsed.data) {
-    const company = safeParse(ycCompany, item);
-
-    if (!company.success) {
-      continue;
+    if (!response.ok) {
+      return yield* new ExternalFetchError({
+        message: `The YC list answered ${response.status}.`,
+        url: YC_LIST_URL,
+        upstreamStatus: response.status,
+      });
     }
 
-    const { name, former_names: former = [], tags = [] } = company.data;
-    const facts: YcFacts = {
-      field: ycField(company.data.industry ?? "", company.data.subindustry ?? "", tags),
-      headquarters: ycCountry(company.data.regions ?? []),
-      funding: YC_FUNDING[company.data.status ?? ""] ?? "vc",
-      website: webAddress(company.data.website ?? ""),
-      batch: shortBatch(company.data.batch ?? ""),
-      url: webAddress(company.data.url ?? ""),
-    };
+    return yield* Effect.tryPromise({
+      try: (): Promise<unknown> => response.json(),
+      catch: (cause) =>
+        new ExternalFetchError({
+          message: "The YC list returned invalid JSON.",
+          url: YC_LIST_URL,
+          cause,
+        }),
+    });
+  }).pipe(
+    Effect.timeout(YC_FETCH_TIMEOUT),
+    Effect.catchTag(
+      "TimeoutError",
+      (cause) =>
+        new ExternalFetchError({
+          message: "The YC list timed out.",
+          url: YC_LIST_URL,
+          cause,
+        }),
+    ),
+  );
+}
 
-    for (const key of new Set([name, ...former].map(companyKey))) {
-      if (key === "") {
+/** The YC list by companyKey, current and former names; companies whose key is taken twice are left out. */
+function loadYcListEffect(): Effect.Effect<ReadonlyMap<string, YcFacts>, ExternalFetchError> {
+  return Effect.gen(function* () {
+    const json = yield* fetchYcJsonEffect();
+    const items = yield* decodeYcList(json).pipe(
+      Effect.mapError(
+        (cause) =>
+          new ExternalFetchError({
+            message: "The YC list isn't a list.",
+            url: YC_LIST_URL,
+            cause,
+          }),
+      ),
+    );
+
+    const byKey = new Map<string, YcFacts>();
+    const twice = new Set<string>();
+
+    for (const item of items) {
+      const company = decodeYcCompany(item);
+
+      if (Option.isNone(company)) {
         continue;
       }
 
-      if (byKey.has(key)) {
-        twice.add(key);
+      const data = company.value;
+      const { name, former_names: former = [], tags = [] } = data;
+      const facts: YcFacts = {
+        field: ycField(data.industry ?? "", data.subindustry ?? "", tags),
+        headquarters: ycCountry(data.regions ?? []),
+        funding: YC_FUNDING[data.status ?? ""] ?? "vc",
+        website: webAddress(data.website ?? ""),
+        batch: shortBatch(data.batch ?? ""),
+        url: webAddress(data.url ?? ""),
+      };
+
+      for (const key of new Set([name, ...former].map(companyKey))) {
+        if (key === "") {
+          continue;
+        }
+
+        if (byKey.has(key)) {
+          twice.add(key);
+        }
+
+        byKey.set(key, facts);
       }
-
-      byKey.set(key, facts);
     }
-  }
 
-  // Two YC companies with one name: the desk can't tell which is meant.
-  for (const key of twice) {
-    byKey.delete(key);
-  }
+    // Two YC companies with one name: the desk can't tell which is meant.
+    for (const key of twice) {
+      byKey.delete(key);
+    }
 
-  return byKey;
+    return byKey;
+  });
 }
 
-export { loadYcList, shortBatch, webAddress };
+/** The YC list by companyKey, current and former names; companies whose key is taken twice are left out. */
+async function loadYcList(): Promise<ReadonlyMap<string, YcFacts>> {
+  return runServerEffect(loadYcListEffect());
+}
+
+export { loadYcList, loadYcListEffect, shortBatch, webAddress };
 export type { YcFacts };

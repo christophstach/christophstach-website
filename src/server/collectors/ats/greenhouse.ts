@@ -1,32 +1,37 @@
 import "server-only";
-import { array, exactOptional, looseObject, nullable, number, safeParse, string } from "zod/mini";
+import { Effect, Option, Schema } from "effect";
 import type { AtsReader } from "./types";
 import { boardPosting, isoDay, workplaceInLocation } from "./types";
 import { decodeEntities, htmlToText } from "../text";
 import type { AtsBoard } from "../../../data/postings";
 import type { FoundPosting } from "../types";
-import { HttpError } from "../../http";
-import type { output } from "zod/mini";
-import { fetchBoardJson } from "./fetch";
+import { ExternalFetchError, runServerEffect } from "../../effect";
+import { fetchBoardJsonEffect, mapBoardNotFound } from "./fetch";
 
 // Greenhouse's job board API: boards-api.greenhouse.io/v1/boards/<board>/jobs.
 // content=true adds each job's text, as HTML escaped once more. It states no
 // workplace or salary of its own: the location may say "Remote".
 
-const jobSchema = looseObject({
-  id: number(),
-  title: string(),
-  absolute_url: string(),
-  location: exactOptional(nullable(looseObject({ name: exactOptional(nullable(string())) }))),
-  first_published: exactOptional(nullable(string())),
-  updated_at: exactOptional(nullable(string())),
-  company_name: exactOptional(nullable(string())),
-  content: exactOptional(nullable(string())),
+const jobSchema = Schema.Struct({
+  id: Schema.Finite,
+  title: Schema.String,
+  absolute_url: Schema.String,
+  location: Schema.optionalKey(
+    Schema.NullOr(Schema.Struct({ name: Schema.optionalKey(Schema.NullOr(Schema.String)) })),
+  ),
+  first_published: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  updated_at: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  company_name: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  content: Schema.optionalKey(Schema.NullOr(Schema.String)),
 });
 
-const boardSchema = looseObject({ jobs: array(jobSchema) });
+const rawBoardSchema = Schema.Struct({ jobs: Schema.Array(Schema.Unknown) });
 
-function toPosting(job: output<typeof jobSchema>, board: AtsBoard): FoundPosting {
+const decodeRawBoard = Schema.decodeUnknownEffect(rawBoardSchema);
+const decodeJob = Schema.decodeUnknownEffect(jobSchema);
+const decodeRawJob = Schema.decodeUnknownOption(Schema.fromJsonString(jobSchema));
+
+function toPosting(job: typeof jobSchema.Type, board: AtsBoard, raw: string): FoundPosting {
   const location = (job.location?.name ?? "").trim();
 
   return {
@@ -38,34 +43,53 @@ function toPosting(job: output<typeof jobSchema>, board: AtsBoard): FoundPosting
     description: htmlToText(decodeEntities(job.content ?? "")),
     postedOn: isoDay(job.first_published ?? job.updated_at ?? undefined),
     workplace: workplaceInLocation(location),
-    raw: JSON.stringify(job),
+    raw,
   };
+}
+
+function readGreenhouseEffect(board: AtsBoard): Effect.Effect<FoundPosting[], ExternalFetchError> {
+  return Effect.gen(function* () {
+    const url = `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(board.board)}/jobs?content=true`;
+    const body = yield* fetchBoardJsonEffect(url, board);
+    const rawBoard = yield* decodeRawBoard(body).pipe(
+      Effect.mapError(
+        (cause) =>
+          new ExternalFetchError({
+            message: `Greenhouse's board "${board.board}" no longer reads as expected.`,
+            url,
+            cause,
+          }),
+      ),
+    );
+    const jobs = yield* Effect.forEach(rawBoard.jobs, (rawJob) =>
+      decodeJob(rawJob).pipe(
+        Effect.map((job) => ({ job, raw: JSON.stringify(rawJob) })),
+        Effect.mapError(
+          (cause) =>
+            new ExternalFetchError({
+              message: `Greenhouse's board "${board.board}" no longer reads as expected.`,
+              url,
+              cause,
+            }),
+        ),
+      ),
+    );
+
+    return jobs.map(({ job, raw }) => toPosting(job, board, raw));
+  });
 }
 
 const greenhouse: AtsReader = {
   provider: "greenhouse",
+  readEffect: readGreenhouseEffect,
   async read(board) {
-    const body = await fetchBoardJson(
-      `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(board.board)}/jobs?content=true`,
-      board,
-    );
-    const parsed = safeParse(boardSchema, body);
-
-    if (!parsed.success) {
-      throw new HttpError(502, `Greenhouse's board "${board.board}" no longer reads as expected.`);
-    }
-
-    return parsed.data.jobs.map((job) => toPosting(job, board));
+    return runServerEffect(mapBoardNotFound(readGreenhouseEffect(board)));
   },
   reread(raw, board) {
-    try {
-      const parsed = safeParse(jobSchema, JSON.parse(raw));
+    const parsed = decodeRawJob(raw);
 
-      return parsed.success ? toPosting(parsed.data, board) : undefined;
-    } catch {
-      return undefined;
-    }
+    return Option.isSome(parsed) ? toPosting(parsed.value, board, raw) : undefined;
   },
 };
 
-export { greenhouse };
+export { greenhouse, readGreenhouseEffect };

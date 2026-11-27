@@ -1,62 +1,65 @@
 import "server-only";
-import { array, exactOptional, looseObject, nullable, number, safeParse, string } from "zod/mini";
+import { Effect, Option, Schema } from "effect";
 import type { AtsReader } from "./types";
 import { boardPosting, isoDay, joinPlaces, workplaceInLocation, workplaceWord } from "./types";
 import type { AtsBoard } from "../../../data/postings";
 import type { FoundPosting } from "../types";
-import { HttpError } from "../../http";
+import { ExternalFetchError, runServerEffect } from "../../effect";
 import { NO_SALARY } from "../salary";
 import type { Salary } from "../salary";
 import { SALARY_CURRENCIES } from "../../../data/postings";
-import { fetchBoardJson } from "./fetch";
+import { fetchBoardJsonEffect, mapBoardNotFound } from "./fetch";
 import { htmlToText } from "../text";
-import type { output } from "zod/mini";
 
 // Lever's postings API: api.lever.co/v0/postings/<board>?mode=json, or
 // api.eu.lever.co for boards hosted in the EU. Each job states its
 // workplace, and may state a salary range.
 
-const jobSchema = looseObject({
-  id: string(),
-  text: string(),
-  hostedUrl: string(),
-  createdAt: exactOptional(nullable(number())),
-  workplaceType: exactOptional(nullable(string())),
-  categories: exactOptional(
-    nullable(
-      looseObject({
-        location: exactOptional(nullable(string())),
-        allLocations: exactOptional(nullable(array(string()))),
+const jobSchema = Schema.Struct({
+  id: Schema.String,
+  text: Schema.String,
+  hostedUrl: Schema.String,
+  createdAt: Schema.optionalKey(Schema.NullOr(Schema.Finite)),
+  workplaceType: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  categories: Schema.optionalKey(
+    Schema.NullOr(
+      Schema.Struct({
+        location: Schema.optionalKey(Schema.NullOr(Schema.String)),
+        allLocations: Schema.optionalKey(Schema.NullOr(Schema.Array(Schema.String))),
       }),
     ),
   ),
-  descriptionPlain: exactOptional(nullable(string())),
-  lists: exactOptional(
-    nullable(
-      array(
-        looseObject({
-          text: exactOptional(nullable(string())),
-          content: exactOptional(nullable(string())),
+  descriptionPlain: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  lists: Schema.optionalKey(
+    Schema.NullOr(
+      Schema.Array(
+        Schema.Struct({
+          text: Schema.optionalKey(Schema.NullOr(Schema.String)),
+          content: Schema.optionalKey(Schema.NullOr(Schema.String)),
         }),
       ),
     ),
   ),
-  additionalPlain: exactOptional(nullable(string())),
-  salaryRange: exactOptional(
-    nullable(
-      looseObject({
-        currency: exactOptional(nullable(string())),
-        interval: exactOptional(nullable(string())),
-        min: exactOptional(nullable(number())),
-        max: exactOptional(nullable(number())),
+  additionalPlain: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  salaryRange: Schema.optionalKey(
+    Schema.NullOr(
+      Schema.Struct({
+        currency: Schema.optionalKey(Schema.NullOr(Schema.String)),
+        interval: Schema.optionalKey(Schema.NullOr(Schema.String)),
+        min: Schema.optionalKey(Schema.NullOr(Schema.Finite)),
+        max: Schema.optionalKey(Schema.NullOr(Schema.Finite)),
       }),
     ),
   ),
 });
 
-const boardSchema = array(jobSchema);
+const rawBoardSchema = Schema.Array(Schema.Unknown);
 
-type LeverJob = output<typeof jobSchema>;
+type LeverJob = typeof jobSchema.Type;
+
+const decodeRawBoard = Schema.decodeUnknownEffect(rawBoardSchema);
+const decodeJob = Schema.decodeUnknownEffect(jobSchema);
+const decodeRawJob = Schema.decodeUnknownOption(Schema.fromJsonString(jobSchema));
 
 /** What a year has of each interval Lever states a salary per. */
 const PER_YEAR: Record<string, number> = { "per-year-salary": 1, "per-month-salary": 12 };
@@ -93,7 +96,7 @@ function descriptionOf(job: LeverJob): string {
     .join("\n\n");
 }
 
-function toPosting(job: LeverJob, board: AtsBoard): FoundPosting {
+function toPosting(job: LeverJob, board: AtsBoard, raw: string): FoundPosting {
   const location = joinPlaces(
     job.categories?.allLocations ?? [job.categories?.location ?? undefined],
   );
@@ -107,45 +110,69 @@ function toPosting(job: LeverJob, board: AtsBoard): FoundPosting {
     postedOn: isoDay(job.createdAt ?? undefined),
     workplace: workplaceWord(job.workplaceType ?? undefined) || workplaceInLocation(location),
     ...salaryOf(job.salaryRange),
-    raw: JSON.stringify(job),
+    raw,
   };
 }
 
-async function fetchJobs(board: AtsBoard): Promise<unknown> {
+function fetchJobsEffect(
+  board: AtsBoard,
+): Effect.Effect<{ body: unknown; url: string }, ExternalFetchError> {
   const path = `/v0/postings/${encodeURIComponent(board.board)}?mode=json`;
+  const globalUrl = `https://api.lever.co${path}`;
+  const euUrl = `https://api.eu.lever.co${path}`;
 
-  try {
-    return await fetchBoardJson(`https://api.lever.co${path}`, board);
-  } catch (error) {
+  return fetchBoardJsonEffect(globalUrl, board).pipe(
+    Effect.map((body) => ({ body, url: globalUrl })),
     // Not on the global instance: maybe on the EU one.
-    if (error instanceof HttpError && error.status === 404) {
-      return fetchBoardJson(`https://api.eu.lever.co${path}`, board);
-    }
+    Effect.catchIf(
+      (error) => error.upstreamStatus === 404,
+      () => fetchBoardJsonEffect(euUrl, board).pipe(Effect.map((body) => ({ body, url: euUrl }))),
+    ),
+  );
+}
 
-    throw error;
-  }
+function readLeverEffect(board: AtsBoard): Effect.Effect<FoundPosting[], ExternalFetchError> {
+  return Effect.gen(function* () {
+    const { body, url } = yield* fetchJobsEffect(board);
+    const rawJobs = yield* decodeRawBoard(body).pipe(
+      Effect.mapError(
+        (cause) =>
+          new ExternalFetchError({
+            message: `Lever's board "${board.board}" no longer reads as expected.`,
+            url,
+            cause,
+          }),
+      ),
+    );
+    const jobs = yield* Effect.forEach(rawJobs, (rawJob) =>
+      decodeJob(rawJob).pipe(
+        Effect.map((job) => ({ job, raw: JSON.stringify(rawJob) })),
+        Effect.mapError(
+          (cause) =>
+            new ExternalFetchError({
+              message: `Lever's board "${board.board}" no longer reads as expected.`,
+              url,
+              cause,
+            }),
+        ),
+      ),
+    );
+
+    return jobs.map(({ job, raw }) => toPosting(job, board, raw));
+  });
 }
 
 const lever: AtsReader = {
   provider: "lever",
+  readEffect: readLeverEffect,
   async read(board) {
-    const parsed = safeParse(boardSchema, await fetchJobs(board));
-
-    if (!parsed.success) {
-      throw new HttpError(502, `Lever's board "${board.board}" no longer reads as expected.`);
-    }
-
-    return parsed.data.map((job) => toPosting(job, board));
+    return runServerEffect(mapBoardNotFound(readLeverEffect(board)));
   },
   reread(raw, board) {
-    try {
-      const parsed = safeParse(jobSchema, JSON.parse(raw));
+    const parsed = decodeRawJob(raw);
 
-      return parsed.success ? toPosting(parsed.data, board) : undefined;
-    } catch {
-      return undefined;
-    }
+    return Option.isSome(parsed) ? toPosting(parsed.value, board, raw) : undefined;
   },
 };
 
-export { lever };
+export { lever, readLeverEffect };
