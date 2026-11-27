@@ -202,3 +202,13 @@ Lock before planning implementation:
   - **Next Step:** 1 clear action (or confirmation that changes are live on `main` and cleaned up).
 - **`AUDIT` / `VERBOSE` (Opt-In or Persistent Failure Only):** Append a collapsible `<details><summary>Technical Execution Ledger</summary>` containing Run ID, Mode, Merge Order, Fix Cycles (`x / 5`), Decisions, and the Wave/Step table (Role, Gate/QA, Retries, Commit/Worktree).
 - **`SILENT`:** Result only (auto-upgrades to `STANDARD` on error or decision).
+
+---
+
+## 10. Self-Improvement (Automatic Retro -> Skill Edit)
+
+- **Retro (every run, in-memory, no worker):** At `CLEANUP`, review the ledger: retries & their causes, merge conflicts, `verify`/`qa` failures, contract violations, decision pauses, critical-path accuracy (`size` estimates vs actual), idle parallel slots or splits that cost more than they saved, and wall time. Ask: *which skill rule, missing or wrong, caused avoidable cost?*
+- **Auto-Apply (no approval needed):** If the retro finds a concrete, evidence-backed cause, append 1 `writer_repo` node "Orchestrator-Skill verbessern" / "Improve orchestrator skill" (`owned_paths: [".agents/skills/orchestrator/SKILL.md"]`) that edits this file directly. Then run the normal fast `verify` (YAML frontmatter parses, JSON blocks parse, fences balanced, size limits below), commit it on its own as `chore(orchestrator): self-improve – <cause>`, and deliver it under the run's `delivery_mode`. If nothing actionable was found (the common case), skip it with no tokens spent.
+- **Edit Rules:** Make minimal, targeted diffs and prefer replacing or tightening a rule over adding one. Keep the file ≤ 28 KB (if over, consolidate before adding). No run-specific facts (paths, timings of one repo) unless phrased as a general rule. Never touch the `description` frontmatter format (single-line quoted string).
+- **Locked (never weakened by self-improvement):** Zero Self-Execution; never `--force`/history rewrite on `main`; §5.1 decision gates & `DECISION_RULE_IRREVERSIBLE`; worktree guardrail; plain-language UX; `delivery_mode` semantics; this §10 itself. Changes there require explicit user approval.
+- **Report:** Add 1 plain sentence under **Decisions Made** / final summary stating what the skill learned (e.g., "Skill angepasst: Lockfile-Änderungen laufen jetzt immer als eigener Schritt."). Every self-edit is a separate commit, so it can be reverted with `git revert`.
