@@ -2,7 +2,6 @@ import "server-only";
 import { Cause, Effect, Exit, Result, Schema } from "effect";
 import { APPLICATION_SOURCES, APPLICATION_STATUSES } from "../data/applications";
 import type { Application } from "../data/applications";
-import { SALARY_CURRENCIES, WORKPLACES } from "../data/postings";
 import { type BadRequestError, toHttpError } from "./effect";
 import {
   ISO_DATE_PATTERN,
@@ -14,15 +13,9 @@ import {
   textSchema,
   trimmedSchema,
 } from "./input";
+import { jobTermsFields, salaryInOrderCheck } from "./job-terms";
 
 const NOT_APPLICATION = "Not an application.";
-
-const salarySchema = Schema.Int.annotate({ message: "A salary is a whole number." }).pipe(
-  Schema.check(
-    Schema.isGreaterThanOrEqualTo(0, { message: "A salary isn't negative." }),
-    Schema.isLessThanOrEqualTo(100_000_000, { message: "That salary is too large." }),
-  ),
-);
 
 const ContactSchema = Schema.Struct({
   id: textSchema(NOT_APPLICATION),
@@ -44,12 +37,7 @@ const ApplicationBodySchema = Schema.Struct({
   jobUrl: trimmedSchema(NOT_APPLICATION),
   jobDescription: trimmedSchema(NOT_APPLICATION),
   location: trimmedSchema(NOT_APPLICATION),
-  workplace: Schema.Literals(["", ...WORKPLACES] as const).annotate({ message: NOT_APPLICATION }),
-  salaryMin: Schema.NullOr(salarySchema),
-  salaryMax: Schema.NullOr(salarySchema),
-  salaryCurrency: Schema.Literals(["", ...SALARY_CURRENCIES] as const).annotate({
-    message: NOT_APPLICATION,
-  }),
+  ...jobTermsFields(NOT_APPLICATION),
   source: Schema.Literals(APPLICATION_SOURCES).annotate({ message: NOT_APPLICATION }),
   status: Schema.Literals(APPLICATION_STATUSES).annotate({ message: NOT_APPLICATION }),
   cvId: trimmedSchema(NOT_APPLICATION),
@@ -61,17 +49,7 @@ const ApplicationBodySchema = Schema.Struct({
   note: trimmedSchema(NOT_APPLICATION),
 })
   .annotate({ message: NOT_APPLICATION })
-  .pipe(
-    Schema.check(
-      Schema.makeFilter(
-        (terms) =>
-          terms.salaryMin === null ||
-          terms.salaryMax === null ||
-          terms.salaryMin <= terms.salaryMax,
-        { message: "The salary's lower end is above its upper one." },
-      ),
-    ),
-  );
+  .pipe(Schema.check(salaryInOrderCheck));
 
 /**
  * Checks the shape of an application sent by the desk; the route's id wins.

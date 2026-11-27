@@ -14,7 +14,6 @@ import {
 } from "./collectors";
 import { checkCompaniesQuietlyEffect } from "./company-check";
 import {
-  AiScoringError,
   type AppError,
   BadRequestError,
   type ConfigError,
@@ -30,7 +29,7 @@ import {
   runServerEffect,
 } from "./effect";
 import { readJsonEffect } from "./input";
-import { scoreSoon } from "./posting-score";
+import { scoreSoonEffect } from "./posting-score";
 import {
   addPostingsEffect,
   dismissClosedEffect,
@@ -86,16 +85,6 @@ function runErrorMessage(error: AppError): string {
   }
 
   return error.message;
-}
-
-function scoreSoonEffect(
-  ids: string[],
-  options: { started: number; request?: Request },
-): Effect.Effect<void, AiScoringError> {
-  return Effect.tryPromise({
-    try: () => scoreSoon(ids, options),
-    catch: (cause) => new AiScoringError({ message: "Scoring failed.", cause }),
-  });
 }
 
 function requireRowEffect(
@@ -339,12 +328,7 @@ function receiveEffect(
   request: Request,
 ): Effect.Effect<
   CollectorRun,
-  | UnauthorizedError
-  | ConflictError
-  | BadRequestError
-  | AiScoringError
-  | DatabaseError
-  | ConfigError,
+  UnauthorizedError | ConflictError | BadRequestError | DatabaseError | ConfigError,
   Database
 > {
   return Effect.gen(function* () {
@@ -453,12 +437,7 @@ function runCollectorEffect(
   id: string,
 ): Effect.Effect<
   CollectorRun,
-  | NotFoundError
-  | BadRequestError
-  | ExternalFetchError
-  | AiScoringError
-  | DatabaseError
-  | ConfigError,
+  NotFoundError | BadRequestError | ExternalFetchError | DatabaseError | ConfigError,
   Database
 > {
   return Effect.gen(function* () {
