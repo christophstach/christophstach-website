@@ -16,6 +16,7 @@ import { BadGatewayError, NotFoundError, type PdfRenderError, runServerEffect } 
 import { CV_PDF_PATH } from "../data/endpoints";
 import type { CvLayout } from "../data/cv-print-layout";
 import { currentRequestEffect } from "./desk-write";
+import { previewProtectionHeaders } from "./fetch-public";
 import { parseCvBodyEffect } from "./cv-body";
 import { paths } from "../router";
 import { publicPaths } from "./cv-public-paths";
@@ -99,6 +100,8 @@ function printForDesk(id: string, layout: CvLayout | undefined) {
   return runServerEffect(printForDeskEffect(id, layout));
 }
 
+const PDF_FETCH_TIMEOUT = "45 seconds" as const;
+
 /**
  * The primary CV is read from the public PDF, so this reads the cached
  * file that visitors download and only runs Chrome when that cache is cold.
@@ -115,33 +118,47 @@ function cvPdfEffect(
     }
 
     const url = new URL(CV_PDF_PATH, request.url);
-    const response = yield* Effect.tryPromise({
-      try: () => fetch(url),
-      catch: (cause) =>
-        new BadGatewayError({
-          message: "The PDF route could not be reached.",
-          cause,
-        }),
-    });
+    const headers = previewProtectionHeaders(request);
 
-    // Errors carry their cause to the desk, which shows it: the PDF route runs
-    // Chrome on Vercel, and its failures are otherwise only in the function logs.
-    if (!response.ok) {
-      return yield* new BadGatewayError({
-        message: `The PDF route answered ${response.status} ${response.statusText}.`,
+    return yield* Effect.gen(function* () {
+      const response = yield* Effect.tryPromise({
+        try: (signal) => fetch(url, { headers, signal }),
+        catch: (cause) =>
+          new BadGatewayError({
+            message: "The PDF route could not be reached.",
+            cause,
+          }),
       });
-    }
 
-    const buffer = yield* Effect.tryPromise({
-      try: () => response.arrayBuffer(),
-      catch: (cause) =>
-        new BadGatewayError({
-          message: "Reading the PDF response failed.",
-          cause,
-        }),
-    });
+      // Errors carry their cause to the desk, which shows it: the PDF route runs
+      // Chrome on Vercel, and its failures are otherwise only in the function logs.
+      if (!response.ok) {
+        return yield* new BadGatewayError({
+          message: `The PDF route answered ${response.status} ${response.statusText}.`,
+        });
+      }
 
-    return new Uint8Array(buffer);
+      const buffer = yield* Effect.tryPromise({
+        try: () => response.arrayBuffer(),
+        catch: (cause) =>
+          new BadGatewayError({
+            message: "Reading the PDF response failed.",
+            cause,
+          }),
+      });
+
+      return new Uint8Array(buffer);
+    }).pipe(
+      Effect.timeout(PDF_FETCH_TIMEOUT),
+      Effect.catchTag(
+        "TimeoutError",
+        (cause) =>
+          new BadGatewayError({
+            message: "The PDF route timed out.",
+            cause,
+          }),
+      ),
+    );
   });
 }
 

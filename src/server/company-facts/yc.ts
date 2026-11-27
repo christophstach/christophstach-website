@@ -1,5 +1,5 @@
 import "server-only";
-import { Effect, Option, Schema } from "effect";
+import { Cache, Duration, Effect, Exit, Option, Schema } from "effect";
 import type { CompanyField, CompanyFunding } from "../../data/companies";
 import { companyKey } from "../../lib/posting";
 import { countryCode } from "../../lib/company";
@@ -11,6 +11,8 @@ import { ExternalFetchError, runServerEffect } from "../effect";
 
 const YC_LIST_URL = "https://yc-oss.github.io/api/companies/all.json";
 const YC_FETCH_TIMEOUT = "15 seconds" as const;
+const YC_CACHE_TTL = "6 hours" as const;
+const YC_CACHE_KEY = "yc-companies" as const;
 
 /** What the desk reads of a company in the list; other fields are ignored. */
 const ycCompanySchema = Schema.Struct({
@@ -192,8 +194,11 @@ function fetchYcJsonEffect(): Effect.Effect<unknown, ExternalFetchError> {
   );
 }
 
-/** The YC list by companyKey, current and former names; companies whose key is taken twice are left out. */
-function loadYcListEffect(): Effect.Effect<ReadonlyMap<string, YcFacts>, ExternalFetchError> {
+/** Fetches and indexes the YC list by companyKey, current and former names; ambiguous keys are left out. */
+function fetchAndIndexYcListEffect(): Effect.Effect<
+  ReadonlyMap<string, YcFacts>,
+  ExternalFetchError
+> {
   return Effect.gen(function* () {
     const json = yield* fetchYcJsonEffect();
     const items = yield* decodeYcList(json).pipe(
@@ -248,6 +253,42 @@ function loadYcListEffect(): Effect.Effect<ReadonlyMap<string, YcFacts>, Externa
 
     return byKey;
   });
+}
+
+type YcListCache = Cache.Cache<
+  typeof YC_CACHE_KEY,
+  ReadonlyMap<string, YcFacts>,
+  ExternalFetchError
+>;
+
+let ycListCache: YcListCache | undefined;
+
+function getYcListCacheEffect(): Effect.Effect<YcListCache> {
+  return Effect.gen(function* () {
+    if (ycListCache !== undefined) {
+      return ycListCache;
+    }
+
+    // Cache the parsed YC dataset for 6 hours; failed lookups expire
+    // immediately so transient outages aren't sticky.
+    const created = yield* Cache.makeWith<
+      typeof YC_CACHE_KEY,
+      ReadonlyMap<string, YcFacts>,
+      ExternalFetchError
+    >(() => fetchAndIndexYcListEffect(), {
+      capacity: 1,
+      timeToLive: (exit) => (Exit.isSuccess(exit) ? YC_CACHE_TTL : Duration.zero),
+    });
+
+    ycListCache ??= created;
+
+    return ycListCache;
+  });
+}
+
+/** The YC list by companyKey, current and former names; companies whose key is taken twice are left out. */
+function loadYcListEffect(): Effect.Effect<ReadonlyMap<string, YcFacts>, ExternalFetchError> {
+  return Effect.flatMap(getYcListCacheEffect(), (cache) => Cache.get(cache, YC_CACHE_KEY));
 }
 
 /** The YC list by companyKey, current and former names; companies whose key is taken twice are left out. */

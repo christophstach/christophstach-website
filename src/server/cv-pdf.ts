@@ -143,10 +143,19 @@ function requestCookies(request: Request): Map<string, string> {
     const separator = part.indexOf("=");
 
     if (separator > 0) {
-      cookies.set(
-        part.slice(0, separator).trim(),
-        decodeURIComponent(part.slice(separator + 1).trim()),
-      );
+      const name = part.slice(0, separator).trim();
+      const rawValue = part.slice(separator + 1).trim();
+
+      if (name === "") {
+        continue;
+      }
+
+      try {
+        cookies.set(name, decodeURIComponent(rawValue));
+      } catch {
+        // Malformed percent-encoding in an unrelated cookie must not break PDF rendering.
+        cookies.set(name, rawValue);
+      }
     }
   }
 
@@ -211,6 +220,7 @@ export function renderPdf(
 }
 
 const REVALIDATE_CONCURRENCY = 4;
+const REVALIDATE_TIMEOUT = "10 seconds" as const;
 
 /**
  * Renews cached public responses after a change, e.g. the CV PDF or the data
@@ -235,10 +245,11 @@ export function revalidatePathsEffect(
 
       return Effect.gen(function* () {
         const response = yield* Effect.tryPromise({
-          try: () =>
+          try: (signal) =>
             fetch(url, {
               method: "HEAD",
               headers: { "x-prerender-revalidate": token },
+              signal,
             }),
           catch: (cause) =>
             new ExternalFetchError({
@@ -246,7 +257,18 @@ export function revalidatePathsEffect(
               url: url.href,
               cause,
             }),
-        });
+        }).pipe(
+          Effect.timeout(REVALIDATE_TIMEOUT),
+          Effect.catchTag(
+            "TimeoutError",
+            (cause) =>
+              new ExternalFetchError({
+                message: `Revalidating cached path ${path} timed out.`,
+                url: url.href,
+                cause,
+              }),
+          ),
+        );
 
         if (!response.ok) {
           yield* Effect.logWarning(

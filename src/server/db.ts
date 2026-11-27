@@ -31,8 +31,13 @@ function connect(url: string) {
 
   // prepare: false because Neon's pooled URL runs PgBouncer in transaction
   // mode, which can't keep prepared statements; one connection per function
-  // instance is plenty for the desk.
-  const client = postgres(connection.href, { max: 1, prepare: false });
+  // instance is plenty for the desk, with explicit timeouts for Neon resilience.
+  const client = postgres(connection.href, {
+    max: 1,
+    prepare: false,
+    connect_timeout: 10,
+    idle_timeout: 20,
+  });
 
   return drizzle(client, { schema, casing: "snake_case" });
 }
