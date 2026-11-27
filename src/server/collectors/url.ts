@@ -1,12 +1,11 @@
 import "server-only";
-import { array, exactOptional, looseObject, number, safeParse, string, union } from "zod/mini";
+import { Effect, Option, Schema } from "effect";
 import { NO_SALARY } from "./salary";
 import type { Salary } from "./salary";
 import { SALARY_CURRENCIES } from "../../data/postings";
-import type { ZodMiniType, output } from "zod/mini";
+import { BadRequestError, ExternalFetchError, runServerEffect } from "../effect";
 import { decodeEntities, htmlToText } from "./text";
 import type { FoundPosting } from "./types";
-import { HttpError } from "../http";
 import { JOB_LINK } from "./linkedin-email";
 
 // A job ad added by its address. Most career pages and job boards describe
@@ -15,46 +14,51 @@ import { JOB_LINK } from "./linkedin-email";
 // breaks LinkedIn's terms; a LinkedIn link keeps only its job id.
 
 const MAX_BYTES = 3_000_000;
+const PAGE_FETCH_TIMEOUT = "10 seconds" as const;
 
-const named = union([string(), looseObject({ name: exactOptional(string()) })]);
-const amount = union([number(), string()]);
-const listOf = <Item extends ZodMiniType>(item: Item) => union([item, array(item)]);
+const named = Schema.Union([
+  Schema.String,
+  Schema.Struct({ name: Schema.optionalKey(Schema.String) }),
+]);
+const amount = Schema.Union([Schema.Finite, Schema.String]);
+const listOf = <Item extends Schema.Constraint>(item: Item) =>
+  Schema.Union([item, Schema.Array(item)]);
 
 /** The parts of a schema.org JobPosting the desk keeps; anything else may be there too. */
-const jobPostingSchema = looseObject({
-  title: exactOptional(string()),
-  description: exactOptional(string()),
-  datePosted: exactOptional(string()),
-  hiringOrganization: exactOptional(named),
-  jobLocationType: exactOptional(listOf(string())),
-  baseSalary: exactOptional(
+const jobPostingSchema = Schema.Struct({
+  title: Schema.optionalKey(Schema.String),
+  description: Schema.optionalKey(Schema.String),
+  datePosted: Schema.optionalKey(Schema.String),
+  hiringOrganization: Schema.optionalKey(named),
+  jobLocationType: Schema.optionalKey(listOf(Schema.String)),
+  baseSalary: Schema.optionalKey(
     listOf(
-      looseObject({
-        currency: exactOptional(string()),
-        value: exactOptional(
-          union([
+      Schema.Struct({
+        currency: Schema.optionalKey(Schema.String),
+        value: Schema.optionalKey(
+          Schema.Union([
             amount,
-            looseObject({
-              value: exactOptional(amount),
-              minValue: exactOptional(amount),
-              maxValue: exactOptional(amount),
-              unitText: exactOptional(string()),
+            Schema.Struct({
+              value: Schema.optionalKey(amount),
+              minValue: Schema.optionalKey(amount),
+              maxValue: Schema.optionalKey(amount),
+              unitText: Schema.optionalKey(Schema.String),
             }),
           ]),
         ),
       }),
     ),
   ),
-  jobLocation: exactOptional(
+  jobLocation: Schema.optionalKey(
     listOf(
-      looseObject({
-        address: exactOptional(
-          union([
-            string(),
-            looseObject({
-              addressLocality: exactOptional(string()),
-              addressRegion: exactOptional(string()),
-              addressCountry: exactOptional(named),
+      Schema.Struct({
+        address: Schema.optionalKey(
+          Schema.Union([
+            Schema.String,
+            Schema.Struct({
+              addressLocality: Schema.optionalKey(Schema.String),
+              addressRegion: Schema.optionalKey(Schema.String),
+              addressCountry: Schema.optionalKey(named),
             }),
           ]),
         ),
@@ -63,14 +67,24 @@ const jobPostingSchema = looseObject({
   ),
 });
 
-type JobPostingLd = output<typeof jobPostingSchema>;
+type JobPostingLd = typeof jobPostingSchema.Type;
 
-function nameOf(value: string | { name?: string } | undefined): string {
+const decodeJobPosting = Schema.decodeUnknownOption(jobPostingSchema);
+
+function nameOf(value: string | { readonly name?: string } | undefined): string {
   return typeof value === "string" ? value : (value?.name ?? "");
 }
 
-function toList<Item>(value: Item | Item[] | undefined): Item[] {
-  return value === undefined ? [] : Array.isArray(value) ? value : [value];
+function isReadonlyArray<Item>(value: Item | readonly Item[]): value is readonly Item[] {
+  return Array.isArray(value);
+}
+
+function toList<Item>(value: Item | readonly Item[] | undefined): readonly Item[] {
+  if (value === undefined) {
+    return [];
+  }
+
+  return isReadonlyArray(value) ? value : [value];
 }
 
 /** Whether a JSON-LD node says it is a JobPosting. */
@@ -235,90 +249,128 @@ function linkedinPosting(id: string): FoundPosting {
   };
 }
 
-async function fetchPage(url: URL): Promise<{ html: string; url: URL }> {
-  let response: Response;
-
-  try {
-    response = await fetch(url, {
-      headers: { accept: "text/html", "user-agent": "Mozilla/5.0 (compatible; desk)" },
-      redirect: "follow",
-      signal: AbortSignal.timeout(10_000),
+function fetchPageEffect(url: URL): Effect.Effect<{ html: string; url: URL }, ExternalFetchError> {
+  return Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: (signal) =>
+        fetch(url, {
+          headers: { accept: "text/html", "user-agent": "Mozilla/5.0 (compatible; desk)" },
+          redirect: "follow",
+          signal,
+        }),
+      catch: (cause) =>
+        new ExternalFetchError({
+          message: `${url.host} did not answer.`,
+          url: url.href,
+          cause,
+        }),
     });
-  } catch {
-    throw new HttpError(502, `${url.host} did not answer.`);
-  }
 
-  if (!response.ok) {
-    throw new HttpError(502, `${url.host} answered ${response.status}.`);
-  }
+    if (!response.ok) {
+      return yield* new ExternalFetchError({
+        message: `${url.host} answered ${response.status}.`,
+        url: url.href,
+        upstreamStatus: response.status,
+      });
+    }
 
-  const html = await response.text();
+    const html = yield* Effect.tryPromise({
+      try: () => response.text(),
+      catch: (cause) =>
+        new ExternalFetchError({
+          message: `${url.host} did not answer.`,
+          url: url.href,
+          cause,
+        }),
+    });
 
-  if (html.length > MAX_BYTES) {
-    throw new HttpError(502, `The page at ${url.host} is too large to read.`);
-  }
+    if (html.length > MAX_BYTES) {
+      return yield* new ExternalFetchError({
+        message: `The page at ${url.host} is too large to read.`,
+        url: url.href,
+      });
+    }
 
-  return { html, url: new URL(response.url || url.href) };
+    return { html, url: new URL(response.url || url.href) };
+  }).pipe(
+    Effect.timeout(PAGE_FETCH_TIMEOUT),
+    Effect.catchTag(
+      "TimeoutError",
+      (cause) =>
+        new ExternalFetchError({
+          message: `${url.host} did not answer.`,
+          url: url.href,
+          cause,
+        }),
+    ),
+  );
 }
 
 /** Reads the job ad at an address: from its JSON-LD, or its title if it has none. */
-async function readUrl(address: string): Promise<FoundPosting> {
-  let url: URL;
+function readUrlEffect(
+  address: string,
+): Effect.Effect<FoundPosting, BadRequestError | ExternalFetchError> {
+  return Effect.gen(function* () {
+    const url = yield* Effect.try({
+      try: () => new URL(address.trim()),
+      catch: (cause) => new BadRequestError({ message: `"${address}" is no address.`, cause }),
+    });
 
-  try {
-    url = new URL(address.trim());
-  } catch {
-    throw new HttpError(400, `"${address}" is no address.`);
-  }
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      return yield* new BadRequestError({
+        message: "Only http and https addresses can be read.",
+      });
+    }
 
-  if (url.protocol !== "https:" && url.protocol !== "http:") {
-    throw new HttpError(400, "Only http and https addresses can be read.");
-  }
+    const linkedinId = JOB_LINK.exec(url.href)?.[1];
 
-  const linkedinId = JOB_LINK.exec(url.href)?.[1];
+    if (linkedinId !== undefined) {
+      return linkedinPosting(linkedinId);
+    }
 
-  if (linkedinId !== undefined) {
-    return linkedinPosting(linkedinId);
-  }
+    const page = yield* fetchPageEffect(url);
+    const node = jsonLdBlocks(page.html)
+      .map(findJobPosting)
+      .find((found) => found !== undefined);
+    const posting = node === undefined ? undefined : Option.getOrUndefined(decodeJobPosting(node));
+    const externalId = canonicalUrl(page.url);
 
-  const page = await fetchPage(url);
-  const node = jsonLdBlocks(page.html)
-    .map(findJobPosting)
-    .find((found) => found !== undefined);
-  const parsed = node === undefined ? undefined : safeParse(jobPostingSchema, node);
-  const posting = parsed?.success === true ? parsed.data : undefined;
-  const externalId = canonicalUrl(page.url);
+    if (posting === undefined) {
+      return {
+        source: "web",
+        externalId,
+        url: externalId,
+        company: metaContent(page.html, "og:site_name"),
+        title: metaContent(page.html, "og:title") || pageTitle(page.html),
+        location: "",
+        description: htmlToText(metaContent(page.html, "og:description")),
+        postedOn: "",
+        workplace: "",
+        ...NO_SALARY,
+        raw: "",
+      };
+    }
 
-  if (posting === undefined) {
     return {
       source: "web",
       externalId,
       url: externalId,
-      company: metaContent(page.html, "og:site_name"),
-      title: metaContent(page.html, "og:title") || pageTitle(page.html),
-      location: "",
-      description: htmlToText(metaContent(page.html, "og:description")),
-      postedOn: "",
-      workplace: "",
-      ...NO_SALARY,
-      raw: "",
+      company: nameOf(posting.hiringOrganization),
+      title: decodeEntities(posting.title ?? "").trim(),
+      location: locationOf(posting),
+      // The description is HTML, sometimes escaped once more.
+      description: htmlToText(decodeEntities(posting.description ?? "")),
+      postedOn: /^\d{4}-\d{2}-\d{2}/u.exec(posting.datePosted ?? "")?.[0] ?? "",
+      workplace: isRemote(posting) ? "remote" : "",
+      ...salaryOf(posting),
+      raw: JSON.stringify(node),
     };
-  }
-
-  return {
-    source: "web",
-    externalId,
-    url: externalId,
-    company: nameOf(posting.hiringOrganization),
-    title: decodeEntities(posting.title ?? "").trim(),
-    location: locationOf(posting),
-    // The description is HTML, sometimes escaped once more.
-    description: htmlToText(decodeEntities(posting.description ?? "")),
-    postedOn: /^\d{4}-\d{2}-\d{2}/u.exec(posting.datePosted ?? "")?.[0] ?? "",
-    workplace: isRemote(posting) ? "remote" : "",
-    ...salaryOf(posting),
-    raw: JSON.stringify(node),
-  };
+  });
 }
 
-export { readUrl };
+/** Reads the job ad at an address: from its JSON-LD, or its title if it has none. */
+async function readUrl(address: string): Promise<FoundPosting> {
+  return runServerEffect(readUrlEffect(address));
+}
+
+export { readUrl, readUrlEffect };

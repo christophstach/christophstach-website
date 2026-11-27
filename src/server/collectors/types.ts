@@ -1,10 +1,12 @@
 import "server-only";
+import type { Effect } from "effect";
 import type {
   PostingSource,
   PushCollectorType,
   SalaryCurrency,
   Workplace,
 } from "../../data/postings";
+import type { BadRequestError } from "../effect";
 
 /** A job ad as a collector reads it, before it is stored. */
 interface FoundPosting {
@@ -29,10 +31,12 @@ interface FoundPosting {
 
 /**
  * A collector the desk is sent to (push): it reads a request body into
- * postings. Throws an HttpError (400) for a body it doesn't understand.
+ * postings. Fails with `BadRequestError` (or throws `HttpError` 400 in sync
+ * compat mode) for a body it doesn't understand.
  */
 interface PushCollector {
   type: PushCollectorType;
+  readEffect: (body: unknown) => Effect.Effect<FoundPosting[], BadRequestError>;
   read: (body: unknown) => FoundPosting[];
   /** Reads one posting's stored raw input again; undefined if it no longer finds it there. */
   reread: (raw: string, externalId: string) => FoundPosting | undefined;

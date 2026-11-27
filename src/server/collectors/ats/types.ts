@@ -1,5 +1,7 @@
 import "server-only";
+import type { Effect } from "effect";
 import type { AtsBoard, AtsProvider, Workplace } from "../../../data/postings";
+import type { ExternalFetchError } from "../../effect";
 import type { FoundPosting } from "../types";
 import { NO_SALARY } from "../salary";
 
@@ -10,6 +12,8 @@ import { NO_SALARY } from "../salary";
  */
 interface AtsReader {
   provider: AtsProvider;
+  /** Every job the board lists. Fails with `ExternalFetchError` if it can't be read. */
+  readEffect: (board: AtsBoard) => Effect.Effect<FoundPosting[], ExternalFetchError>;
   /** Every job the board lists. Throws an HttpError if it can't be read. */
   read: (board: AtsBoard) => Promise<FoundPosting[]>;
   /** One job again from its stored raw input; undefined if that no longer reads. */
@@ -68,7 +72,7 @@ function workplaceInLocation(location: string): Workplace | "" {
 }
 
 /** Places, without repeats or blanks, joined as the desk shows several. */
-function joinPlaces(places: (string | undefined)[]): string {
+function joinPlaces(places: readonly (string | undefined)[]): string {
   return [...new Set(places.map((place) => (place ?? "").trim()))]
     .filter((place) => place !== "")
     .join(" · ");

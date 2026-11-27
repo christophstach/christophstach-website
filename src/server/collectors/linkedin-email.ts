@@ -1,11 +1,12 @@
 import "server-only";
+import { Effect, Option, Result, Schema } from "effect";
 import type { FoundPosting, PushCollector } from "./types";
 import { NO_SALARY, readSalary, readWorkplace } from "./salary";
 import type { Salary } from "./salary";
 import type { Workplace } from "../../data/postings";
-import { array, exactOptional, maxLength, object, safeParse, string } from "zod/mini";
+import { BadRequestError, decodeUnknownEffect, formatSchemaError, toHttpError } from "../effect";
+import { emptyOrMatchingSchema } from "../input";
 import { htmlToText, tidyLines } from "./text";
-import { emptyOrMatching, parseInput } from "../input";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
 
@@ -15,23 +16,33 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
 // job as a few lines (title, company, location) and a link to
 // linkedin.com/jobs/view/<id>, whose id says which job it is.
 
-const bodySchema = object({
-  messages: array(
-    object({
-      subject: exactOptional(string("A subject is text.")),
-      plain: exactOptional(string("A plain body is text.")),
-      html: exactOptional(string("An HTML body is text.")),
-      date: exactOptional(emptyOrMatching(ISO_DATE, "A date is YYYY-MM-DD.")),
-    }),
-    "Send { messages: [{ subject, plain, html, date }] }.",
-  ).check(maxLength(50, "At most 50 messages at a time.")),
+const messageSchema = Schema.Struct({
+  subject: Schema.optionalKey(Schema.String.annotate({ message: "A subject is text." })),
+  plain: Schema.optionalKey(Schema.String.annotate({ message: "A plain body is text." })),
+  html: Schema.optionalKey(Schema.String.annotate({ message: "An HTML body is text." })),
+  date: Schema.optionalKey(emptyOrMatchingSchema(ISO_DATE, "A date is YYYY-MM-DD.")),
+});
+
+const bodySchema = Schema.Struct({
+  messages: Schema.Array(messageSchema)
+    .annotate({ message: "Send { messages: [{ subject, plain, html, date }] }." })
+    .pipe(Schema.check(Schema.isMaxLength(50, { message: "At most 50 messages at a time." }))),
 });
 
 /**
  * What a posting keeps of its mail: both bodies as text, and its day. Older
  * ones kept the plain text alone, or no day.
  */
-const rawSchema = object({ plain: string(), html: string(), date: exactOptional(string()) });
+const rawSchema = Schema.fromJsonString(
+  Schema.Struct({
+    plain: Schema.String,
+    html: Schema.String,
+    date: Schema.optionalKey(Schema.String),
+  }),
+);
+
+const decodeBodyResult = Schema.decodeUnknownResult(bodySchema);
+const decodeRawMail = Schema.decodeUnknownOption(rawSchema);
 
 /** A mail as the desk reads it: its bodies as text and its day (YYYY-MM-DD), each may be empty. */
 interface Mail {
@@ -168,39 +179,57 @@ function readMail({ plain, html, date }: Mail): FoundPosting[] {
 /** A posting's stored mail: both bodies, or the plain one alone. */
 function storedMail(raw: string): Mail {
   if (raw.startsWith("{")) {
-    try {
-      const parsed = safeParse(rawSchema, JSON.parse(raw));
+    const parsed = decodeRawMail(raw);
 
-      if (parsed.success) {
-        return { ...parsed.data, date: parsed.data.date ?? "" };
-      }
-    } catch {
-      // Plain text that happens to start with a brace.
+    if (Option.isSome(parsed)) {
+      return { ...parsed.value, date: parsed.value.date ?? "" };
     }
   }
 
   return { plain: raw, html: "", date: "" };
 }
 
+function readMessages(messages: readonly (typeof messageSchema.Type)[]): FoundPosting[] {
+  // The plain body says which jobs there are, with their title, company
+  // and location: read as text, the HTML one mixes those up. The HTML one
+  // adds workplace and salary.
+  return messages.flatMap((message) =>
+    readMail({
+      plain: compactLinks(tidyLines(message.plain ?? "")),
+      html: message.html === undefined ? "" : compactLinks(htmlToText(message.html)),
+      date: message.date ?? "",
+    }),
+  );
+}
+
+function readLinkedinEmailEffect(body: unknown): Effect.Effect<FoundPosting[], BadRequestError> {
+  return Effect.gen(function* () {
+    const { messages } = yield* decodeUnknownEffect(bodySchema, body);
+
+    return readMessages(messages);
+  });
+}
+
 const linkedinEmail: PushCollector = {
   type: "linkedin-email",
+  readEffect: readLinkedinEmailEffect,
   read(body) {
-    const { messages } = parseInput(bodySchema, body);
+    const parsed = decodeBodyResult(body);
 
-    // The plain body says which jobs there are, with their title, company
-    // and location: read as text, the HTML one mixes those up. The HTML one
-    // adds workplace and salary.
-    return messages.flatMap((message) =>
-      readMail({
-        plain: compactLinks(tidyLines(message.plain ?? "")),
-        html: message.html === undefined ? "" : compactLinks(htmlToText(message.html)),
-        date: message.date ?? "",
-      }),
-    );
+    if (Result.isFailure(parsed)) {
+      throw toHttpError(
+        new BadRequestError({
+          message: formatSchemaError(parsed.failure),
+          cause: parsed.failure,
+        }),
+      );
+    }
+
+    return readMessages(parsed.success.messages);
   },
   reread(raw, externalId) {
     return readMail(storedMail(raw)).find((posting) => posting.externalId === externalId);
   },
 };
 
-export { JOB_LINK, linkedinEmail, readMail };
+export { JOB_LINK, linkedinEmail, readLinkedinEmailEffect, readMail };

@@ -1,11 +1,12 @@
 import "server-only";
+import { Effect } from "effect";
 import { boardPosting, isoDay, joinPlaces, workplaceInLocation } from "./types";
 import { decodeEntities, htmlToText } from "../text";
 import type { AtsBoard } from "../../../data/postings";
 import type { AtsReader } from "./types";
 import type { FoundPosting } from "../types";
-import { HttpError } from "../../http";
-import { fetchBoard } from "./fetch";
+import { ExternalFetchError, runServerEffect } from "../../effect";
+import { fetchBoardEffect, mapBoardNotFound } from "./fetch";
 
 // Personio's job feed: <board>.jobs.personio.de/xml, common with German
 // companies. It lists each job as a <position>: id, office (and
@@ -60,23 +61,31 @@ function toPosting(position: string, board: AtsBoard): FoundPosting | undefined 
   };
 }
 
-const personio: AtsReader = {
-  provider: "personio",
-  async read(board) {
-    const xml = await fetchBoard(
-      `https://${encodeURIComponent(board.board)}.jobs.personio.de/xml`,
-      board,
-    );
+function readPersonioEffect(board: AtsBoard): Effect.Effect<FoundPosting[], ExternalFetchError> {
+  return Effect.gen(function* () {
+    const url = `https://${encodeURIComponent(board.board)}.jobs.personio.de/xml`;
+    const xml = yield* fetchBoardEffect(url, board);
 
     if (!xml.includes("<workzag-jobs")) {
-      throw new HttpError(502, `Personio's board "${board.board}" no longer reads as expected.`);
+      return yield* new ExternalFetchError({
+        message: `Personio's board "${board.board}" no longer reads as expected.`,
+        url,
+      });
     }
 
     return tagsOf(xml, "position").flatMap((position) => toPosting(position, board) ?? []);
+  });
+}
+
+const personio: AtsReader = {
+  provider: "personio",
+  readEffect: readPersonioEffect,
+  async read(board) {
+    return runServerEffect(mapBoardNotFound(readPersonioEffect(board)));
   },
   reread(raw, board) {
     return toPosting(raw, board);
   },
 };
 
-export { personio };
+export { personio, readPersonioEffect };
