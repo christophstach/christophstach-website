@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { SITE_OWNER, SITE_URL, normalizePathname } from "../src/lib/site.ts";
+import { SITE_OWNER, SITE_URL, normalizePathname, resolveOwnerEmail } from "../src/lib/site.ts";
 
 await describe("site constants", async () => {
   await it("defines a canonical HTTPS SITE_URL without a trailing slash", () => {
@@ -10,13 +10,24 @@ await describe("site constants", async () => {
     assert.equal(SITE_URL.endsWith("/"), false);
   });
 
-  await it("defines non-empty SITE_OWNER metadata with valid links and email", () => {
+  await it("defines non-empty SITE_OWNER metadata with valid links and no plaintext email", () => {
     assert.ok(SITE_OWNER.name.length > 0);
     assert.ok(SITE_OWNER.location.length > 0);
     assert.ok(SITE_OWNER.locationDe.length > 0);
-    assert.match(SITE_OWNER.email, /^[^\s@]+@[^\s@]+\.[^\s@]+$/u);
+    assert.equal("email" in SITE_OWNER, false);
     assert.equal(new URL(SITE_OWNER.githubUrl).protocol, "https:");
     assert.equal(new URL(SITE_OWNER.linkedinUrl).protocol, "https:");
+  });
+
+  await it("resolves the expected owner email address on demand", () => {
+    const email = resolveOwnerEmail();
+    const parts = email.split("@");
+
+    assert.match(email, /^[^\s@]+@[^\s@]+\.[^\s@]+$/u);
+    assert.equal(parts.length, 2);
+    assert.equal(parts[0], ["christoph", "stach"].join("."));
+    assert.equal(parts[1], ["gmail", "com"].join("."));
+    assert.equal(email.length, 25);
   });
 });
 

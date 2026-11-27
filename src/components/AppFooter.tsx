@@ -1,4 +1,4 @@
-import { IconBrandGithub, IconBrandLinkedin, IconMail } from "./icons";
+import { IconBrandGithub, IconBrandLinkedin } from "./icons";
 import { SITE_OWNER } from "../lib/site";
 import { paths } from "../router";
 import styles from "./AppFooter.module.css";
@@ -25,13 +25,6 @@ export function AppFooter() {
         </div>
 
         <div class={styles.social}>
-          <a
-            href={`mailto:${SITE_OWNER.email}`}
-            aria-label={`Email ${SITE_OWNER.name}`}
-            class="icon-button"
-          >
-            <IconMail size={20} />
-          </a>
           <a
             href={SITE_OWNER.linkedinUrl}
             target="_blank"

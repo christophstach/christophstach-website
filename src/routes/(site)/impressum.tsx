@@ -1,4 +1,5 @@
 import { Show } from "solid-js";
+import { EmailReveal } from "../../components/EmailReveal";
 import { SITE_OWNER } from "../../lib/site";
 import styles from "./legal.module.css";
 
@@ -47,10 +48,7 @@ export default function Impressum() {
             Kontakt
           </h2>
           <p class={styles.section__body}>
-            E-Mail:{" "}
-            <a href={`mailto:${SITE_OWNER.email}`} class="text-link">
-              {SITE_OWNER.email}
-            </a>
+            E-Mail: <EmailReveal locale="de" />
           </p>
         </section>
 

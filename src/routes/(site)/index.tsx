@@ -58,7 +58,6 @@ const getHomeView = query(async () => {
       <HomeAbout />
       <HomeStack skills={skillGroups} />
       <props.contact
-        email={SITE_OWNER.email}
         githubUrl={SITE_OWNER.githubUrl}
         linkedinUrl={SITE_OWNER.linkedinUrl}
         curriculumHref={paths.curriculum()}
@@ -81,7 +80,6 @@ export default function Home() {
     <View
       contact={(props) => (
         <HomeContactCta
-          email={props.email}
           githubUrl={props.githubUrl}
           linkedinUrl={props.linkedinUrl}
           curriculumHref={props.curriculumHref}

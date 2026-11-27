@@ -8,10 +8,10 @@ import {
 } from "../icons";
 import { Show, createSignal, onSettled } from "solid-js";
 import { cvDownloadVisible } from "../../data/cvs";
+import { resolveOwnerEmail } from "../../lib/site";
 import styles from "./home.module.css";
 
 export interface HomeContactCtaProps {
-  email: string;
   githubUrl: string;
   linkedinUrl: string;
   curriculumHref: string;
@@ -20,6 +20,7 @@ export interface HomeContactCtaProps {
 
 /** Quiet, terminal-styled recruiter closing CTA with direct contact and CV links. */
 export function HomeContactCta(props: HomeContactCtaProps) {
+  const [revealed, setRevealed] = createSignal<string | null>(null);
   const [status, setStatus] = createSignal<"idle" | "copied" | "error">("idle");
   let resetTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -29,6 +30,10 @@ export function HomeContactCta(props: HomeContactCtaProps) {
     }
   });
 
+  function revealEmail() {
+    setRevealed(resolveOwnerEmail());
+  }
+
   async function copyEmail() {
     if (resetTimer !== undefined) {
       clearTimeout(resetTimer);
@@ -36,7 +41,7 @@ export function HomeContactCta(props: HomeContactCtaProps) {
     }
 
     try {
-      await navigator.clipboard.writeText(props.email);
+      await navigator.clipboard.writeText(revealed() ?? resolveOwnerEmail());
       setStatus("copied");
       resetTimer = setTimeout(() => {
         setStatus("idle");
@@ -53,7 +58,9 @@ export function HomeContactCta(props: HomeContactCtaProps) {
     }
 
     if (status() === "error") {
-      return "Could not copy email. Use the mail link directly.";
+      return revealed() === null
+        ? "Could not copy email. Reveal and use the mail link directly."
+        : "Could not copy email. Use the mail link directly.";
     }
 
     return "";
@@ -71,10 +78,26 @@ export function HomeContactCta(props: HomeContactCtaProps) {
         </p>
 
         <div class={styles.contact__mail}>
-          <a href={`mailto:${props.email}`} class={["text-link", styles.contact__address]}>
-            <IconMail size={16} />
-            {props.email}
-          </a>
+          <Show
+            when={revealed()}
+            fallback={
+              <button
+                type="button"
+                class={["button button--outline button--icon", styles.contact__copy]}
+                onClick={revealEmail}
+              >
+                <IconMail size={16} />
+                Reveal email
+              </button>
+            }
+          >
+            {(email) => (
+              <a href={`mailto:${email()}`} class={["text-link", styles.contact__address]}>
+                <IconMail size={16} />
+                {email()}
+              </a>
+            )}
+          </Show>
 
           <button
             type="button"
