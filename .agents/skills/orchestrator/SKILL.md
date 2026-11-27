@@ -10,7 +10,7 @@ description: "Token-efficient multi-agent coordinator for Antigravity Remote Age
 - **Hybrid Delegation (Speed + Context Hygiene):** Delegate heavy, parallel, or bias-sensitive work to isolated worker subagents (`enable_subagent_tools: false`), while keeping fast, low-output control operations directly in the orchestrator to avoid subagent cold-start tokens and roundtrip latency:
   - **Direct in Orchestrator:** (1) **Git lifecycle** (ref/status checks, worktree add/remove/prune, `node_modules`/`.venv` symlinks, `owned_paths` diff check, sequential merge, delivery push & branch cleanup—always with compact flags `--short`/`--name-only`/`-q`, halting immediately on conflict); (2) **quick planning lookups** (≤ 3 small targeted reads like `package.json`/`AGENTS.md` or `rg --files`); (3) **programmatic `verify`** in the target worktree _while `qa` runs in parallel_—always redirecting verbose output to `<scratch_dir>/verify.log` and reading only exit code + diff stats + last ~25 failing lines; (4) **small skill self-edits (§10)**; plus Charter locking, ledger, task graph validation/scheduling, task mirror, plan diagram, worker steering, decisions, and reporting.
   - **Always Delegate to Subagents:** All repo implementation/doc edits (`coding`, `writer_repo`), broad exploration/ideation (`research`, `brainstorm`), independent semantic review (`qa`), and heavy/multi-step runs (`compute`). Never paste large logs or whole source files into orchestrator context.
-- **Plain-Language UX (Strict Separation):** Keep all internal protocol (`DISPATCH_PACKET_V1`, `STEP_RESULT_V1`, `run_id`, `wave_id`, `step_id`, `DECISION_RULE_*`, FSM states, `OPT-1`, `D01`) strictly inside JSON packets and the state ledger. Always speak to the user in **clear, natural prose in the user's language**—never leak internal IDs, wave/step codes (`W5`, `S15`), or rule names into normal updates, questions, summaries, **or UI-visible subagent names** (`Role` in `invoke_subagent` / `description` in Claude Code's `Agent` tool). Give subagents short, human-readable 2–5 word titles in the user's language describing their actual task (e.g., `"CV-Layout anpassen"`, `"Qualitätsprüfung"`, `"Codebase erkunden"`), keeping `step_id` strictly inside the JSON prompt. Reserve technical audit tables strictly for opt-in `AUDIT`/`VERBOSE` mode or persistent failure.
+- **Plain-Language UX (Strict Separation):** Keep all internal protocol (`run_id`, `wave_id`, `step_id`, `DECISION_RULE_*`, FSM states, `OPT-1`, `D01`) strictly inside worker briefs and the state ledger. Always speak to the user in **clear, natural prose in the user's language**—never leak internal IDs, wave/step codes (`W5`, `S15`), or rule names into normal updates, questions, summaries, **or UI-visible subagent names** (`Role` in `invoke_subagent` / `description` in Claude Code's `Agent` tool). Give subagents short, human-readable 2–5 word titles in the user's language describing their actual task (e.g., `"CV-Layout anpassen"`, `"Qualitätsprüfung"`, `"Codebase erkunden"`), keeping `step` strictly inside the worker brief. Reserve technical audit tables strictly for opt-in `AUDIT`/`VERBOSE` mode or persistent failure.
 
 ### Orchestration Modes (Pick the Lightest Fit)
 
@@ -34,9 +34,9 @@ description: "Token-efficient multi-agent coordinator for Antigravity Remote Age
 | **Decisions**                    | `ask_question` (fallback: concise plain-language text).                                                                                                                                                | `AskUserQuestion` (fallback: concise plain-language text).                                                                                                                                         |
 | **State & Scratch**              | `<artifact_dir>/orchestrator-state.json` & `<artifact_dir>/scratch/`.                                                                                                                                  | `.worktrees/<run_id>/orchestrator-state.json` & `.worktrees/<run_id>/scratch/` (gitignored).                                                                                                       |
 
-- **Worktree Guardrail:** Write/exec workers MUST use **absolute paths** inside `workspace.worktree_path` and set `Cwd = workspace.worktree_path`. Never read/write/mutate the main checkout from workers (only the orchestrator runs Git lifecycle commands and read-only `git status --porcelain` checks against it).
+- **Worktree Guardrail:** Write/exec workers MUST use **absolute paths** inside `worktree` and set `Cwd = worktree`. Never read/write/mutate the main checkout from workers (only the orchestrator runs Git lifecycle commands and read-only `git status --porcelain` checks against it).
 - **Worker Reuse & Live Steering:** Reuse `coding`/`writer_repo` workers on retries via `send_message`/`resume` so context is preserved. On reactive wakeups (user pivot or peer findings affecting active workers), forward concise course-corrections immediately via `send_message` or `kill` invalidated workers.
-- **State Ledger & Recovery:** Update `orchestrator-state.json` on Run State changes and decisions (`run_id`, `mode`, `delivery_mode`, `base_branch`, `base_commit`, `run_state`, `loop_count`, `plan_rev`, `approved_decisions`, `graph`, `active_worktrees`). On resume after compaction/interruption, read the ledger and run `git worktree list` / `git worktree prune` directly.
+- **State Ledger & Recovery:** Persist `orchestrator-state.json` (compact JSON on disk—only touched by the orchestrator) on Run State changes and decisions (`run_id`, `mode`, `delivery_mode`, `base_branch`, `base_commit`, `run_state`, `loop_count`, `plan_rev`, `approved_decisions`, `graph`, `active_worktrees`). On resume after compaction/interruption, read the ledger and run `git worktree list` / `git worktree prune` directly.
 
 ---
 
@@ -57,10 +57,10 @@ Lock before planning implementation:
 
 ### 4.1 Task Graph (Single Source of Truth)
 
-- **Nodes:** The ledger's `graph` holds one node per step: `{ "id": "S03", "title": "<plain 2–5 words, user's language>", "role", "depends_on": [...], "owned_paths": [...], "tier": "fast|primary", "size": "S|M|L", "status" }`. Dispatch packets are **derived** from nodes (never re-planned per packet); the node `title` doubles as the subagent's UI name and diagram label.
+- **Nodes:** The ledger's `graph` holds one node per step: `{ "id": "S03", "title": "<plain 2–5 words, user's language>", "role", "depends_on": [...], "owned_paths": [...], "tier": "fast|primary", "size": "S|M|L", "status" }`. Worker briefs (§7.1) are **derived** from nodes (never re-planned per dispatch); the node `title` doubles as the subagent's UI name and diagram label.
 - **Validate Before Every Dispatch (in-memory, no worker):** (1) acyclic, (2) every `depends_on` id exists and is not `CANCELLED`, (3) no `owned_paths` overlap between nodes that could run concurrently (i.e., neither reaches the other via `depends_on`), (4) hard sequential boundaries (§5.2) are encoded as explicit edges. On failure, fix the graph (add edge / merge nodes) before dispatching—never dispatch an invalid graph.
 - **Critical-Path Scheduling:** Weight nodes `S=1`, `M=2`, `L=3`. When ready nodes exceed the concurrency cap, dispatch in descending order of **longest remaining weighted path to a sink** (ties: ascending `id`), so the chain that bounds total runtime always starts first.
-- **Dynamic Graph Edits:** Retries, fix steps, wiring steps, and user pivots are graph edits—insert new nodes (`S07`..) with edges, or mark obsolete nodes `CANCELLED` (and `kill` their workers). Every structural edit increments `plan_rev` (feeds `idempotency_key`), re-runs validation, and syncs the mirror and diagram.
+- **Dynamic Graph Edits:** Retries, fix steps, wiring steps, and user pivots are graph edits—insert new nodes (`S07`..) with edges, or mark obsolete nodes `CANCELLED` (and `kill` their workers). Every structural edit increments `plan_rev` (tracked in the ledger), re-runs validation, and syncs the mirror and diagram.
 - **Native Task Mirror (Always):** Mirror the graph into the runtime's task UI and update it on every node status change (batch updates per wakeup).
   - **Antigravity:** `task.md` artifact in `<artifact_dir>`—one checklist line per node with plain title + "wartet auf: …" / "waiting for: …" (`[ ]` queued, `[/]` running, `[x]` done, `~~struck~~` cancelled).
   - **Claude Code:** `TaskCreate` per node (subject = plain title), `TaskUpdate(addBlockedBy=[...])` for edges, `status` `pending` -> `in_progress` -> `completed` (`deleted` for cancelled). If the Task tools are not exposed in the session, fall back to `TodoWrite`, else to `.worktrees/<run_id>/task.md`.
@@ -80,7 +80,7 @@ Lock before planning implementation:
 | `PLANNING`                   | Unapproved Big Decision or `BLOCKED`                                                   | `AWAITING_DECISION`                       | Pause dependent steps; record pause origin (`PLANNING`); escalate.                                                                                                                                                       |
 | `PLANNING`                   | Ready steps valid (write/exec vs read-only)                                            | `PROVISIONING` / `DISPATCHED`             | Write batch: orchestrator batch-provisions worktrees + dep symlinks directly in 1 shell call -> `DISPATCHED`. Read-only: dispatch directly.                                                                              |
 | `PROVISIONING`               | Worktrees & dep links ready                                                            | `DISPATCHED`                              | Validate graph; launch all ready nodes in 1 parallel call in critical-path order (respect concurrency cap); mark them running in the mirror.                                                                             |
-| `DISPATCHED`                 | Read-only step settles                                                                 | `DISPATCHED` / `PLANNING` / `CLEANUP`     | Validate JSON + read-only invariants in-memory; mark `VERIFIED`; immediately launch newly ready downstream steps.                                                                                                        |
+| `DISPATCHED`                 | Read-only step settles                                                                 | `DISPATCHED` / `PLANNING` / `CLEANUP`     | Check required result fields + read-only invariants in-memory; mark `VERIFIED`; immediately launch newly ready downstream steps.                                                                                         |
 | `DISPATCHED`                 | All write steps in batch settled (`STANDARD` multi-writer)                             | `INTEGRATING`                             | Orchestrator verifies each branch's `owned_paths` via `git diff --name-only` and merges sequentially into `orch/<run_id>/integrated`.                                                                                    |
 | `DISPATCHED` / `INTEGRATING` | `LIGHT` write step settled OR `STANDARD`/`STRICT` merge clean                          | `VERIFYING`                               | Launch **1 `qa` subagent** (omit for trivial `LIGHT` edits) and run **direct log-redirected `verify`** **in parallel** on the integrated branch (or `LIGHT` worktree).                                                   |
 | `VERIFYING`                  | `verify` or `qa` fails AND `retry_count < 2` AND `loop_count < 5`                      | `DISPATCHED`                              | Combine all `verify` violations + `qa` fix items into **1** targeted retry via `send_message`/`resume` to the responsible worker (or insert a fix node if no single owner; bump `plan_rev`).                             |
@@ -108,89 +108,62 @@ Lock before planning implementation:
 - **Parallelize When It Pays Off (Token-Smart Split Check):**
   - Keep **small, cohesive edits** (e.g., 2–4 small files in the same module/concern) in **1 `coding` worker** (`LIGHT` mode) to avoid cold-start, worktree, and merge token overhead.
   - **Fan out in parallel** (typically **2–4 substantial slices**, up to cap `8`) when subtasks are genuinely independent and heavy—e.g., separate features/pages/modules, large refactors across disjoint directories, or independent multi-area research.
-- **Upfront Interface Specs:** When parallel writers interact, include a brief (3–8 line) shared interface spec (types, exports, signatures) in `scoped_context` so they run simultaneously.
+- **Upfront Interface Specs:** When parallel writers interact, include a brief (3–8 line) shared interface spec (types, exports, signatures) in `interfaces` so they run simultaneously.
 - **Wiring Step Pattern:** Keep parallel writers strictly inside disjoint `owned_paths`; schedule **1** sequential wiring step afterward for shared entrypoints (`index.ts`, routes, layouts, registries).
 - **Hard Sequential Boundaries:** Never run concurrently: (1) Git merges into `integrated`/`main`, (2) edits to the same file, (3) shared lockfile or sequential migration generation (`pnpm-lock.yaml`, Drizzle migrations).
-- **IDs & Caps:** Zero-padded `step_id` (`S01`..) & `decision_id` (`D01`..); `idempotency_key: <run_id>:<step_id>:<base_commit>:r<plan_rev>`; max `2` immediate targeted retries (no sleep); `timeout_sec` applies to commands inside the worker; `Loop Cap = 5` counts **re-plan/fix cycles** (not forward DAG waves); fan-in `upstream_artifacts` sorted ascending by `step_id`.
+- **IDs & Caps:** Zero-padded `step_id` (`S01`..) & `decision_id` (`D01`..); track `idempotency_key: <run_id>:<step_id>:<base_commit>:r<plan_rev>` in the ledger (not repeated in briefs); max `2` immediate targeted retries (no sleep); `Loop Cap = 5` counts **re-plan/fix cycles** (not forward DAG waves); fan-in upstream outputs sorted ascending by `step_id`.
 
 ---
 
 ## 6. Inline Role Profiles (Inject Once per Worker Definition)
 
-| Role                  | Mode        | Write Tools | Model Tier                     | Core Directives (Do Not Repeat in Every Dispatch JSON)                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| :-------------------- | :---------- | :---------- | :----------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `research`            | `read_only` | `false`     | Fast (simple) / Primary (deep) | Read-only local repo facts (`modified_files: []`, `commit_sha: null`; no network on built-in Antigravity `research`). Cite `file:line`, tag confidence (`HIGH`/`MED`/`LOW`), return concise `findings` in `payload`.                                                                                                                                                                                                                                                             |
-| `brainstorm`          | `read_only` | `false`     | Primary                        | Read-only options (`LENS_MINIMAL`, `LENS_SCALABLE`, `LENS_FIRST_PRINCIPLES`), label `ASSUMPTION`s, return structured `options` in `payload`.                                                                                                                                                                                                                                                                                                                                     |
-| `coding`              | `write`     | `true`      | Primary                        | Work strictly inside `workspace.worktree_path` (absolute paths, `Cwd = worktree_path`) and `owned_paths`. **Self-check** scoped lint/format on touched files before committing to `branch_name`. Confirm clean `git status`, return exact `commit_sha`, `modified_files`, `lines_changed`.                                                                                                                                                                                       |
-| `writer_repo`         | `write`     | `true`      | Primary                        | Same worktree/owned_paths/self-check/commit rules as `coding`, focused on repo docs.                                                                                                                                                                                                                                                                                                                                                                                             |
-| `verify` _(fallback)_ | `exec`      | `true`      | **Fast**                       | **Optional Subagent Fallback (only if verification needs multi-step reasoning; normally run directly by orchestrator with log redirection):** Never modify tracked files (`modified_files: []`, `commit_sha: null`). Verify real `git diff --name-only --numstat <base>..HEAD`, clean worktree + untouched main checkout, Charter diff/contract limits, and project lint/typecheck/build/tests. Return `gate_verdict`, `checks`, `violations` (failing lines only) in `payload`. |
-| `qa`                  | `read_only` | `false`     | Primary                        | **Holistic Semantic Gate (Parallel with direct `verify`):** Review the full integrated diff against `overall_goal`, `success_criteria`, logic, and edge cases (`modified_files: []`, `commit_sha: null`). Return `qa_verdict`, `criteria_checks`, concrete `fix_items` in `payload`.                                                                                                                                                                                             |
-| `compute`             | `exec`      | `true`      | Primary                        | Run builds/benchmarks/sharded suites in worktree (`commit_sha: null` valid unless artifacts committed). Return compact `metrics`/`artifact_paths` in `payload`.                                                                                                                                                                                                                                                                                                                  |
-| `writer_readonly`     | `read_only` | `false`     | Primary                        | Draft reports/deliverables (or write large outputs to `scratch_dir`) without editing repo files.                                                                                                                                                                                                                                                                                                                                                                                 |
+| Role                  | Mode        | Write Tools | Model Tier                     | Core Directives (Injected Once, Never Repeated in Briefs)                                                                                                                                                                                                                                                                                                                                                                                         |
+| :-------------------- | :---------- | :---------- | :----------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `research`            | `read_only` | `false`     | Fast (simple) / Primary (deep) | Read-only local repo facts (`files: []`, `commit: null`; no network on built-in Antigravity `research`). Cite `file:line`, tag confidence (`HIGH`/`MED`/`LOW`), return concise `findings`.                                                                                                                                                                                                                                                        |
+| `brainstorm`          | `read_only` | `false`     | Primary                        | Read-only options (`LENS_MINIMAL`, `LENS_SCALABLE`, `LENS_FIRST_PRINCIPLES`), label `ASSUMPTION`s, return structured `options`.                                                                                                                                                                                                                                                                                                                   |
+| `coding`              | `write`     | `true`      | Primary                        | Work strictly inside `worktree` (absolute paths, `Cwd = worktree`) and `owned`. **Self-check** scoped lint/format on touched files before committing to `branch`. Confirm clean `git status`, return exact `commit`, `files`, `lines`, `check`.                                                                                                                                                                                                   |
+| `writer_repo`         | `write`     | `true`      | Primary                        | Same `worktree`/`owned`/self-check/commit rules as `coding`, focused on repo docs.                                                                                                                                                                                                                                                                                                                                                                |
+| `verify` _(fallback)_ | `exec`      | `true`      | **Fast**                       | **Optional Subagent Fallback (only if verification needs multi-step reasoning; normally run directly by orchestrator with log redirection):** Never modify tracked files (`files: []`, `commit: null`). Verify real `git diff --name-only --numstat <base>..HEAD`, clean worktree + untouched main checkout, Charter diff/contract limits, and project lint/typecheck/build/tests. Return `verdict`, `checks`, `violations` (failing lines only). |
+| `qa`                  | `read_only` | `false`     | Primary                        | **Holistic Semantic Gate (Parallel with direct `verify`):** Review the full integrated diff against `goal`, `success_criteria`, logic, and edge cases (`files: []`, `commit: null`). Return `verdict`, `criteria_checks`, concrete `fix_items`.                                                                                                                                                                                                   |
+| `compute`             | `exec`      | `true`      | Primary                        | Run builds/benchmarks/sharded suites in `worktree` (`commit: null` valid unless artifacts committed). Return compact `metrics`/`artifacts`.                                                                                                                                                                                                                                                                                                       |
+| `writer_readonly`     | `read_only` | `false`     | Primary                        | Draft reports/deliverables (or write large outputs to `scratch`) without editing repo files.                                                                                                                                                                                                                                                                                                                                                      |
 
 ---
 
-## 7. Compact JSON Contracts & Context Diet
+## 7. Compact YAML Worker Protocol & Context Diet
 
-**Context Diet (Token Saver):** Pass only file paths and brief interface specs in `ctx`—never paste whole files, full logs, or repeated `role_directives` (those live once in the worker's `system_prompt`). Keep `summary` to 1–2 sentences; put only failing lines (not full stdout) or a `scratch/` path in `payload`.
+**Context Diet (Token Saver):** Use flat YAML between orchestrator and workers (no JSON quotes/escaping, no orchestrator-internal fields like `run_id`, `plan_rev`, `depends_on`, or `contract_type`—those stay in `orchestrator-state.json`). Pass only paths and short interface specs—never whole files, full logs, or repeated role directives. Keep `summary` to 1–2 sentences; put only failing lines or a `scratch` path in results.
 
-### 7.1 Dispatch (`DISPATCH_PACKET_V1`)
+### 7.1 Dispatch Brief (Orchestrator -> Worker)
 
-```json
-{
-  "contract_type": "DISPATCH_PACKET_V1",
-  "run_id": "run-20261126-225500-f4a9",
-  "step_id": "S03",
-  "depends_on": ["S01"],
-  "plan_rev": 1,
-  "role": "coding",
-  "idempotency_key": "run-20261126-225500-f4a9:S03:8c19e2a:r1",
-  "timeout_sec": 300,
-  "objective": "Implement Redis sliding-window limiter + unit tests; run scoped lint before commit.",
-  "workspace": {
-    "worktree_path": "/abs/repo/.worktrees/run-20261126-225500-f4a9/S03",
-    "branch_name": "orch/run-20261126-225500-f4a9/S03-coding",
-    "base_commit": "8c19e2a",
-    "owned_paths": ["src/limiter/**", "tests/limiter/**"],
-    "read_only": false
-  },
-  "ctx": {
-    "goal": "Add Redis-backed sliding-window rate limiting to the API.",
-    "upstream": ["S01"],
-    "interfaces": [
-      "export function checkLimit(key: string): Promise<{ allowed: boolean; retryAfterMs: number }>"
-    ],
-    "approved": ["D01"],
-    "scratch_dir": "/abs/scratch",
-    "out_of_scope": ["src/middleware/** (S04)", "main"]
-  }
-}
+```yaml
+step: S03
+worktree: /abs/repo/.worktrees/run-20261126-225500-f4a9/S03
+branch: orch/run-20261126-225500-f4a9/S03-coding
+owned: [src/limiter/**, tests/limiter/**]
+avoid: [src/middleware/**, main]
+goal: Add Redis-backed sliding-window rate limiting to the API.
+task: Implement Redis sliding-window limiter + unit tests; run scoped lint before commit.
+interfaces: |
+  export function checkLimit(key: string): Promise<{ allowed: boolean; retryAfterMs: number }>
+scratch: /abs/scratch
 ```
 
-_Use `null` for `worktree_path`, `branch_name`, `owned_paths` on read-only steps without a checkout. Never include secrets in `ctx`._
+_Omit `worktree`, `branch`, `owned` on read-only steps without a checkout; omit `interfaces`/`avoid` if unused. Never include secrets._
 
-### 7.2 Return (`STEP_RESULT_V1`)
+### 7.2 Worker Result (Worker -> Orchestrator)
 
-```json
-{
-  "contract_type": "STEP_RESULT_V1",
-  "run_id": "run-20261126-225500-f4a9",
-  "step_id": "S03",
-  "role": "coding",
-  "status": "OK",
-  "exit_code": 0,
-  "branch_name": "orch/run-20261126-225500-f4a9/S03-coding",
-  "commit_sha": "a91c4e2",
-  "modified_files": ["src/limiter/redisWindow.ts", "tests/limiter/redisWindow.test.ts"],
-  "lines_changed": 114,
-  "decision_triggers": [],
-  "payload": { "self_check": "oxlint PASS" },
-  "summary": "Implemented sliding-window limiter with unit tests; scoped lint passed.",
-  "error": null
-}
+```yaml
+status: OK
+commit: a91c4e2
+files: [src/limiter/redisWindow.ts, tests/limiter/redisWindow.test.ts]
+lines: 114
+check: oxlint PASS
+triggers: []
+summary: Implemented sliding-window limiter with unit tests; scoped lint passed.
 ```
 
-_Allowed `status`: `OK`, `NEEDS_DECISION`, `FAILED`, `TIMEOUT`. Missing/malformed JSON -> `CONTRACT_VIOLATION` (counts toward `max_retries = 2`). Read-only & `verify` invariants: `modified_files: []`, `lines_changed: 0`, `commit_sha: null`._
+_Allowed `status`: `OK`, `NEEDS_DECISION`, `FAILED`, `TIMEOUT`. Add role keys (`findings`, `options`, `verdict`, `fix_items`, `violations`, `metrics`, `error`) only when non-empty; omit empty keys. Read-only/`verify` steps omit `commit`/`files`/`lines` (or return `commit: null`, `files: []`, `lines: 0`). **Tolerant parsing:** never waste a retry on minor YAML syntax quirks if the message is clear—only retry when required facts are missing (e.g., missing `status` or missing `commit` on a write step; counts toward `max_retries = 2`)._
 
 ---
 
@@ -220,8 +193,8 @@ _Allowed `status`: `OK`, `NEEDS_DECISION`, `FAILED`, `TIMEOUT`. Missing/malforme
 
 ## 10. Self-Improvement (Automatic Retro -> Direct Skill Edit)
 
-- **Retro (every run, in-memory, no worker):** At `CLEANUP`, review the ledger: retries & their causes, merge conflicts, `verify`/`qa` failures, contract violations, decision pauses, critical-path accuracy (`size` estimates vs actual), idle parallel slots or splits that cost more than they saved, and wall time. Ask: _which skill rule, missing or wrong, caused avoidable cost?_
-- **Auto-Apply (direct, no worker or approval needed):** If the retro finds a concrete, evidence-backed cause, edit `.agents/skills/orchestrator/SKILL.md` directly in the orchestrator with a minimal diff, run local validation (YAML frontmatter parses, JSON blocks parse, fences balanced, size limit below), commit it on its own as `chore(orchestrator): self-improve – <cause>`, and deliver it under the run's `delivery_mode`. If nothing actionable was found (the common case), skip it with zero extra tokens spent.
+- **Retro (every run, in-memory, no worker):** At `CLEANUP`, review the ledger: retries & their causes, merge conflicts, `verify`/`qa` failures, missing result fields, decision pauses, critical-path accuracy (`size` estimates vs actual), idle parallel slots or splits that cost more than they saved, and wall time. Ask: _which skill rule, missing or wrong, caused avoidable cost?_
+- **Auto-Apply (direct, no worker or approval needed):** If the retro finds a concrete, evidence-backed cause, edit `.agents/skills/orchestrator/SKILL.md` directly in the orchestrator with a minimal diff, run local validation (YAML frontmatter + fenced YAML blocks parse, fences balanced, size limit below), commit it on its own as `chore(orchestrator): self-improve – <cause>`, and deliver it under the run's `delivery_mode`. If nothing actionable was found (the common case), skip it with zero extra tokens spent.
 - **Edit Rules:** Make minimal, targeted diffs and prefer replacing or tightening a rule over adding one. Keep the file ≤ 250 lines (if over, consolidate before adding). No run-specific facts (paths, timings of one repo) unless phrased as a general rule. Never touch the `description` frontmatter format (single-line quoted string).
 - **Locked (never weakened by self-improvement):** Hybrid Delegation boundary (repo code/docs, broad research, and independent `qa` always delegated to isolated subagents); never `--force`/history rewrite on `main`; §5.1 decision gates & `DECISION_RULE_IRREVERSIBLE`; worktree guardrail; plain-language UX; `delivery_mode` semantics; this §10 itself. Changes there require explicit user approval.
 - **Report:** Add 1 plain sentence under **Decisions Made** / final summary stating what the skill learned (e.g., "Skill angepasst: Lockfile-Änderungen laufen jetzt immer als eigener Schritt."). Every self-edit is a separate commit, so it can be reverted with `git revert`.
